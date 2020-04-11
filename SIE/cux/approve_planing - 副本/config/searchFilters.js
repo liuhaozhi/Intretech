@@ -1,6 +1,6 @@
 /**
  * @NApiVersion 2.0
- * @NModuleScope Public
+ * @NModuleScope Public /test/
  */
 
 define({
