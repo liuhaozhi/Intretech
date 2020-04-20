@@ -31,18 +31,23 @@ define([
 
             if(params.printType === 'paymentInvoice')
             response.writeFile(handler.handleAsPDF('./template/payment_invoice_pdf.ftl' , printData.getPaymentInvData(params.id) ))
+
+            if(params.printType === 'creditInvoice')
+            response.writeFile(handler.handleAsPDF('./template/credit_invoice_pdf.ftl' , printData.getCreditInvoiceDate(params.id) ))
         }
         else if(params.type === 'excel')
         {
             if(params.printType === 'packlist')
             response.writeFile(handler.handleAsExcel('./template/packing_list_Excel.ftl' , printData.getPackListData(params.id) ))
 
-            log.error('data',printData.getTransportInvData(params.id))
             if(params.printType === 'transportInvoice')
             response.writeFile(handler.handleAsExcel('./template/transport_invoice_Excel.ftl' , printData.getTransportInvData(params.id) ))
 
             if(params.printType === 'paymentInvoice')
             response.writeFile(handler.handleAsExcel('./template/payment_invoice_Excel.ftl' , printData.getPaymentInvData(params.id) ))
+
+            if(params.printType === 'creditInvoice')
+            response.writeFile(handler.handleAsExcel('./template/credit_invoice_Excel.ftl' , printData.getCreditInvoiceDate(params.id) ))
         }
     }
 

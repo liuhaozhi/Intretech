@@ -40,13 +40,13 @@ define([
         {
             context.form.addButton({
                 id : 'custpage_printPackPdf',
-                label : '打印运输单PDF',
+                label : '打印装箱单PDF',
                 functionName : 'printPackpdf('+ context.newRecord.id +')'
             })
     
             context.form.addButton({
                 id : 'custpage_printPackExcel',
-                label : '打印运输单Excel',
+                label : '打印装箱单Excel',
                 functionName : 'printPackExcel('+ context.newRecord.id +')'
             })
 
@@ -109,7 +109,7 @@ define([
 
     function transPrintToInvoice(newRecord){
         var sublistLines = getSublistLines(newRecord)
-        log.error('sublistLines',sublistLines)
+        
         for(var key in sublistLines)
         {
             var salesorder = record.load({

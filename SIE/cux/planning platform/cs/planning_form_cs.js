@@ -424,6 +424,7 @@ define([
             trandate : currentRec.getText('custpage_trandate'),
             emoloyee : currentRec.getValue('custpage_emoloyee'),
             customer : currentRec.getValue('custpage_customer'),
+            sourcemp :currentRec.getValue('custpage_sourcemp') ,
             ordertype : currentRec.getValue('custpage_ordertype'),
             dateclose : currentRec.getText('custpage_dateclose'),     
             subsidiary : currentRec.getValue('custpage_subsidiary'), 

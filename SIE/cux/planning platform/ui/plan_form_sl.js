@@ -498,6 +498,48 @@ define([
         var billingaddress = salesOrder.getSubrecord('billingaddress')
         var shippingaddress = salesOrder.getSubrecord('shippingaddress')
 
+        if(params.custpage_isintercompany === 'T')
+        {
+            salesOrder.setValue({
+                fieldId : 'custbody_final_customer',
+                value : params.custpage_endcustomer
+            })
+
+            salesOrder.setValue({
+                fieldId : 'custbody_whether_ntercompany_transact',
+                value : true
+            })
+
+            salesOrder.setValue({
+                fieldId : 'customform',
+                value : 164
+            })
+
+            var searchInfo = params.custpage_ordertype === '4' ? {
+                id : params.custpage_customer,
+                type : 'customer',
+                fieldId : 'custentity_vim'
+            } : {
+                id : params.custpage_subsidiary,
+                type : 'subsidiary',
+                fieldId : 'custrecord_intre_intercompany_location'
+            }
+
+            var location = search.lookupFields({
+                type : searchInfo.type,
+                id : searchInfo.id,
+                columns : [searchInfo.fieldId]
+            })[searchInfo.fieldId][0]
+
+            if(location)
+            {
+                salesOrder.setValue({
+                    fieldId : 'custbody_rece_locations',
+                    value : location.value
+                })
+            }
+        }
+
         if(customerAdress.ship)
         {
             if(customerAdress.ship.emp)
@@ -658,32 +700,12 @@ define([
             value : userObj.department
         })
 
-        if(params.custpage_isintercompany === 'T')
-        {
-            var searchInfo = params.custpage_ordertype === '4' ? {
-                id : params.custpage_customer,
-                type : 'customer',
-                fieldId : 'custentity_vim'
-            } : {
-                id : params.custpage_subsidiary,
-                type : 'subsidiary',
-                fieldId : 'custrecord_intre_intercompany_location'
-            }
+        salesOrder.setValue({
+            fieldId : 'custbody_source_doc_creator',
+            value : params.custpage_sourcemp
+        })
 
-            var location = search.lookupFields({
-                type : searchInfo.type,
-                id : searchInfo.id,
-                columns : [searchInfo.fieldId]
-            })[searchInfo.fieldId][0]
 
-            if(location)
-            {
-                salesOrder.setValue({
-                    fieldId : 'custbody_rece_locations',
-                    value : location.value
-                })
-            }
-        }
     }
 
     function today(){

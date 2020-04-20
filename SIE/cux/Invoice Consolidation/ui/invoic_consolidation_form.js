@@ -370,7 +370,7 @@ define([
                         fieldId : 'quantity',
                         line : index
                     })
-                )
+                ).toFixed(2)
 
                 var amount = operation.mul(rate , lines[line].quantity)
                 var taxamount = operation.mul(amount , parseFloat(taxcode) / 100)
@@ -529,14 +529,14 @@ define([
                 newRecord.setCurrentSublistValue({
                     sublistId : 'recmachcustrecord185',
                     fieldId : 'custrecord_ci_zongtuoshu',
-                    value : operation.mul(
+                    value : Math.ceil(operation.mul(
                         salesRecord.getSublistValue({
                             sublistId : 'item',
                             fieldId : 'custcol_sup_total',
                             line : index
                         }) || 0,
                         scale
-                    )
+                    )) 
                 })
 
                 newRecord.setCurrentSublistValue({
@@ -1080,6 +1080,7 @@ define([
         var line = res.getValue('line')
         var quantity = Math.abs(res.getValue('quantity'))
         var quantitybilled = 0
+        var quantityshiprecv = 0
         var taxamount = res.getValue(columns[12])
         var netamountnotax = res.getValue(columns[11])
         
@@ -1099,11 +1100,13 @@ define([
         {
             if(res.getValue('custcol_ci_yunshudaying'))
             quantitybilled = operation.add(0,res.getValue('custcol_ci_yunshudaying')) 
+            quantityshiprecv = quantity
         }
         else
         {
             if(res.getValue('quantitybilled'))
             quantitybilled = res.getValue('quantitybilled')
+            quantityshiprecv = res.getValue('quantityshiprecv')
         }   
 
         if(checkInfo[res.id])
@@ -1139,13 +1142,13 @@ define([
                 sublist.setSublistValue({
                     id : FIELDPR + 'currquantity',
                     line : index,
-                    value : operation.sub(quantity , quantitybilled).toString()
+                    value : operation.sub(quantityshiprecv , quantitybilled).toString()
                 })
 
                 sublist.setSublistValue({
                     id : FIELDPR + 'abbprovequantity',
                     line : index,
-                    value : operation.sub(quantity , quantitybilled).toString()
+                    value : operation.sub(quantityshiprecv , quantitybilled).toString()
                 })  
             }
         }
@@ -1154,13 +1157,13 @@ define([
             sublist.setSublistValue({
                 id : FIELDPR + 'currquantity',
                 line : index,
-                value : operation.sub(quantity , quantitybilled).toString()
+                value : operation.sub(quantityshiprecv , quantitybilled).toString()
             })
 
             sublist.setSublistValue({
                 id : FIELDPR + 'abbprovequantity',
                 line : index,
-                value : operation.sub(quantity , quantitybilled).toString()
+                value : operation.sub(quantityshiprecv , quantitybilled).toString()
             })  
         }
 
@@ -1168,7 +1171,7 @@ define([
             id : FIELDPR + 'quantityshiprecv',
             line : index,
             value : res.getValue('quantityshiprecv')
-        }) //已开票
+        }) //已实施
        
         sublist.setSublistValue({
             id : FIELDPR + 'quantitybilled',

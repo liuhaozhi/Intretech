@@ -136,6 +136,14 @@ define({
                 defaultValue : params.emoloyee || ''
             },
             {
+                id : 'sourcemp' ,
+                label : '来源单据创建人(sourcemp)' , 
+                type : 'select' ,
+                source : 'employee' ,
+                container : 'custpage_filters' ,
+                defaultValue : params.sourcemp || ''
+            },
+            {
                 id : 'title' ,
                 label : 'title' , 
                 type : 'text' ,

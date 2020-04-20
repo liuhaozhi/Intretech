@@ -120,8 +120,8 @@
                     <td colspan="3" rowspan="2" style="border-left:thin solid #000;border-right:thin solid #000;border-top:thin solid #000;">
                         <table id="bankinfo">
                             <tr><td>Bank information</td></tr>
-                            <tr><td>${makesure(data.bankInfo.name)}</td></tr>
-                            <tr><td>${makesure(data.bankInfo.account)}</td></tr>
+                            <tr><td>开户银行：${makesure(data.bankInfo.branch)}</td></tr>
+                            <tr><td>人民币账号：${makesure(data.bankInfo.account)}</td></tr>
                         </table>
                     </td>
                 </tr>

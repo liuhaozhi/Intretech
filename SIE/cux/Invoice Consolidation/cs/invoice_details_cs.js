@@ -398,7 +398,7 @@ define([
         })
     }
 
-    function printPaymentInvoicPdf(){
+    function printPaymentInvoicPdf(id){
         printElement({
             id : id,
             type : 'pdf',

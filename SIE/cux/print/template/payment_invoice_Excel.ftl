@@ -100,8 +100,12 @@
                     <td colspan="3" rowspan="2" style="border-left:thin solid #000;border-right:thin solid #000;border-top:thin solid #000;">
                         <table id="bankinfo">
                             <tr><td>Bank information</td></tr>
-                            <tr><td>${makesure(data.bankInfo.name)}</td></tr>
-                            <tr><td align="left">${makesure(data.bankInfo.account)}</td></tr>
+                            <tr><td>Account Name:${makesure(data.bankInfo.subsidiary)}</td></tr>
+                            <tr><td>Account No:${makesure(data.bankInfo.account)}</td></tr>
+                            <tr><td>Bank Name:${makesure(data.bankInfo.branch)}</td></tr>
+                            <tr><td>Bank Address:${makesure(data.bankInfo.adress)}</td></tr>
+                            <tr><td>Swift Code:${makesure(data.bankInfo.code)}</td></tr>
+                            <tr><td align="left">Beneficiary's TEL:${makesure(data.bankInfo.tel)}</td></tr>
                         </table>
                     </td>
                 </tr>

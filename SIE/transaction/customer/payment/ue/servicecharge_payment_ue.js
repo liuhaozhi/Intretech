@@ -67,11 +67,6 @@ define([
             value : parmas.postingperiod
         })
 
-        serviceRecord.setValue({
-            fieldId : 'approvalstatus',
-            value : 2
-        })
-
         serviceRecord.selectNewLine({
             sublistId : 'line'
         })

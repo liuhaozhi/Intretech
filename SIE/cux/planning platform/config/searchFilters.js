@@ -108,6 +108,21 @@ define({
                 ['custrecord_p_custcol_salesorder.custbody_final_customer' , 'anyof' , [params.endcustomer]]
             )
         }
+        else
+        {
+            filters.push(
+                'AND',
+                ['custrecord_p_custcol_salesorder.custbody_whether_ntercompany_transact' , 'is' , params.isintercompany]
+            )
+        }
+
+        if(params.sourcemp)
+        {
+            filters.push(
+                'AND',
+                ['custrecord_p_custcol_salesorder.custbody_source_doc_creator' , 'anyof' , [params.sourcemp]]
+            )
+        }
 
         filters.push(
             'AND',

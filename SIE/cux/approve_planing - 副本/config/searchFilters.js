@@ -8,12 +8,11 @@ define({
         var filters = new Array()
  
         filters.push(
-            ['custrecord_p_custcol_approval_status' , 'anyof' , [1]],
-            'AND',
-            ['custrecord_salesorder_shipped' , 'is' , 'F']
+            ['mainline' , 'is' , 'T']
         ) 
 
         if(params.subsidiary)
+        
         {
             filters.push(
                 'AND',

@@ -50,6 +50,35 @@ define([
         }
     }
 
+    function getBankInfo(bank){
+        if(bank)
+        {
+            var bankInfo = search.lookupFields({
+                type : 'customrecord_yinhangxinxi',
+                id : bank,
+                columns : [
+                    'custrecord_yinhangzhanghumc',
+                    'custrecord_account_no',
+                    'custrecordfenzhihang_name',
+                    'custrecordbank_address',
+                    'custrecord_swift_code',
+                    'custrecord_beneficiarys_tel'
+                ]
+            })
+
+            return {
+                subsidiary : bankInfo.custrecord_yinhangzhanghumc[0] ? bankInfo.custrecord_yinhangzhanghumc[0].text : '',
+                account : bankInfo.custrecord_account_no ? bankInfo.custrecord_account_no : '',
+                branch : bankInfo.custrecordfenzhihang_name ? bankInfo.custrecordfenzhihang_name : '',
+                adress : bankInfo.custrecordbank_address ? bankInfo.custrecordbank_address : '',
+                code : bankInfo.custrecord_swift_code ? bankInfo.custrecord_swift_code : '',
+                tel : bankInfo.custrecord_beneficiarys_tel ? bankInfo.custrecord_beneficiarys_tel : ''
+            }
+        }
+         
+        return {}
+    }
+
     function getTransportInvData(id){
         var recordInfo = record.load({
             type : 'customrecord_hebingfapiao',
@@ -65,6 +94,9 @@ define([
             fieldId : 'custrecord_kehu_fapiao'
         }))
         var transportInvLineInfo = getTransportInvLineInfo(recordInfo)
+        var bankInfo = getBankInfo(recordInfo.getValue({
+            fieldId : 'custrecord_p_custentity_bankinfo'
+        }))
 
         return {
             subsidiaryInfo : subsidiaryInfo,
@@ -92,14 +124,11 @@ define([
                 })
             },
             billInfo : {
-                adress : recordInfo.getValue({
+                    adress : recordInfo.getValue({
                     fieldId : 'custrecord_kehudizhi'
                 })
             },
-            bankInfo : {
-                name : 'test',
-                account : '9527'
-            },
+            bankInfo :bankInfo,
             items : transportInvLineInfo.itemLines,
             itemTotal : transportInvLineInfo.itemTotal,
         }
@@ -120,6 +149,9 @@ define([
             fieldId : 'custrecord_kehu_fapiao'
         }))
         var paymentInvLineInfo = getPaymentInvLineInfo(recordInfo)
+        var bankInfo = getBankInfo(recordInfo.getValue({
+            fieldId : 'custrecord_p_custentity_bankinfo'
+        }))
 
         return {
             subsidiaryInfo : subsidiaryInfo,
@@ -154,10 +186,7 @@ define([
                     fieldId : 'custrecord_shoupiaoren'
                 })
             },
-            bankInfo : {
-                name : 'test',
-                account : '9527'
-            },
+            bankInfo : bankInfo,
             items : paymentInvLineInfo.itemLines,
             itemTotal : paymentInvLineInfo.itemTotal,
         }
@@ -190,7 +219,7 @@ define([
         
             itemLines.push({
                 orderNum : getSublistValue(detailRecord,'custrecord_ci_kehudingdanhao',index), //客户订单号
-                lineNum : getSublistValue(detailRecord,'custrecord_ci_kehudingdanhao',index), //客户订单行号
+                lineNum : getSublistValue(detailRecord,'custrecord_ci_kehudingdanhanghao',index), //客户订单行号
                 itemNum : getSublistText(detailRecord,'custrecord_ci_kehuwuliaobianma',index),
                 itemDes : getSublistValue(detailRecord,'custrecord_ci_kehuwuliaomingchen',index),
                 quantity : quantity,
@@ -200,7 +229,98 @@ define([
         }
 
         if(detailRecord.getValue('custrecord_hebingxiangtonghuoping') === true)
-        itemLines = CombineSameGoods(itemLines , ['itemNum','price'] , ['amount'])
+        itemLines = CombineSameGoods(itemLines , ['itemNum','price'] , ['quantity','amount'])
+
+        return {
+            itemTotal : itemTotal,
+            itemLines : itemLines
+        }
+    }
+
+    function getCreditInvoiceDate(id){
+        var recordInfo = record.load({
+            type : 'creditmemo',
+            id : id
+        })
+        var currencySymbol = getCurrencySymbol(recordInfo.getValue({
+            fieldId : 'currency'
+        }))
+        var subsidiaryInfo = getSubsidiaryInfo(recordInfo.getValue({
+            fieldId : 'subsidiary'
+        }))
+        var creditInvLineInfo = getCreditInvLineInfo(recordInfo)
+        var bankInfo = getBankInfo(recordInfo.getValue({
+            fieldId : 'custbody_custentity_bankinfo'
+        }))
+
+        return {
+            subsidiaryInfo : subsidiaryInfo,
+            currencySymbol : currencySymbol,
+            tranid : recordInfo.getValue('tranid'),
+            trandate : recordInfo.getText('trandate'),
+            bankInfo : bankInfo,
+            bill : {
+                emp : recordInfo.getValue('custbody_vperson'),
+                adress : recordInfo.getValue('billaddress')
+            },
+            items : creditInvLineInfo.itemLines,
+            itemTotal : creditInvLineInfo.itemTotal
+        }
+    }
+
+    function getCreditInvLineInfo(detailRecord){
+        var itemLines = new Array()
+        var lineCount = detailRecord.getLineCount({
+            sublistId : 'item'
+        })
+        var itemTotal = {
+            amount : detailRecord.getValue({
+                fieldId : 'total'
+            }),
+            chinaAmount : changeNumMoneyToChinese(detailRecord.getValue({
+                fieldId : 'total'
+            }))
+        }
+       
+        for(var index = 0 ; index < lineCount ; index++)
+        {
+            var quantity = detailRecord.getSublistValue({
+                sublistId : 'item',
+                fieldId : 'quantity',
+                line : index
+            })
+
+            itemTotal.quantity = itemTotal.quantity ? operation.add(itemTotal.quantity , quantity) : quantity 
+        
+            itemLines.push({
+                orderNum : detailRecord.getValue('custbody_wip_customer_order_number'),
+                itemNum : detailRecord.getSublistText({
+                    sublistId : 'item',
+                    fieldId : 'custcol_cgoodscode',
+                    line : index
+                }),
+                itemDes : detailRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_cgoodsname',
+                    line : index
+                }),
+                quantity : quantity,
+                price :  detailRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'rate',
+                    line : index
+                }),
+                amount : detailRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'grossamt',
+                    line : index
+                }),
+                remark : detailRecord.getValue('custbody_invoice_number')
+            })
+        }
+
+        if(detailRecord.getValue('custrecord_hebingxiangtonghuoping') === true)
+        itemLines = CombineSameGoods(itemLines , ['itemNum','price'] , ['quantity','amount'])
 
         return {
             itemTotal : itemTotal,
@@ -239,7 +359,7 @@ define([
         }
 
         if(detailRecord.getValue('custrecord_hebingxiangtonghuoping') === true)
-        itemLines = CombineSameGoods(itemLines , ['itemNum','price'] , ['amount'])
+        itemLines = CombineSameGoods(itemLines , ['itemNum','price'] , ['quantity','amount'])
 
         return {
             itemTotal : itemTotal,
@@ -304,7 +424,7 @@ define([
         for(; i < itemLines.length ; i ++)
         {
             var indexs = new Array()
-            var item1 = JSON.parse(JSON.stringify(itemLines[i])) 
+            var item1 = itemLines[i]
 
             itemLines.splice(i,1)
             i--
@@ -515,7 +635,8 @@ define([
     return {
         getPackListData : getPackListData ,
         getPaymentInvData : getPaymentInvData,
-        getTransportInvData : getTransportInvData
+        getTransportInvData : getTransportInvData,
+        getCreditInvoiceDate : getCreditInvoiceDate
     };
 
 })

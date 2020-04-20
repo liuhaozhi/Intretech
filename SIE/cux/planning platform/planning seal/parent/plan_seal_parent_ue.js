@@ -595,6 +595,48 @@ define([
                     var beforExpectedshipdate = copyRecord.getText({
                         fieldId : 'custrecord_p_expectedshipdate' 
                     })
+                    var parentQuantity = copyRecord.getValue({
+                        fieldId : 'custrecord_p_quantity' 
+                    })
+                    var scale = operation.div(
+                        item.quantity || 0,
+                        parentQuantity
+                    ).toFixed(2)
+
+                    copyRecord.setValue({
+                        fieldId : 'custrecord_p_custcol_boxes_numbers',
+                        value : Math.ceil(operation.mul(scale,copyRecord.getValue({ //箱数
+                            fieldId : 'custrecord_p_custcol_boxes_numbers'
+                        })))
+                    })
+
+                    copyRecord.setValue({ 
+                        fieldId : 'custrecord_p_custcol_total_net_weight',
+                        value : operation.mul(scale,copyRecord.getValue({ //总净重
+                            fieldId : 'custrecord_p_custcol_total_net_weight'
+                        }))
+                    })
+
+                    copyRecord.setValue({ 
+                        fieldId : 'custrecord_p_custcol_total_gross_weight',
+                        value : operation.mul(scale,copyRecord.getValue({ //总毛重
+                            fieldId : 'custrecord_p_custcol_total_gross_weight'
+                        }))
+                    })
+
+                    copyRecord.setValue({ 
+                        fieldId : 'custrecord_p_custcol_total_cubic_number',
+                        value : operation.mul(scale,copyRecord.getValue({ //总立方
+                            fieldId : 'custrecord_p_custcol_total_cubic_number'
+                        }))
+                    })
+
+                    copyRecord.setValue({ 
+                        fieldId : 'custrecord_p_custcol_sup_total',
+                        value : Math.ceil( operation.mul(scale,copyRecord.getValue({ //总托数
+                            fieldId : 'custrecord_p_custcol_sup_total'
+                        })))
+                    })
 
                     copyRecord.setValue({
                         fieldId : 'custrecord_p_quantity',
@@ -664,6 +706,11 @@ define([
             value : item.line
         })
 
+        orderRecord.setValue({
+            fieldId : 'custbody_planchange',
+            value : true
+        })
+
         orderRecord.setSublistValue({
             sublistId : 'item',
             fieldId : 'quantity',
@@ -711,6 +758,11 @@ define([
 
     function inseterOrderSublistLine(orderRecord,copyRecord,item){
         var index = getInsetIndex(item.line,orderRecord)
+
+        orderRecord.setValue({
+            fieldId : 'custbody_planchange',
+            value : true
+        })
 
         orderRecord.insertLine({
             sublistId : 'item',
@@ -1051,6 +1103,11 @@ define([
             sublistId : 'item',
             fieldId : 'custcol_line',
             value : item.line.slice(0,item.line.indexOf('.'))
+        })
+
+        orderRecord.setValue({
+            fieldId : 'custbody_planchange',
+            value : true
         })
 
         orderRecord.removeLine({
