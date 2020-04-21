@@ -8,7 +8,9 @@ define({
         var filters = [
             ['custrecord_p_custcol_salesorder.mainline' , 'is' , 'T'],
             'AND',
-            ['custrecord_p_custcol_salesorder.taxline' , 'is' , 'F']
+            ['custrecord_p_custcol_salesorder.taxline' , 'is' , 'F'],
+            'AND',
+            ['custrecord_salesorder_shipped' , 'is' , 'F']
         ]
 
         if(params.item)
@@ -99,20 +101,33 @@ define({
             )
         }
 
-        if(params.isintercompany === 'T')
+        if(params.isintercompany)
         {
             filters.push(
                 'AND',
-                ['custrecord_p_custcol_salesorder.custbody_whether_ntercompany_transact' , 'is' , params.isintercompany],
-                'AND',
-                ['custrecord_p_custcol_salesorder.custbody_final_customer' , 'anyof' , [params.endcustomer]]
+                ['custrecord_p_custcol_salesorder.custbody_whether_ntercompany_transact' , 'is' , 'T']
             )
+
+            if(params.isintercompany === '2') //对外 需要最终客户
+            {
+                filters.push(
+                    'AND',
+                    ['custrecord_p_custcol_salesorder.custbody_final_customer' , 'anyof' , [params.endcustomer]]
+                )
+            }
+            else
+            {
+                filters.push(
+                    'AND',
+                    ['custrecord_p_custcol_salesorder.custbody_source_purchase' , 'is' , 'T']
+                )
+            }
         }
         else
         {
             filters.push(
                 'AND',
-                ['custrecord_p_custcol_salesorder.custbody_whether_ntercompany_transact' , 'is' , params.isintercompany]
+                ['custrecord_p_custcol_salesorder.custbody_whether_ntercompany_transact' , 'is' , 'F']
             )
         }
 
@@ -123,11 +138,6 @@ define({
                 ['custrecord_p_custcol_salesorder.custbody_source_doc_creator' , 'anyof' , [params.sourcemp]]
             )
         }
-
-        filters.push(
-            'AND',
-            ['custrecord_salesorder_shipped' , 'is' , 'F']
-        )
 
         return filters
     }

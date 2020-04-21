@@ -115,7 +115,7 @@ define([
             sublistId : 'item',
             fieldId : 'taxrate1'
         }))
-
+        
         currentRec.setCurrentSublistValue({  //折后单价 不含税
             sublistId : 'item',
             fieldId : 'rate',

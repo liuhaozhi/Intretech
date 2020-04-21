@@ -498,23 +498,8 @@ define([
         var billingaddress = salesOrder.getSubrecord('billingaddress')
         var shippingaddress = salesOrder.getSubrecord('shippingaddress')
 
-        if(params.custpage_isintercompany === 'T')
+        if(params.custpage_isintercompany)
         {
-            salesOrder.setValue({
-                fieldId : 'custbody_final_customer',
-                value : params.custpage_endcustomer
-            })
-
-            salesOrder.setValue({
-                fieldId : 'custbody_whether_ntercompany_transact',
-                value : true
-            })
-
-            salesOrder.setValue({
-                fieldId : 'customform',
-                value : 164
-            })
-
             var searchInfo = params.custpage_ordertype === '4' ? {
                 id : params.custpage_customer,
                 type : 'customer',
@@ -524,7 +509,6 @@ define([
                 type : 'subsidiary',
                 fieldId : 'custrecord_intre_intercompany_location'
             }
-
             var location = search.lookupFields({
                 type : searchInfo.type,
                 id : searchInfo.id,
@@ -538,6 +522,22 @@ define([
                     value : location.value
                 })
             }
+
+            salesOrder.setValue({
+                fieldId : 'custbody_whether_ntercompany_transact',
+                value : true
+            })
+
+            salesOrder.setValue({
+                fieldId : 'customform',
+                value : 164
+            })
+
+            if(params.custpage_isintercompany === '2')
+            salesOrder.setValue({
+                fieldId : 'custbody_final_customer',
+                value : params.custpage_endcustomer
+            })
         }
 
         if(customerAdress.ship)

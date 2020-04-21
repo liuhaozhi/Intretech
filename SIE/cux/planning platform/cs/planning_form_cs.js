@@ -136,7 +136,7 @@ define([
             sublistId : sublistId
         })
         
-        if(currentRec.getValue('custpage_isintercompany'))
+        if(currentRec.getValue('custpage_isintercompany') === '2')
         {
             if(!currentRec.getValue('custpage_endcustomer'))
             {
@@ -185,13 +185,13 @@ define([
 
         if(context.fieldId === 'custpage_isintercompany')
         {
-            var endcustomer = currentRec.getText({
+            var isintercompany = currentRec.getValue({
                 fieldId : 'custpage_isintercompany'
             })
 
             currentRec.getField({
                 fieldId : 'custpage_endcustomer'
-            }).isMandatory = endcustomer === 'T'
+            }).isMandatory = isintercompany === '2'
         }
 
         if(context.fieldId === 'custpage_currpage')
@@ -389,7 +389,7 @@ define([
             return false
         }
 
-        if(currentRec.getValue('custpage_isintercompany'))
+        if(currentRec.getValue('custpage_isintercompany') === '2')
         {
             if(!currentRec.getValue('custpage_endcustomer'))
             {
@@ -433,7 +433,7 @@ define([
             disposetype : currentRec.getValue('custpage_disposetype'),
             deliverydatend : currentRec.getText('custpage_deliverydatend'),
             deliverydatestar : currentRec.getText('custpage_deliverydatestar'), 
-            isintercompany : currentRec.getText('custpage_isintercompany')
+            isintercompany : currentRec.getValue('custpage_isintercompany')
         }
     }
     

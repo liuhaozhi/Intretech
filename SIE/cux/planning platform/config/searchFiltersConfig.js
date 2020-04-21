@@ -86,8 +86,9 @@ define({
             },
             {
                 id : 'isintercompany' ,
-                label : '公司间交易(inter-firm transction)' ,
-                type : 'checkbox' ,
+                label : '公司间交易类型(inter-firm transction)' ,
+                type : 'select' ,
+                source : 'customlist_intercompany_type',
                 container : 'custpage_filters' ,
                 defaultValue : params.isintercompany
             },

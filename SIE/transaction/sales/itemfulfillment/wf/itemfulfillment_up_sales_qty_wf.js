@@ -21,35 +21,38 @@ define([
 
         for(var key in sublistLines)
         {
-            var item = sublistLines[key]
-            var salesOrd = record.load({
-                type : 'estimate',
-                id : key
-            })
-
-            for(var line in item)
+            if(!!key)
             {
-                var index = getIndex(salesOrd,line)
-                log.error('index',index)
-                if(index > -1)
+                var item = sublistLines[key]
+                var salesOrd = record.load({
+                    type : 'estimate',
+                    id : key
+                })
+    
+                for(var line in item)
                 {
-                    salesOrd.setSublistValue({
-                        sublistId : 'item',
-                        fieldId : 'custcol_out_of_stock',
-                        line : index,
-                        value : operation.add(
-                            salesOrd.getSublistValue({
-                                sublistId : 'item',
-                                fieldId : 'custcol_out_of_stock',
-                                line : index
-                            }),
-                            item[line]
-                        )
-                    })
+                    var index = getIndex(salesOrd,line)
+                    log.error('index',index)
+                    if(index > -1)
+                    {
+                        salesOrd.setSublistValue({
+                            sublistId : 'item',
+                            fieldId : 'custcol_out_of_stock',
+                            line : index,
+                            value : operation.add(
+                                salesOrd.getSublistValue({
+                                    sublistId : 'item',
+                                    fieldId : 'custcol_out_of_stock',
+                                    line : index
+                                }),
+                                item[line]
+                            )
+                        })
+                    }
                 }
+    
+                salesOrd.save()
             }
-
-            salesOrd.save()
         }
     }
 
