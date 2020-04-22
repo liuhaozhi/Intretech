@@ -3,9 +3,9 @@
  * @NScriptType ClientScript
  * @NModuleScope SameAccount
  */
-define(['N/https','N/search','N/log','N/record','N/url'],
+define(['N/https','N/search','N/log','N/record','N/url','../../SIE/cux/helper/operation_assistant'],
 
-function(https,search,log,record,urll) {
+function(https,search,log,record,urll,operation) {
     
          //tranid发货通知单编号  就是来源单据字段
         //exchangerate交易汇率
@@ -51,7 +51,7 @@ function(https,search,log,record,urll) {
                 value: total
             });
 
-            var Surplus = Number(total)-Number(sumTotal);
+            var Surplus = operation.sub(total || 0 , sumTotal || 0)
             Surplus =Surplus.toFixed(2)
             cuRecord.setValue({
                 fieldId: 'custbody_reference_invoice_amount',
@@ -85,26 +85,7 @@ function(https,search,log,record,urll) {
                 fieldId: 'custbody_cust_ordertype',
                 value: custbody_cust_ordertype
             });
-            // //subsidiary子公司
-            // var subsidiary = custom[0].getValue({
-            //     name: 'subsidiary'
-            // });
-            // console.log("获取的子公司值subsidiary="+subsidiary);
-            // cuRecord.setValue({
-            //     fieldId: 'subsidiary',
-            //     value: subsidiary
-            // });
-            // //department部门
-            // var department = custom[0].getValue({
-            //     name: 'department'
-            // });
-            // console.log("获取的department="+department);
-            // cuRecord.setValue({
-            //     fieldId: 'department',
-            //     value: department
-            // });
 
-            //custbody_pc_salesman业务员
             var custbody_pc_salesman = custom[0].getValue({
                 name: 'custbody_pc_salesman'
             });
@@ -178,7 +159,7 @@ function(https,search,log,record,urll) {
                     value: cuTotal
                 });
                 //剩余开票金额
-                var Surplus = Number(cuTotal)-Number(sum);
+                var Surplus = operation.sub(cuTotal||0,sum||0)
                 Surplus =Surplus.toFixed(2)
                 cuRecord.setValue({
                     fieldId: 'custbody_reference_invoice_amount',
@@ -390,7 +371,7 @@ function(https,search,log,record,urll) {
                 return false;
             }
             if(sum<total){
-                cuuSum =sum+cuuTotal;
+                cuuSum =operation.add(sum || 0 , cuuTotal || 0)
                 if(cuuSum>total){
                     alert("已开发票金额"+sum+', 加上当前页面开票金额'+cuuTotal+",超过发货通知单总计金额,请确认后保存");
                     return false;
@@ -800,9 +781,9 @@ function(https,search,log,record,urll) {
             var exchangerate = custom[i].getValue({
                 name: 'exchangerate'
             });
-            total1 = Number(total1)/Number(exchangerate);
+            total1 = operation.div(total1||0,exchangerate)
             //console.log("第一个已保存搜索的total值="+total1)
-            sum1=Number(sum1)+Number(total1);
+            sum1=operation.add(sum1||0,total1||0)
          }
         //  console.log("改发票的内部id="+custom[0].id);
         //  console.log("获取的发票按钮金额="+sum1);
@@ -857,20 +838,13 @@ function(https,search,log,record,urll) {
             var exchangerate2 = custom2[j].getValue({
                 name: 'exchangerate'
             });
-            total2 = Number(total2)/Number(exchangerate2);
+            total2 = operation.div(total2||0,exchangerate2)
             // console.log("第2个已保存搜索的total值="+total2+",id="+iid);
-             sum2=Number(sum2)+Number(total2);
+             sum2=operation.add(sum2||0,total2||0)
              
          }
-         //console.log(JSON.stringify(tempRes));//debug
-        //  alert("获取的通过‘夸客户’按钮创建的发票总和="+sum2);
-        // console.log("获取的跨客户按钮金额="+sum2);
-        // console.log("获取的发票按钮的长度="+custom2.length);
 
-         var sum =Number(sum1)+Number(sum2);
-        //  alert("两者相加的总和="+sum);
-        // console.log("获取所有符合条件的发票总计合="+sum);
-        return Number(sum);
+        return operation.add(sum1 || 0,sum2 || 0 )
         
     }
 
@@ -927,9 +901,9 @@ function(https,search,log,record,urll) {
                 var exchangerate = custom[i].getValue({
                     name: 'exchangerate'
                 });
-                total1 = Number(total1)/Number(exchangerate);
+                total1 = operation.div(total1 || 0 , exchangerate)
                 //console.log("第一个已保存搜索的total值="+total1)
-                sum1=Number(sum1)+Number(total1);
+                sum1= operation.add(sum1||0,total1||0)
              }
             //  console.log("改发票的内部id="+custom[0].id);
             //  console.log("获取的发票按钮金额="+sum1);
@@ -984,20 +958,13 @@ function(https,search,log,record,urll) {
                 var exchangerate2 = custom2[j].getValue({
                     name: 'exchangerate'
                 });
-                total2 = Number(total2)/Number(exchangerate2);
+                 total2 = operation.div(total2 || 0 , exchangerate2)
                 // console.log("第2个已保存搜索的total值="+total2+",id="+iid);
-                 sum2=Number(sum2)+Number(total2);
+                 sum2=operation.add(sum2 || 0 , total2 || 0)
                  
              }
-             //console.log(JSON.stringify(tempRes));//debug
-            //  alert("获取的通过‘夸客户’按钮创建的发票总和="+sum2);
-            // console.log("获取的跨客户按钮金额="+sum2);
-            // console.log("获取的发票按钮的长度="+custom2.length);
-    
-             var sum =Number(sum1)+Number(sum2);
-            //  alert("两者相加的总和="+sum);
-            // console.log("获取所有符合条件的发票总计合="+sum);
-            return Number(sum);
+
+            return operation.add(sum1||0,sum2||0)
             
     }
     //通过发货通知单id创建搜索获取总额
@@ -1041,7 +1008,7 @@ function(https,search,log,record,urll) {
                 name: 'exchangerate'
             });
 
-            total=Number(total)/Number(exchangerate2);
+            total=operation.div(total||0,exchangerate2)
         }
 
         return total;

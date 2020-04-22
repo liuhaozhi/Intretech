@@ -42,10 +42,10 @@ define([
                     setPrice({
                         currentRec : currentRec,
                         item : itemInfo.item,   
-                        rate : operation.mul(price , customerDiscount / 100),
+                        rate : operation.mul(price , isNaN(customerDiscount) ? 1 :  customerDiscount / 100),
                         mode : itemPrice[itemInfo.item].mode,
                         price : price,
-                        customerDiscount : customerDiscount
+                        customerDiscount : isNaN(customerDiscount) ? '' : customerDiscount
                     })
 
                     currentRec.selectLine({
@@ -122,17 +122,21 @@ define([
             value : params.rate
         })
 
-        currentRec.setCurrentSublistValue({  //客户折扣
-            sublistId : 'item',
-            fieldId : 'custcol_cdiscount',
-            value : params.customerDiscount
-        })
+        if(params.customerDiscount)
+        {
+            currentRec.setCurrentSublistValue({  //客户折扣
+                sublistId : 'item',
+                fieldId : 'custcol_cdiscount',
+                value : params.customerDiscount
+            })
+    
+            currentRec.setCurrentSublistValue({  //最终折扣
+                sublistId : 'item',
+                fieldId : 'custcol_fdiscount',
+                value : params.customerDiscount
+            })
+        }
 
-        currentRec.setCurrentSublistValue({  //最终折扣
-            sublistId : 'item',
-            fieldId : 'custcol_fdiscount',
-            value : params.customerDiscount
-        })
 
         currentRec.setCurrentSublistValue({  //折前单价  不含税
             sublistId : 'item',

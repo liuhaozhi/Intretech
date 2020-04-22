@@ -203,17 +203,13 @@ define([
     }
 
     function setCashFlow(item,currentRec){
-        var isIntercompany = currentRec.getValue({
-            fieldId : 'custbody_whether_ntercompany_transact'
-        })
-
         var account = search.lookupFields({
             type : 'item',
             id : item,
-            columns : ['incomeaccount','intercoincomeaccount']
-        })[isIntercompany === false ? 'incomeaccount' : 'intercoincomeaccount']
+            columns : ['incomeaccount']
+        }).incomeaccount
 
-        if(account)
+        if(account[0])
         {
             var cashFlow = search.lookupFields({
                 type : 'account',
@@ -221,7 +217,7 @@ define([
                 columns : ['custrecord_n112_cseg_cn_cfi']
             }).custrecord_n112_cseg_cn_cfi
 
-            if(cashFlow)
+            if(cashFlow[0])
             currentRec.setCurrentSublistValue({
                 sublistId : 'item',
                 fieldId : 'custcol_cseg_cn_cfi',

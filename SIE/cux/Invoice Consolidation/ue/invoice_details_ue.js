@@ -112,42 +112,45 @@ define([
         
         for(var key in sublistLines)
         {
-            var salesorder = record.load({
-                type : 'salesorder',
-                id : key
-            })
-            
-            for(var line in sublistLines[key])
+            if(key)
             {
-                var index = salesorder.findSublistLineWithValue({
-                    sublistId : 'item',
-                    fieldId : 'item',
-                    value : sublistLines[key][line].item
+                var salesorder = record.load({
+                    type : 'salesorder',
+                    id : key
                 })
-
-                if(index > -1)
-                {
-                    var quantity = operation.sub(
-                        salesorder.getSublistValue({
+                
+                    for(var line in sublistLines[key])
+                    {
+                        var index = salesorder.findSublistLineWithValue({
                             sublistId : 'item',
-                            fieldId : 'quantityfulfilled',
-                            line : index
-                        }),
-                        salesorder.getSublistValue({
-                            sublistId : 'item',
-                            fieldId : 'quantitybilled',
-                            line : index
+                            fieldId : 'item',
+                            value : sublistLines[key][line].item
                         })
-                    )
-    
-                    if(Number(quantity) < Number(sublistLines[key][line].quantity))
-                    return false
-                }
-                else
-                {
-                    return false
-                }
-            }
+
+                        if(index > -1)
+                        {
+                            var quantity = operation.sub(
+                                salesorder.getSublistValue({
+                                    sublistId : 'item',
+                                    fieldId : 'quantityfulfilled',
+                                    line : index
+                                }),
+                                 salesorder.getSublistValue({
+                                    sublistId : 'item',
+                                    fieldId : 'quantitybilled',
+                                    line : index
+                                })
+                            )
+                
+                            if(Number(quantity) < Number(sublistLines[key][line].quantity))
+                            return false
+                        }
+                        else
+                        {
+                            return false
+                        }
+                    }
+              }
         }
 
         return true
