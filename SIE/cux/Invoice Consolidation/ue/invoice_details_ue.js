@@ -118,45 +118,41 @@ define([
                     id : key
                 })
                 
-                    for(var line in sublistLines[key])
-                    {
-                        var index = salesorder.findSublistLineWithValue({
-                            sublistId : 'item',
-                            fieldId : 'item',
-                            value : sublistLines[key][line].item
-                        })
+                for(var line in sublistLines[key])
+                {
+                    var index = salesorder.findSublistLineWithValue({
+                        sublistId : 'item',
+                        fieldId : 'item',
+                        value : sublistLines[key][line].item
+                    })
 
-                        if(index > -1)
-                        {
-                            var quantity = operation.sub(
+                    if(index > -1)
+                    {
+                        var quantity = operation.sub(
+                            salesorder.getSublistValue({
+                                sublistId : 'item',
+                                fieldId : 'quantityfulfilled',
+                                line : index
+                            }),
                                 salesorder.getSublistValue({
-                                    sublistId : 'item',
-                                    fieldId : 'quantityfulfilled',
-                                    line : index
-                                }),
-                                 salesorder.getSublistValue({
-                                    sublistId : 'item',
-                                    fieldId : 'quantitybilled',
-                                    line : index
-                                })
-                            )
-                
-                            if(Number(quantity) < Number(sublistLines[key][line].quantity))
-                            return false
-                        }
-                        else
-                        {
-                            return false
-                        }
+                                sublistId : 'item',
+                                fieldId : 'quantitybilled',
+                                line : index
+                            })
+                        )
+            
+                        if(Number(quantity) < Number(sublistLines[key][line].quantity))
+                        return false
                     }
-              }
+                    else
+                    {
+                        return false
+                    }
+                }
+            }
         }
 
         return true
-    }
-
-    function beforeSubmit(context) {
-        
     }
 
     function afterSubmit(context) {
@@ -169,60 +165,64 @@ define([
     function transFormToInvoice(lines,internalId,prinType,invoiceNum){
         var invoiceIds = new Object()
 
-        for(var key in lines){
-            var salesItem = lines[key]
-            var invoiceRe = record.transform({
-                fromType : 'salesorder',
-                fromId : key,
-                toType : 'invoice'
-            })
-            var lineCount = invoiceRe.getLineCount({
-                sublistId : 'item'
-            })
-
-            invoiceRe.setValue({
-                fieldId : 'custbody_merge_id',
-                value : internalId
-            })
-
-            invoiceRe.setValue({
-                fieldId : 'custbody_invoice_number',
-                value : invoiceNum
-            })
-
-            invoiceRe.setValue({
-                fieldId : 'custbody_ci_invoice_consolidated',
-                value : prinType === '2' ? true : false
-            })
-
-            try{
-                for(var item in salesItem)
-                {
-                    for(var i = 0 ; i < lineCount ; i ++)
+        for(var key in lines)
+        {
+            if(key)
+            {
+                var salesItem = lines[key]
+                var invoiceRe = record.transform({
+                    fromType : 'salesorder',
+                    fromId : key,
+                    toType : 'invoice'
+                })
+                var lineCount = invoiceRe.getLineCount({
+                    sublistId : 'item'
+                })
+    
+                invoiceRe.setValue({
+                    fieldId : 'custbody_merge_id',
+                    value : internalId
+                })
+    
+                invoiceRe.setValue({
+                    fieldId : 'custbody_invoice_number',
+                    value : invoiceNum
+                })
+    
+                invoiceRe.setValue({
+                    fieldId : 'custbody_ci_invoice_consolidated',
+                    value : prinType === '2' ? true : false
+                })
+    
+                try{
+                    for(var item in salesItem)
                     {
-                        var lineItem = invoiceRe.getSublistValue({
-                            sublistId : 'item',
-                            fieldId : 'item',
-                            line : i
-                        })
-
-                        if(lineItem === salesItem[item].item)
+                        for(var i = 0 ; i < lineCount ; i ++)
                         {
-                            invoiceRe.setSublistValue({
+                            var lineItem = invoiceRe.getSublistValue({
                                 sublistId : 'item',
-                                fieldId : 'quantity',
-                                line : i,
-                                value : salesItem[item].quantity
+                                fieldId : 'item',
+                                line : i
                             })
+    
+                            if(lineItem === salesItem[item].item)
+                            {
+                                invoiceRe.setSublistValue({
+                                    sublistId : 'item',
+                                    fieldId : 'quantity',
+                                    line : i,
+                                    value : salesItem[item].quantity
+                                })
+                            }
                         }
                     }
+                    invoiceIds[key] = invoiceRe.save({
+                        ignoreMandatoryFields : true
+                    })
                 }
-                invoiceIds[key] = invoiceRe.save({
-                    ignoreMandatoryFields : true
-                })
-            }
-            catch(e){
-                throw(e.message)
+                catch(e){
+                    throw(e.message)
+                }
             }
        }
 
@@ -305,50 +305,53 @@ define([
     function updateSalesOrdQuantity(lines,internalId){
         for(var key in lines)
         {
-            var salesItem = lines[key]
-            var saleOrder = record.load({
-                type : 'salesorder',
-                id : key
-            })
-
-            try{
-                for(var item in salesItem)
-                {
-                    var index = saleOrder.findSublistLineWithValue({
-                        sublistId : 'item',
-                        fieldId : 'line',
-                        value : item
-                    })
-    
-                    if(index > -1)
-                    {
-                        saleOrder.setSublistValue({
-                            sublistId : 'item',
-                            fieldId : 'custcol_ci_yunshudaying',
-                            line : index,
-                            value : operation.add(
-                                saleOrder.getSublistValue({
-                                    sublistId : 'item',
-                                    fieldId : 'custcol_ci_yunshudaying',
-                                    line : index,
-                                }),salesItem[item].quantity
-                            )
-                        })
-
-                        saleOrder.setSublistValue({
-                            sublistId : 'item',
-                            fieldId : 'custcol_ci_yunshu',
-                            line : index,
-                            value : internalId
-                        })
-                    }
-                }
-
-                saleOrder.save({
-                    ignoreMandatoryFields : true
+            if(key)
+            {
+                var salesItem = lines[key]
+                var saleOrder = record.load({
+                    type : 'salesorder',
+                    id : key
                 })
-            }catch(e){
-                throw(e.message)
+    
+                try{
+                    for(var item in salesItem)
+                    {
+                        var index = saleOrder.findSublistLineWithValue({
+                            sublistId : 'item',
+                            fieldId : 'line',
+                            value : item
+                        })
+        
+                        if(index > -1)
+                        {
+                            saleOrder.setSublistValue({
+                                sublistId : 'item',
+                                fieldId : 'custcol_ci_yunshudaying',
+                                line : index,
+                                value : operation.add(
+                                    saleOrder.getSublistValue({
+                                        sublistId : 'item',
+                                        fieldId : 'custcol_ci_yunshudaying',
+                                        line : index,
+                                    }),salesItem[item].quantity
+                                )
+                            })
+    
+                            saleOrder.setSublistValue({
+                                sublistId : 'item',
+                                fieldId : 'custcol_ci_yunshu',
+                                line : index,
+                                value : internalId
+                            })
+                        }
+                    }
+    
+                    saleOrder.save({
+                        ignoreMandatoryFields : true
+                    })
+                }catch(e){
+                    throw(e.message)
+                }
             }
         }
     }
@@ -374,7 +377,6 @@ define([
 
     return {
         beforeLoad: beforeLoad,
-        beforeSubmit: beforeSubmit,
         afterSubmit: afterSubmit
     }
 });
