@@ -3,10 +3,9 @@
  *@NScriptType UserEventScript
  */
 define([
-    'N/search',
     'N/record',
     '../../helper/operation_assistant'
-], function(search , record , operation) {
+], function(record , operation) {
     var sublistId = 'recmachcustrecord185'
 
     function beforeLoad(context) {
@@ -163,13 +162,13 @@ define([
     function afterSubmit(context) {
         if(!context.oldRecord)
         {
-            log.error('create')
             updateSalesorder(context.newRecord)
         }
     }
 
     function transFormToInvoice(lines,internalId,prinType,invoiceNum){
         var invoiceIds = new Object()
+
         for(var key in lines){
             var salesItem = lines[key]
             var invoiceRe = record.transform({
@@ -206,7 +205,7 @@ define([
                             fieldId : 'item',
                             line : i
                         })
-    
+
                         if(lineItem === salesItem[item].item)
                         {
                             invoiceRe.setSublistValue({
