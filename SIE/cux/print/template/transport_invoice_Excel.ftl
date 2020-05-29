@@ -68,62 +68,62 @@
                 <tr><td align="center" colspan="7" style="height:20px;"></td></tr>
                 <tr>
                     <td align="center" colspan="7" style="vertical-align: middle;">
-                        <p class="title">发票</p>
+                        <p class="title">SHOPPING INVOICE/运输发票</p>
                     </td>
                 </tr>
                 <tr class="borderRow">
                     <td colspan="4" style="border-left:thin solid #000;border-top:thin solid #000;">
                        <table id="shipExport">
-                            <tr><td>Shipper / Exporter:</td></tr>
+                            <tr><td>Shipper / Exporter/（发货人/出口商）：</td></tr>
                             <tr><td>${makesure(data.subsidiaryInfo.legalname)}</td></tr>
                             <tr><td>${makesure(data.subsidiaryInfo.mainaddress_text)}</td></tr>
-                            <tr><td>电话：${makesure(data.subsidiaryInfo.custrecord_subsidiary_phone)}</td></tr>
-                            <tr><td>FAX：${makesure(data.subsidiaryInfo.fax)}</td></tr>
+                            <tr><td>TEL/电话：${makesure(data.subsidiaryInfo.custrecord_subsidiary_phone)}</td></tr>
+                            <tr><td>FAX/传真：${makesure(data.subsidiaryInfo.fax)}</td></tr>
                         </table>
                     </td>
                     <td colspan="3" style="border-left:thin solid #000;border-top:thin solid #000;border-right:thin solid #000;">
                         <table id="shipMethod">
-                            <tr><td>Invoice No:${makesure(data.shipInfo.invNum)}</td></tr>
-                            <tr><td>Invoice Date:${makesure(data.shipInfo.invDay)}</td></tr>
-                            <tr><td>Ship method:${makesure(data.shipInfo.method)}</td></tr>
-                            <tr><td>Port of loading:${makesure(data.shipInfo.port)}</td></tr>
-                            <tr><td>Payment terms:${makesure(data.shipInfo.terms)}</td></tr>
+                            <tr><td>Invoice No./发票号:${makesure(data.shipInfo.invNum)}</td></tr>
+                            <tr><td>Invoice Date/发票日期：${makesure(data.shipInfo.invDay)}</td></tr>
+                            <tr><td>Ship Method/运输方式：${makesure(data.shipInfo.method)}</td></tr>
+                            <tr><td>Port of Loading/装货港：${makesure(data.shipInfo.port)}</td></tr>
+                            <tr><td>Payment  Term/账期：${makesure(data.shipInfo.terms)}</td></tr>
                         </table>
                     </td>
                 </tr>
                 <tr class="borderRow" >
                     <td colspan="4" style="border-left:thin solid #000;border-top:thin solid #000;">
                         <table id="bill">
-                            <tr><td>Bill to</td></tr>
+                            <tr><td>Bill to/收票人：</td></tr>
                             <tr><td>${makesure(data.customerName)}</td></tr>
                             <tr><td>${makesure(data.billInfo.adress)}</td></tr>
                         </table>
                     </td>
                     <td colspan="3" rowspan="2" style="border-left:thin solid #000;border-right:thin solid #000;border-top:thin solid #000;">
                         <table id="bankinfo">
-                            <tr><td>Bank information</td></tr>
-                            <tr><td>开户银行：${makesure(data.bankInfo.branch)}</td></tr>
-                            <tr><td>人民币账号：${makesure(data.bankInfo.account)}</td></tr>
+                            <tr><td>Bank Information/收款银行信息</td></tr>
+                            <tr><td>Bank Name/开户银行:${makesure(data.bankInfo.branch)}</td></tr>
+                            <tr><td>Account No/银行账号:${makesure(data.bankInfo.account)}</td></tr>
                         </table>
                     </td>
                 </tr>
                 <tr class="borderRow">
                     <td colspan="4" style="border-left:thin solid #000;border-top:thin solid #000;">
                         <table id="consigenee">
-                            <tr><td>Consigenee</td></tr>
+                            <tr><td>Consignee/收货人：</td></tr>
                             <tr><td>${makesure(data.customerName)}</td></tr>
                             <tr><td>${makesure(data.shipInfo.adress)}</td></tr>
                         </table>
                     </td>
                 </tr>
                 <tr id="itemTitle">
-                    <td align="center">项目</td>
-                    <td align="center">订单单号</td>
-                    <td align="center">货号</td>
-                    <td align="center">货品描述</td>
-                    <td align="center">数量(PCS)</td>
-                    <td align="center">单价(${makesure(data.currencySymbol)})</td>
-                    <td align="center" style="border-right:thin solid #000;">总价(${makesure(data.currencySymbol)})</td>
+                    <td align="center">Item/项目：</td>
+                    <td align="center">PO No./订单单号：</td>
+                    <td align="center">PN/货号：</td>
+                    <td align="center">Description/规格描述：</td>
+                    <td align="center">Qty. /数量（PCS）：</td>
+                    <td align="center">Unit Price/单价(${makesure(data.currencySymbol)}):</td>
+                    <td align="center" style="border-right:thin solid #000;">Amount/总金额：(${makesure(data.currencySymbol)})</td>
                 </tr>
                 <tr class="itemSpace">
                     <td align="center">/</td>
@@ -146,7 +146,7 @@
                     </tr>
                 </#list>
                 <tr id="itemAmount">
-                    <td>总计</td>
+                    <td>Total/总计</td>
                     <td></td>
                     <td></td>
                     <td></td>
@@ -155,7 +155,7 @@
                     <td align="center" style="border-right:thin solid #000;">${makenumber(data.itemTotal.amount)}</td>
                 </tr>
                 <tr class="itemSpace" style="height:20px;">
-                    <td colspan="7" style="border-right:thin solid #000;">合计：${makesure(data.itemTotal.chinaAmount)}</td>
+                    <td colspan="7" style="border-right:thin solid #000;">SAY/合计：${makesure(data.itemTotal.chinaAmount)}</td>
                 </tr>
                 <tr class="borderRow">
                     <td colspan="4" style="border-left:thin solid #000;border-bottom:thin solid #000;border-top:thin solid #000;height:200px">

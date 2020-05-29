@@ -7,8 +7,6 @@ define([
     'N/cache',
     'N/search',
     'N/record',
-    'N/format',
-    'N/runtime',
     'N/redirect',
     'N/ui/serverWidget',
     '../config/searchFilters',
@@ -16,10 +14,11 @@ define([
     '../config/entryFieldsConfig',
     '../config/searchFiltersConfig',
     '../config/sublistFieldsConfig',
+    '../../helper/wrapper_runtime',
     '../../helper/operation_assistant'
 ], function(
-    currency , cache , search , record , format , runtime , redirect , ui , searchFilters , searchColumns , entryFields , searchFiltersConfig , 
-    sublistFieldsConfig , operation
+    currency , cache , search , record , redirect , ui , searchFilters , searchColumns , entryFields , searchFiltersConfig , 
+    sublistFieldsConfig , runtime , operation
 ) {
     var FIELDPR = 'custpage_'
     var defaultPageSize = 200
@@ -41,17 +40,17 @@ define([
 
     function searchPage(params,response){
         var form = ui.createForm({
-            title : '发票执行平台'
+            title : 'Invoice execution platform/发票执行平台'
         })
 
         form.addFieldGroup({
             id : 'custpage_filters',
-            label : '查询条件'
+            label : 'Query criteria/查询条件'
         })
 
         form.addFieldGroup({
             id : 'custpage_entry',
-            label : '输入区'
+            label : 'Input area/输入区'
         })
 
         form.addFieldGroup({
@@ -87,12 +86,12 @@ define([
 
     function addButtons(form){
         form.addSubmitButton({
-            label : '开票'
+            label : 'Invoice/开票'
         })
 
         form.addButton({
             id : 'custpage_search',
-            label : 'search',
+            label : 'search/查询',
             functionName : 'searchLines'
         })
     }
@@ -174,14 +173,14 @@ define([
     function addPageFields(params){
         var currPageField = params.form.addField({
             id : FIELDPR + 'currpage',
-            label : '当前页',
+            label : 'Currpage/当前页',
             type : 'select',
             container : params.target
         })
 
         var pageSizeField = params.form.addField({
             id : FIELDPR + 'pagesize',
-            label : '每页数据条数',
+            label : 'PageSize/每页数据条数',
             type : 'select',
             container : params.target
         })
@@ -329,6 +328,7 @@ define([
             id : orderId
         })
 
+        log.error('lines',lines)
         for(var line in lines)
         {
             var index = salesRecord.findSublistLineWithValue({
@@ -410,6 +410,12 @@ define([
                     sublistId : 'recmachcustrecord185',
                     fieldId : 'custrecord_ci_danjia',
                     value : rate
+                })
+
+                newRecord.setCurrentSublistValue({
+                    sublistId : 'recmachcustrecord185',
+                    fieldId : 'custrecord_planum',
+                    value : lines[line].planum
                 })
 
                 newRecord.setCurrentSublistValue({
@@ -774,7 +780,10 @@ define([
 
         newRecord.setValue({
             fieldId : 'custrecord_riqi_fapiao',
-            value : today()
+            value : operation.getDateWithTimeZone({
+                date: new Date(),
+                timezone: runtime.getUserTimezone()
+            })
         })
 
         newRecord.setValue({
@@ -807,7 +816,7 @@ define([
 
         newRecord.setValue({
             fieldId : 'custrecord_hebingxiangtonghuoping',
-            value : params.custpage_samegoods === 'T' ? true : false
+            value : params.custpage_samegoods
         })   
 
         newRecord.setValue({
@@ -819,7 +828,10 @@ define([
                     id : params.custpage_subsidiary,
                     columns : ['currency']
                 }).currency[0].value,
-                date: today()
+                date: operation.getDateWithTimeZone({
+                    date: new Date(),
+                    timezone: runtime.getUserTimezone()
+                })
             })
         })
 
@@ -852,11 +864,6 @@ define([
         })
     }
 
-    function today(){
-        var date = new Date()
-        return new Date(date.getTime() + 8 * 1000 * 60 * 60)
-    }
-
     function getPlanListIds(params,response,checkInfo){
         var lines = new Object()
 
@@ -869,7 +876,11 @@ define([
                     if(!lines[key])                  
                     lines[key] = new Object()
                     
-                    lines[key][line] = {quantity : checkInfo[key][line].quantity , invnumber : checkInfo[key][line].invnumber}
+                    lines[key][line] = {
+                        planum : checkInfo[key][line].planum ,
+                        quantity : checkInfo[key][line].quantity , 
+                        invnumber : checkInfo[key][line].invnumber 
+                    }
                 }
             }
         }
@@ -974,6 +985,11 @@ define([
                     group : FIELDPR + 'lines',
                     name : 'custpage_invnumber',
                     line : i
+                }),
+                planum : request.getSublistValue({
+                    group : FIELDPR + 'lines',
+                    name : 'custpage_planum',
+                    line : i
                 })
             }  
         }
@@ -997,7 +1013,7 @@ define([
     }
 
     function bindSublists(params,form,sublist){
-        var filters = getSearchFilters(params , 'myCache' , 'searchFilters')
+        var filters = getSearchFilters(params , runtime.getCurrentUserId() + 'InvConsolidCache' , 'searchFilters')
         var Mysearch= search.create({
             type : 'salesorder',
             filters : filters,
@@ -1214,6 +1230,12 @@ define([
             value : Number(res.getValue(columns[10])) 
         }) //单价
 
+        if(res.getValue(columns[13]))
+        sublist.setSublistValue({
+            id : FIELDPR + 'planum',
+            line : index,
+            value : res.getValue(columns[13])
+        }) //计划号
 
         if(netamountnotax)
         sublist.setSublistValue({
@@ -1239,7 +1261,7 @@ define([
     function addSublist(form,params,callBackFun){
         var sublist = form.addSublist({
             id : FIELDPR + 'lines',
-            label : '查询结果',
+            label : 'Query results/查询结果',
             tab : 'custpage_lists',
             type : 'list'
         })

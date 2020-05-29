@@ -7,19 +7,33 @@ define({
     searchColumns : function (params){
         return  [
             {
+                name : 'item' 
+            },{
                 name : 'line'
             },{
-                name : 'custcol_line'
+                name : 'tranid' 
             },{
-                name : 'tranid'
+                name : 'quantity' 
             },{
-                name : 'item'
+                name : 'trandate'
             },{
-                name : 'quantity'
+                name : 'displayname',  
+                join : 'item'
             },{
-                name : 'quantitypicked'
+                name : 'custcol_line' 
+            },{
+                name : 'quantitypicked' 
+            },{
+                name : 'custcol_dedate'
             },{
                 name : 'custcol_salesorder'
+            },{
+                name : 'tranid' ,
+                join : 'custcol_salesorder' 
+            },{
+                name : 'custbody_invoice_number' 
+            },{
+                name : 'custbody_packing_number' 
             }
         ]
     }

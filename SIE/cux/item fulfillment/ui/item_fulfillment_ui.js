@@ -12,10 +12,11 @@ define([
     '../config/searchColumns',
     '../config/searchFiltersConfig',
     '../config/sublistFieldsConfig',
+    '../../helper/wrapper_runtime',
     '../../helper/operation_assistant'
 ], function(
     cache , search , record , redirect , ui , searchFilters , searchColumns  , searchFiltersConfig , 
-    sublistFieldsConfig , operation
+    sublistFieldsConfig , runtime , operation
 ) {
     var FIELDPR = 'custpage_'
     var defaultPageSize = 200
@@ -195,6 +196,7 @@ define([
     function itemFulfillment(params,request,response){
         try{
             fulfillment(
+                params,
                 response,
                 getCheckLists(
                     extendChechInfo(
@@ -217,7 +219,14 @@ define([
                     trandate : params.custpage_trandate,
                     dateclose : params.custpage_dateclose,
                     salesorder : params.custpage_salesorder,
-                    subsidiary : params.custpage_subsidiary
+                    subsidiary : params.custpage_subsidiary,
+                    location : params.custpage_location,
+                    department : params.custpage_department,
+                    invoicenum : params.custpage_invoicenum,
+                    boxnum : params.custpage_boxnum,
+                    advice : params.custpage_advice,
+                    isexport : params.custpage_isexport,
+                    customerord : params.custpage_customerord
                 }
             })
         }
@@ -227,7 +236,8 @@ define([
         }
     }
 
-    function fulfillment(response,lines){
+    function fulfillment(params,response,lines){
+       
         var errorMessage = new Array()
 
         for(var key in lines){
@@ -238,7 +248,7 @@ define([
                 isDynamic : true
             })
 
-            setLineItemBin(fulfillRecord , lines[key])
+            setLineItemBin(fulfillRecord , lines[key] , params)
 
             try
             {
@@ -263,12 +273,21 @@ define([
         }
     }
 
-    function setLineItemBin(fulfillRecord , items){
+    function setLineItemBin(fulfillRecord , items , params){
         for(var item in items)
         {
             var quantity  = +items[item].quantity
             var lineCount = fulfillRecord.getLineCount({
                 sublistId : 'item'
+            })
+            var invDetail    = JSON.stringify(items[item].invDetails)
+            var invDetailArr = invDetail.split('\\u0005')
+
+            invDetailArr = invDetailArr.map(function(i){
+                var formatStr = '{' + i.replace(/\;/ig,',') + '}'
+
+                formatStr = formatStr.replace(/\"/ig,'')
+                return (new Function("return " + formatStr))()
             })
 
             for(var i = 0 ; i < lineCount ; i ++){
@@ -304,48 +323,25 @@ define([
                     fulfillRecord.setCurrentSublistValue({
                         sublistId : 'item',
                         fieldId : 'location',
-                        value : items[item].location,
+                        value : params.custpage_location,
                     })
 
                     var subDetail = fulfillRecord.getCurrentSublistSubrecord({
                         sublistId : 'item',
                         fieldId : 'inventorydetail'
                     })
-                    var mySearch = search.load({
-                        id : 'customsearch_inventory_number'
-                    })
-
-                    mySearch.filters = mySearch.filters.concat(
-                        {
-                            name : 'item',
-                            operator : 'anyof',
-                            values : [a]
-                        },
-                        {
-                            name : 'location',
-                            operator : 'anyof',
-                            values : [items[item].location]
-                        }
-                    )
             
-                    mySearch.run().each(function(res){
-                        var inventoryCount = +res.getValue({
-                            name : 'quantityavailable'
-                        })
-     
-                        if(inventoryCount >= quantity){
-                            inventoryLine(subDetail,quantity,res.getValue({
-                                name : 'inventorynumber'
-                            }))
+                    invDetailArr.map(function(invList){
+                        var invQuantity = invList['数量']
 
-                            return false
-                        }else{
-                            quantity = operation.sub(quantity - inventoryCount)
-                            inventoryLine(subDetail,inventoryCount,res.getValue({
-                                name : 'inventorynumber'
-                            }))
-
-                            return true
+                        if(quantity > +invQuantity)
+                        {
+                            quantity = operation.sub(quantity , invQuantity)
+                            inventoryLine(subDetail , +invQuantity , invList['批次号'])
+                        }
+                        else
+                        {
+                            inventoryLine(subDetail, +quantity , invList['批次号'])
                         }
                     })
 
@@ -366,23 +362,18 @@ define([
 			sublistId: 'inventoryassignment',
 			fieldId: 'quantity',
 			value: quantity
-		})
-
+        })
+        
 		subDetail.setCurrentSublistValue({
 			sublistId: 'inventoryassignment',
 			fieldId: 'receiptinventorynumber',
-			value: id
-		})
+			value: id.toString()
+        })
 
 		subDetail.commitLine({
 			sublistId : 'inventoryassignment'
         })
 	}
-
-    function today(){
-        var date = new Date()
-        return new Date(date.getTime() + 8 * 1000 * 60 * 60)
-    }
 
     function getCheckLists(checkInfo){
         var lines = new Object()
@@ -400,8 +391,8 @@ define([
                         item : checkInfo[key][line].item,
                         custline : checkInfo[key][line].custline,
                         quantity : checkInfo[key][line].quantity,
-                        location : checkInfo[key][line].location,
-                        salesorder : checkInfo[key][line].salesorder
+                        salesorder : checkInfo[key][line].salesorder,
+                        invDetails : checkInfo[key][line].invDetails
                     }
                 }
             }
@@ -433,7 +424,7 @@ define([
             })] = {
                 item : request.getSublistValue({
                     group : FIELDPR + 'lines',
-                    name : 'custpage_item',
+                    name : 'custpage_itemid',
                     line : i
                 }),
                 checked : request.getSublistValue({
@@ -456,9 +447,9 @@ define([
                     name : 'custpage_custline',
                     line : i
                 }),
-                location : request.getSublistValue({
+                invDetails : request.getSublistValue({
                     group : FIELDPR + 'lines',
-                    name : 'custpage_location',
+                    name : 'custpage_detail',
                     line : i
                 })
             }  
@@ -482,8 +473,135 @@ define([
         return checkCache ? JSON.parse(checkCache) : new Object()
     }
 
+    function getLineItemInvent(items,location){
+        var invent   = new Object()
+        var invCount = new Object()
+        var mySearch = search.load({
+            id : 'customsearch_inventory_number'
+        })
+
+        mySearch.filters = mySearch.filters.concat(
+            {
+                name : 'item',
+                operator : 'anyof',
+                values : [items.map(function(i){return i.item})]
+            },
+            {
+                name : 'location',
+                operator : 'anyof',
+                values : [location]
+            }
+        )
+
+        mySearch.run().each(function(res){
+            var item = res.getValue('item')
+            var expirationdate = res.getValue('expirationdate')
+            var inventorynumber = res.getValue('inventorynumber')
+            var quantityavailable = res.getValue('quantityavailable')
+  
+            if(!invent[item]) invent[item] = new Object()
+            if(!invent[item][inventorynumber]) invent[item][inventorynumber] = {quantity : quantityavailable , expirationdate : expirationdate} 
+
+            invCount[item] ? 
+            invCount[item] = operation.add(invCount[item] , quantityavailable) :  
+            invCount[item] = quantityavailable
+
+            return true
+        })
+
+        return {
+            invent : invent,
+            invCount : invCount
+        }
+    }
+
+    function setLineItemInvent(sublist,items,location){
+        var inventInfo = getLineItemInvent(items,location)
+
+        items.map(function(item){
+            if(inventInfo.invent[item.item])
+            {
+                var itemQuantiy= +item.quantity
+                var itemInvent = inventInfo.invent[item.item]
+                var detailInfo = getInventDetail(itemQuantiy,itemInvent,[])
+                var detailArr  = detailInfo.detailArr
+      
+                detailArr = detailArr.map(function(item){
+                    return item.join(';')
+                })
+
+                sublist.setSublistValue({
+                    id : FIELDPR + 'detail',
+                    line : item.index,
+                    value : detailArr.join('\r\n')
+                })
+
+                if(inventInfo.invCount[item.item])
+                sublist.setSublistValue({
+                    id : FIELDPR + 'available',
+                    line : item.index,
+                    value : inventInfo.invCount[item.item].toString()
+                })
+
+                if(detailInfo.itemQuantiy)
+                {
+                    sublist.setSublistValue({
+                        id : FIELDPR + 'currquantity',
+                        line : item.index,
+                        value : operation.sub(itemQuantiy, detailInfo.itemQuantiy).toString()
+                    })
+    
+                    sublist.setSublistValue({
+                        id : FIELDPR + 'abbprovequantity',
+                        line : item.index,
+                        value : operation.sub(itemQuantiy, detailInfo.itemQuantiy).toString()
+                    })  
+
+                    sublist.setSublistValue({
+                        id : FIELDPR + 'surplusquantity',
+                        line : item.index,
+                        value : detailInfo.itemQuantiy.toString()
+                    })  
+                }
+            }
+        })     
+    }
+
+    function getInventDetail(itemQuantiy,itemInvent,detailArr){
+        if(JSON.stringify(itemInvent) === '{}') return {detailArr : detailArr ,itemQuantiy : itemQuantiy}
+
+        for(var key in itemInvent)
+        {
+            var list = itemInvent[key]
+
+            if(itemQuantiy > +list.quantity)
+            {
+                itemQuantiy = operation.sub(itemQuantiy , list.quantity)
+                detailArr.push([
+                    '批次号:' + key,
+                    '数量:' + list.quantity,
+                    '到期日期:' +  list.expirationdate
+                ])
+                delete itemInvent[key]
+
+                return getInventDetail(itemQuantiy,itemInvent,detailArr)
+            }
+       
+            list.quantity = operation.sub(list.quantity , itemQuantiy)
+            detailArr.push([
+                '批次号:' + key,
+                '数量' + itemQuantiy,
+                '到期日期:' +  list.expirationdate
+            ])
+
+            if(list.quantity === 0) delete itemInvent[key]
+
+            return {detailArr : detailArr}
+        }
+    }
+
     function bindSublists(params,form,sublist){
-        var filters = getSearchFilters(params , 'myCache' , 'searchFilters')
+        var filters = getSearchFilters(params , runtime.getCurrentUserId() + 'ItemfullCache' , 'searchFilters')
         var Mysearch= search.create({
             type : 'salesorder',
             filters : filters,
@@ -506,7 +624,7 @@ define([
             pageDate.fetch({
                 index : params.currPage ? --params.currPage : 0
             }).data.forEach(function(res,index){
-                addSublistLine(sublist,index,res,checkInfo)
+                addSublistLine(sublist,index,res,checkInfo,params.location)
             })
         }
     }
@@ -562,13 +680,17 @@ define([
         return searchFilters.searchFilters(params)
     }
 
-    function addSublistLine(sublist,index,res,checkInfo){
+    function addSublistLine(sublist,index,res,checkInfo,location){
         var line = res.getValue('line')
+        var items = new Array()
         var custline = res.getValue('custcol_line')
         var quantity = Math.abs(res.getValue('quantity'))
         var backordered = res.getValue('quantitypicked')
         var currQuantity= operation.sub(quantity,backordered).toString()
+        var itemInfo = {item : res.getValue('item') , index : index , quantity : currQuantity} 
         
+        items.push(itemInfo)
+ 
         sublist.setSublistValue({
             id : FIELDPR + 'internalid',
             line : index,
@@ -595,6 +717,107 @@ define([
             value : res.getValue('custcol_salesorder')
         })
 
+        sublist.setSublistValue({
+            id : FIELDPR + 'quantityshiprecv',
+            line : index,
+            value : backordered
+        }) 
+
+        if(res.getValue('tranid'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'tranid',
+            line : index,
+            value : res.getValue('tranid')
+        }) //单据编号
+
+        if(res.getValue('trandate'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'trandate',
+            line : index,
+            value : res.getValue('trandate')
+        }) //日期
+
+        if(res.getValue('custbody_invoice_number'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'invnum',
+            line : index,
+            value : res.getValue('custbody_invoice_number')
+        }) //发票号
+
+        if(res.getValue('custbody_packing_number'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'boxnum',
+            line : index,
+            value : res.getValue('custbody_packing_number')
+        }) //装箱号
+
+        if(res.getValue({
+            name : 'tranid' ,
+            join : 'custcol_salesorder'
+        }))
+        sublist.setSublistValue({
+            id : FIELDPR + 'saleordnum',
+            line : index,
+            value : res.getValue({
+                name : 'tranid' ,
+                join : 'custcol_salesorder'
+            })
+        }) //销售订单号
+
+        if(res.getValue('custcol_salesorder'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'salesorder',
+            line : index,
+            value : res.getValue('custcol_salesorder')
+        }) //销售订单id
+
+        if(res.getText('item'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'itemnum',
+            line : index,
+            value : res.getText('item')
+        }) //物料
+
+        if(res.getValue('item'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'itemid',
+            line : index,
+            value : res.getValue('item')
+        }) //物料id
+
+        if(res.getValue({
+            name : 'displayname',
+            join : 'item'
+        }))
+        sublist.setSublistValue({
+            id : FIELDPR + 'itemname',
+            line : index,
+            value : res.getValue({
+                name : 'displayname',
+                join : 'item'
+            })
+        }) //物料名称
+
+        if(res.getValue('custcol_dedate'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'expectedshipdate',
+            line : index,
+            value : res.getValue('custcol_dedate')
+        }) //数量
+
+        if(res.getValue('quantity'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'quantity',
+            line : index,
+            value : quantity.toString()
+        }) //数量
+
+    
+        setCacheLine(checkInfo,res,line,sublist,index,currQuantity)
+        setLineItemInvent(sublist,items,location)
+    }
+
+    function setCacheLine(checkInfo,res,line,sublist,index,currQuantity){
         if(checkInfo[res.id])
         {
             if(checkInfo[res.id][line])
@@ -606,15 +829,6 @@ define([
                         line : index,
                         value : 'T'
                     })
-
-                    if(checkInfo[res.id][line].location)
-                    {
-                        sublist.setSublistValue({
-                            id : FIELDPR + 'location',
-                            line : index,
-                            value : checkInfo[res.id][line].location
-                        })
-                    }
                 }
     
                 if(checkInfo[res.id][line].quantity)
@@ -661,40 +875,6 @@ define([
                 value : currQuantity
             })  
         }
-
-        sublist.setSublistValue({
-            id : FIELDPR + 'quantityshiprecv',
-            line : index,
-            value : backordered
-        }) 
-
-        if(res.getValue('tranid'))
-        sublist.setSublistValue({
-            id : FIELDPR + 'tranid',
-            line : index,
-            value : res.getValue('tranid')
-        }) //单据编号
-
-        if(res.getValue('item'))
-        sublist.setSublistValue({
-            id : FIELDPR + 'item',
-            line : index,
-            value : res.getValue('item')
-        }) //物料
-
-        if(res.getValue('item'))
-        sublist.setSublistValue({
-            id : FIELDPR + 'itemcopy',
-            line : index,
-            value : res.getValue('item')
-        }) //物料
-
-        if(res.getValue('quantity'))
-        sublist.setSublistValue({
-            id : FIELDPR + 'quantity',
-            line : index,
-            value : quantity.toString()
-        }) //数量
     }
 
     function addSublist(form,params,callBackFun){

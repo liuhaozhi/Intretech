@@ -61,10 +61,28 @@ define([], function(
         return c = Number(a.toString().replace(".", "")), d = Number(b.toString().replace(".", "")), c / d * Math.pow(10, f - e)
     }
 
+    function getDateWithTimeZone(params) {
+        var timezoneList = {
+            Asia_Hong_Kong: 'Asia/Hong_Kong'
+        }
+        var localTime = params.date.getTime()
+        var localOffset = params.date.getTimezoneOffset() * 60000
+        var utc = localTime + localOffset
+
+        if (params.timezone === timezoneList.Asia_Hong_Kong) {
+            var timezoneDate = new Date(utc + 3600000 * 8)
+        } else {
+            var timezoneDate = params.date
+        }
+
+        return timezoneDate
+    }
+
     return {
         add : add,
         mul : mul,
         div : div,
-        sub : sub
+        sub : sub,
+        getDateWithTimeZone : getDateWithTimeZone
     }
 });

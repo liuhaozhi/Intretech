@@ -8,13 +8,17 @@ define({
         var filters = new Array()
 
         filters.push(
-            ['mainline' , 'is' , 'F'],
-            'AND',
             ['taxline' , 'is' , 'F'],
             'AND',
-            ['formulanumeric: ABS({quantity}) - ABS({quantitypicked})' , 'greaterthan' , 0],
+            ['mainline' , 'is' , 'F'],
             'AND',
-            ['status' , 'anyof' , ['SalesOrd:D' , 'SalesOrd:B' , 'SalesOrd:E']]
+            ['custcol_salesorder.taxline' , 'is' , 'F'],
+            'AND',
+            ['custcol_salesorder.mainline' , 'is' , 'T'],
+            'AND',
+            ['status' , 'anyof' , ['SalesOrd:D' , 'SalesOrd:B' , 'SalesOrd:E']],
+            'AND',
+            ['formulanumeric: ABS({quantity}) - ABS({quantitypicked})' , 'greaterthan' , 0]
         )
 
         if(params.subsidiary)
@@ -30,6 +34,38 @@ define({
             filters.push(
                 'AND',
                 ['entity' , 'anyof' , [params.customer]]
+            )
+        }
+
+        if(params.department)
+        {
+            filters.push(
+                'AND',
+                ['department' , 'anyof' , [params.department]]
+            )
+        }
+
+        if(params.invoicenum)
+        {
+            filters.push(
+                'AND',
+                ['custbody_invoice_number' , 'contains' , [params.invoicenum]]
+            )
+        }
+   
+        if(params.boxnum)
+        {
+            filters.push(
+                'AND',
+                ['custbody_packing_number' , 'contains' , [params.boxnum]]
+            )
+        }
+
+        if(params.emoloyee)
+        {
+            filters.push(
+                'AND',
+                ['custbody_pc_salesman' , 'anyof' , [params.emoloyee]]
             )
         }
 
@@ -49,6 +85,14 @@ define({
             )
         }
 
+        if(params.advice)
+        {
+            filters.push(
+                'AND',
+                ['internalId' , 'anyof' , [params.advice]]
+            )
+        }
+
         if(params.salesorder)
         {
             filters.push(
@@ -57,11 +101,19 @@ define({
             )
         }
 
-        if(params.emoloyee)
+        if(params.isexport)
         {
             filters.push(
                 'AND',
-                ['custbody_pc_salesman' , 'anyof' , [params.emoloyee]]
+                ['custbody_ifexport' , 'is' , [params.isexport === '1' ? 'T' : 'F']]
+            )
+        }
+
+        if(params.customerord)
+        {
+            filters.push(
+                'AND',
+                ['custcol_salesorder.custbody_wip_customer_order_number' , 'is' , params.customerord]
             )
         }
 

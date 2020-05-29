@@ -3,13 +3,13 @@
  *@NScriptType UserEventScript
  */
 define([
-    'N/cache',
+    'N/format',
     'N/search',
     'N/record',
     'N/redirect',
     '../../../helper/operation_assistant'
 ], function(
-    cache,
+    format,
     search,
     record,
     redirect,
@@ -26,7 +26,6 @@ define([
 
             if(params.fromrecord && params.index)
             {
-                saveCache('fromrecordCache','fromrecord',params.fromrecord)
                 setDefaultFieldValueOrToRecord(params.fromrecord,context.newRecord,params.index)
             }
             else if(params.recordId)
@@ -43,7 +42,7 @@ define([
                     ]
                 })
     
-                setDefaultFieldValue(context.newRecord,defaultFieldsInfo)
+                setDefaultFieldValue(context.newRecord,defaultFieldsInfo,params.recordId)
             }
             
             insertHackStyle(context)
@@ -93,27 +92,6 @@ define([
         '#detail_table_lay td:nth-child(n+2){width:50%!important} #detail_table_lay td:first-child{width:0%!important}</style>'    
     }
  //#pageContainer   div#body
-    function saveCache(cacheName,key,cacheData){
-        var myCache = cache.getCache({
-            name : cacheName
-        })
-
-        myCache.put({
-            key   : key,
-            value : cacheData,
-            ttl   : 9999999
-        })
-    }
-
-    function getCache(cacheName,key){
-        var myCache = cache.getCache({
-            name : cacheName
-        })
-
-        return myCache.get({
-            key : key
-        })
-    }
 
     function getParams(context){
         if(context.request)
@@ -166,10 +144,15 @@ define([
             return true
         })
 
-        setDefaultFieldValue(newRecord,defaultFieldsInfo)
+        setDefaultFieldValue(newRecord,defaultFieldsInfo,recordId)
     }
 
-    function setDefaultFieldValue(newRecord,defaultFieldsInfo){
+    function setDefaultFieldValue(newRecord,defaultFieldsInfo,recordId){
+        newRecord.setValue({
+            fieldId : 'custrecord_inv_source',
+            value : recordId
+        })
+
         newRecord.setValue({
             fieldId : 'custrecord_s_item',
             value : defaultFieldsInfo.custrecord_p_item[0].value
@@ -210,7 +193,7 @@ define([
                 ['custrecord_s_custcol_line' , 'is' , line.slice(0,line.indexOf('.')) || line]
             ],
             columns : [
-                'internalId'
+                'internalid'
             ]
         }).run()
     }
@@ -257,9 +240,26 @@ define([
                 })
             })
 
+            var oldExpectedshipdate = search.lookupFields({
+                type : 'customrecord_shipping_plan',
+                id : newRecord.getValue('custrecord_inv_source'),
+                columns : ['custrecord_p_expectedshipdate']
+            }).custrecord_p_expectedshipdate
+            oldExpectedshipdate = oldExpectedshipdate ? format.parse({type : format.Type.DATE , value : oldExpectedshipdate}) : false
+            var newExpectedshipdate = newRecord.getValue('custrecord_s_expectedshipdate')
+    
+            if(oldExpectedshipdate.toString() !== newExpectedshipdate.toString())
+            updateParentExpectedshipdate({
+                orderRecord : orderRecord,
+                source : newRecord.getValue('custrecord_inv_source'),
+                lineNum : newRecord.getValue('custrecord_s_custcol_line'),
+                newExpectedshipdate : newExpectedshipdate,
+                oldExpectedshipdate : oldExpectedshipdate
+            })
+
             addPlanRecord(orderRecord,context,null,true)
 
-            try 
+            try
             {
                 orderRecord.save()
             }
@@ -278,11 +278,6 @@ define([
         var history   = modifyHistory()
         var newLines  = geiLineItems(newRecord)
         var oldLines  = geiLineItems(oldRecord)
-        var oldExpectedshipdate = oldRecord.getValue('custrecord_s_expectedshipdate')
-        var newExpectedshipdate = newRecord.getValue('custrecord_s_expectedshipdate')
-
-        if(oldExpectedshipdate !== newExpectedshipdate)
-        updateParentExpectedshipdate(newExpectedshipdate)
 
         oldLines.map(function(oldline){
             var edit = false
@@ -291,8 +286,15 @@ define([
                 {
                     if(newLine.expectedshipdate.getTime() !== oldline.expectedshipdate.getTime() || newLine.quantity !== oldline.quantity)
                     {       
-                        history.edit.push(newLine)        
+                        if(newLine.expectedshipdate.getTime() !== oldline.expectedshipdate.getTime())
+                        {
+                            newLine.changeExpected = true
+                            newLine.beforeExpected = oldline.expectedshipdate
+                        }
+
+                        history.edit.push(newLine) 
                     }
+
                     edit = true
                     newLines.splice(newIndex,1)
                 }
@@ -306,16 +308,50 @@ define([
         changeHistory(context,history)
     }
 
-    function updateParentExpectedshipdate(newExpectedshipdate){
-        var fromrecord = getCache('fromrecordCache','fromrecord')
-        if(fromrecord)
+    function updateParentExpectedshipdate(params){
+        if(params.source)
         record.submitFields({
             type : 'customrecord_shipping_plan',
-            id : fromrecord,
+            id : params.source,
             values : {
-                custrecord_p_expectedshipdate : newExpectedshipdate
+                custrecord_p_expectedshipdate : params.newExpectedshipdate
             }
         })
+
+        var orderIndex = params.orderRecord.findSublistLineWithValue({
+            sublistId : 'item',
+            fieldId : 'custcol_line',
+            value : params.lineNum
+        })
+
+        if(orderIndex > -1)
+        {
+            params.orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'expectedshipdate',
+                line : orderIndex,
+                value : params.newExpectedshipdate
+            })
+
+            if(!params.oldExpectedshipdate)
+            {
+                params.orderRecord.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_suggest_date',
+                    line : orderIndex,
+                    value : params.newExpectedshipdate
+                })
+            }
+            else
+            {
+                params.orderRecord.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_before_date',
+                    line : orderIndex,
+                    value : params.oldExpectedshipdate
+                })
+            }
+        }
     }
 
     function changeHistory(context,history){
@@ -326,6 +362,17 @@ define([
             id : newRecord.getValue({
                 fieldId : 'custrecord_s_custcol_salesorder'
             })
+        })
+        var oldExpectedshipdate = oldRecord.getValue('custrecord_s_expectedshipdate')
+        var newExpectedshipdate = newRecord.getValue('custrecord_s_expectedshipdate')
+
+        if(oldExpectedshipdate.toString() !== newExpectedshipdate.toString())
+        updateParentExpectedshipdate({
+            orderRecord : orderRecord,
+            source : newRecord.getValue('custrecord_inv_source'),
+            lineNum : newRecord.getValue('custrecord_s_custcol_line'),
+            newExpectedshipdate : newExpectedshipdate,
+            oldExpectedshipdate : oldExpectedshipdate
         })
 
         try
@@ -344,7 +391,7 @@ define([
     }
 
     function updateParentRecordQuantity(newRecord){
-        var fromrecord = getCache('fromrecordCache','fromrecord')
+        var fromrecord = newRecord.getValue('custrecord_inv_source')
         if(fromrecord)
         record.submitFields({
             type : 'customrecord_shipping_plan',
@@ -462,9 +509,9 @@ define([
         search.create({
             type : 'customrecord_shipping_plan',
             filters : [
-                ['internalId' , 'anyof' , getRecordids(editRecords)]
+                ['internalid' , 'anyof' , getRecordids(editRecords)]
             ],
-            columns : ['internalId']
+            columns : ['internalid']
         }).run().each(function(res){
             editRecords.filter(function(item,index){
                 if(item.recordId == res.id)
@@ -496,6 +543,14 @@ define([
                         fieldId : 'custrecord_p_expectedshipdate',
                         value : item.expectedshipdate,
                     })
+
+                    if(item.changeExpected)
+                    {
+                        planRecord.setValue({
+                            fieldId : 'custrecord_p_custcol_before_date',
+                            value : item.beforeExpected
+                        })
+                    }
 
                     editRecords.splice(index,1)
 
@@ -578,7 +633,7 @@ define([
         var planRecords = new Array()
         var newRecord = context.newRecord
         var lineItems = lineitems || geiLineItems(newRecord)
-        var fromrecord = getCache('fromrecordCache','fromrecord')
+        var fromrecord = newRecord.getValue('custrecord_inv_source')
 
         if(lineItems.length)
         {
@@ -602,6 +657,7 @@ define([
                         item.quantity || 0,
                         parentQuantity
                     ).toFixed(2)
+                    var planNumber = getPlanNumber(orderRecord,item)
 
                     copyRecord.setValue({
                         fieldId : 'custrecord_p_custcol_boxes_numbers',
@@ -639,6 +695,11 @@ define([
                     })
 
                     copyRecord.setValue({
+                        fieldId : 'custrecord_p_custcol_plan_number',
+                        value : planNumber
+                    })
+
+                    copyRecord.setValue({
                         fieldId : 'custrecord_p_quantity',
                         value : item.quantity
                     })
@@ -650,6 +711,11 @@ define([
     
                     copyRecord.setValue({
                         fieldId : 'custrecord_p_expectedshipdate',
+                        value : item.expectedshipdate
+                    })
+
+                    copyRecord.setValue({
+                        fieldId : 'custrecord_p_custcol_suggest_date',
                         value : item.expectedshipdate
                     })
 
@@ -725,6 +791,16 @@ define([
             value : item.expectedshipdate
         })
 
+        if(item.changeExpected)
+        {
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_before_date',
+                line : line,
+                value : item.beforeExpected
+            })
+        }
+
         var oldQuantity = oldRecord.getSublistValue({
             sublistId : 'recmachcustrecord_l_link',
             fieldId : 'custrecord_l_quantity',
@@ -756,9 +832,16 @@ define([
         }
     }
 
+    function getPlanNumber(orderRecord,item){
+        var prix = orderRecord.getValue('tranid')
+
+        return prix.replace(/[0]{1,}/,'') + item.line.replace('.','-')
+    }
+
     function inseterOrderSublistLine(orderRecord,copyRecord,item){
         var index = getInsetIndex(item.line,orderRecord)
-
+        var planNumber = getPlanNumber(orderRecord,item)
+ 
         orderRecord.setValue({
             fieldId : 'custbody_planchange',
             value : true
@@ -767,6 +850,13 @@ define([
         orderRecord.insertLine({
             sublistId : 'item',
             line : index
+        })
+
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_plan_number',
+            line : index,
+            value : planNumber
         })
 
         orderRecord.setSublistValue({
@@ -799,7 +889,7 @@ define([
 
         orderRecord.setSublistValue({
             sublistId : 'item',
-            fieldId : 'custrecord_p_custcol_before_date',
+            fieldId : 'custcol_suggest_date',
             line : index,
             value : item.expectedshipdate
         }) 
@@ -854,7 +944,7 @@ define([
         if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_cgoodscode'}))
         orderRecord.setSublistValue({
             sublistId : 'item',
-            fieldId : 'custcol_cgoodsname',
+            fieldId : 'custcol_cgoodscode',
             line : index,
             value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_cgoodscode'})
         })
@@ -874,14 +964,6 @@ define([
             fieldId : 'custcol_work_order_number',
             line : index,
             value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_work_order_number'})
-        })
-
-        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_plan_number'}))
-        orderRecord.setSublistValue({
-            sublistId : 'item',
-            fieldId : 'custcol_plan_number',
-            line : index,
-            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_plan_number'})
         })
 
         if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_boxes_numbers'}))

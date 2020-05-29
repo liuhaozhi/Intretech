@@ -7,15 +7,17 @@ define([
     'N/search',
     'N/record',
     'N/format',
-    'N/runtime',
     'N/redirect',
     'N/ui/serverWidget',
     '../config/searchFilters',
     '../config/searchColumns',
     '../config/searchFiltersConfig',
-    '../config/sublistFieldsConfig'
+    '../config/sublistFieldsConfig',
+    '../../helper/wrapper_runtime',
+    '../../helper/operation_assistant'
 ], function(
-    cache , search , record , format , runtime , redirect , ui , searchFilters , searchColumns , searchFiltersConfig , sublistFieldsConfig
+    cache , search , record , format , redirect , ui , searchFilters , searchColumns , searchFiltersConfig , 
+    sublistFieldsConfig , runtime , operation
 ) {
     var FIELDPR = 'custpage_'
     var defaultPageSize = 200
@@ -146,6 +148,7 @@ define([
                 value : res.getValue('internalid'),
                 text : res.getValue('entityid') + '&nbsp;&nbsp;' + res.getValue('companyname')
             })
+
             return true
         })
 
@@ -231,35 +234,27 @@ define([
         }
     }
 
-
     function salesOrdCreate(params,request,response){
-        createSalesorder(params,getPlanListIds(extendChechInfo(getCheckInfo(params.custpage_cacheid),request)))
+        createSalesorder(params,getPlanLists(extendChechInfo(getCheckInfo(params.custpage_cacheid),request)))
     }
 
-    function createSalesorder(params,planListIds){
-      
+    function createSalesorder(params,planLists){
         var salesOrder = record.create({
             type : 'salesorder',
             isDynamic : false
         })
         var columns = getAllSalesLineFields()
+
+        columns.push('custrecord_quantity_shipped')
         setHeadFieldsValue(salesOrder,params)
-        setLineItemValue(salesOrder,planListIds,columns)
+        var shipInfo = setLineItemValue(salesOrder,planLists,columns)
 
         try{
             var salesOrderId  = salesOrder.save({ignoreMandatoryFields : false})
 
             if(salesOrderId)
             {
-                planListIds.map(function(item){
-                    record.submitFields({
-                        type : 'customrecord_shipping_plan',
-                        id : item,
-                        values : {
-                            custrecord_salesorder_shipped : 'T'
-                        }
-                    })
-                })
+                updatePlanList(shipInfo)
             }
 
             redirect.toSuitelet({
@@ -293,20 +288,45 @@ define([
 
     }
 
-    function setLineItemValue(salesOrder,planListIds,columns){
+    function updatePlanList(shipInfo){
+        shipInfo.map(function(item){
+            var shipOver = 'F'
+            var shiped = operation.add(item.ship , item.shiped || 0)
+       
+            if(operation.sub(item.quantity , shiped) <= 0)
+            shipOver = 'T'
+
+            record.submitFields({
+                type : 'customrecord_shipping_plan',
+                id : item.id,
+                values : {
+                    custrecord_quantity_shipped : shiped,
+                    custrecord_salesorder_shipped : shipOver
+                }
+            })
+        })
+    }
+
+    function setLineItemValue(salesOrder,planLists,columns){
         var index = 0
+        var shipInfo = new Array()
         var allDateField = dateFields()
         var allPercentFields = percentFields()
+
         search.create({
             type : 'customrecord_shipping_plan',
             filters : [
-                ['internalid' , 'anyof' , planListIds]
+                ['internalid' , 'anyof' , Object.keys(planLists)]
             ],
             columns : columns
         }).run().each(function(res){
+            var shipList = {id : res.id , ship : planLists[res.id]}
+
             for(var i = 0 ; i < columns.length ; i ++)
             {
                 var value = res.getValue(columns[i])
+                var fieldId = columns[i].name.replace(fieldRegExPrefix,'')
+
                 if(allDateField.indexOf(columns[i].name) > -1)
                 {
                     if(!!value)
@@ -325,13 +345,19 @@ define([
                         value = parseFloat(value)
                     }
                 }
-
-                var fieldId = columns[i].name.replace(fieldRegExPrefix,'')
                 
-                if(fieldId !== 'amount' && fieldId !== 'custcol_cn_cfi')
+                if(fieldId !== 'amount' && fieldId !== 'custcol_cn_cfi' && fieldId !== 'custrecord_quantity_shipped')
                 salesOrder.setSublistValue({
                     sublistId : 'item',
                     fieldId : fieldId,
+                    value : value,
+                    line : index
+                })
+
+                if(fieldId === 'expectedshipdate')
+                salesOrder.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_dedate',
                     value : value,
                     line : index
                 })
@@ -343,12 +369,28 @@ define([
                     value : value,
                     line : index
                 })
+
+                if(fieldId === 'quantity')
+                {
+                    salesOrder.setSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'quantity',
+                        value : planLists[res.id],
+                        line : index
+                    })
+                    shipList.quantity = value
+                }
+
+                if(fieldId === 'custrecord_quantity_shipped')
+                shipList.shiped = value
             }
 
             index ++
-
+            shipInfo.push(shipList)
             return true
         })
+
+        return shipInfo
     }
 
     function dateFields(){
@@ -503,12 +545,13 @@ define([
             var searchInfo = params.custpage_ordertype === '4' ? {
                 id : params.custpage_customer,
                 type : 'customer',
-                fieldId : 'custentity_vim'
+                fieldId : 'custentity_vmi'
             } : {
                 id : params.custpage_subsidiary,
                 type : 'subsidiary',
                 fieldId : 'custrecord_intre_intercompany_location'
             }
+
             var location = search.lookupFields({
                 type : searchInfo.type,
                 id : searchInfo.id,
@@ -530,14 +573,23 @@ define([
 
             salesOrder.setValue({
                 fieldId : 'customform',
-                value : 164
+                value : 164  //sb2  154
             })
 
             if(params.custpage_isintercompany === '2')
-            salesOrder.setValue({
-                fieldId : 'custbody_final_customer',
-                value : params.custpage_endcustomer
-            })
+            {
+                salesOrder.setValue({
+                    fieldId : 'custbody_final_customer',
+                    value : params.custpage_endcustomer
+                })
+            }
+            else
+            {
+                salesOrder.setValue({
+                    fieldId : 'custbody_source_purchase',
+                    value : true
+                })
+            }
         }
 
         if(customerAdress.ship)
@@ -687,12 +739,20 @@ define([
 
         salesOrder.setValue({
             fieldId : 'trandate',
-            value : today()
+            value : operation.getDateWithTimeZone({
+                date: new Date(),
+                timezone: runtime.getUserTimezone()
+            })
         })
 
         salesOrder.setValue({
             fieldId : 'currency',
             value : params.custpage_currency
+        })
+
+        salesOrder.setValue({
+            fieldId : 'custbody_ifexport',
+            value : params.custpage_isexport === '1' ? true : false
         })
 
         salesOrder.setValue({
@@ -704,13 +764,6 @@ define([
             fieldId : 'custbody_source_doc_creator',
             value : params.custpage_sourcemp
         })
-
-
-    }
-
-    function today(){
-        var date = new Date()
-        return new Date(date.getTime() + 8 * 1000 * 60 * 60)
     }
 
     function getAllSalesLineFields(){
@@ -725,18 +778,18 @@ define([
         })
     }
 
-    function getPlanListIds(checkInfo){
-        var ids = new Array()
+    function getPlanLists(checkInfo){
+        var lists = new Object()
 
         for(var key in checkInfo)
         {
-            if(checkInfo[key] === 'T')
+            if(checkInfo[key].checked === 'T')
             {
-                ids.push(key)
+                lists[key] = checkInfo[key].quantity
             }
         }
 
-        return ids
+        return lists
     }
 
     function extendChechInfo(checkInfo,request){
@@ -750,11 +803,18 @@ define([
                 group: FIELDPR + 'lines',
                 name: FIELDPR + 'planing',
                 line: i
-            })] = request.getSublistValue({
-                group: FIELDPR + 'lines',
-                name: FIELDPR + 'check',
-                line: i
-            })
+            })] = {
+                checked : request.getSublistValue({
+                    group: FIELDPR + 'lines',
+                    name: FIELDPR + 'check',
+                    line: i
+                }),
+                quantity : request.getSublistValue({
+                    group: FIELDPR + 'lines',
+                    name: FIELDPR + 'quantity',
+                    line: i
+                })
+            } 
         }
 
         return checkInfo
@@ -776,12 +836,11 @@ define([
     }
 
     function bindSublists(params,form,sublist){
-        var filters = getSearchFilters(params,'myCache','searchFilters')
-        log.error('filters',filters)
+        var filters = getSearchFilters(params , runtime.getCurrentUserId() + params.disposetype + 'Cache','searchFilters')
         var pageDate = search.create({
             type : 'customrecord_shipping_plan',
             filters : filters,
-            columns : searchColumns.searchColumns()
+            columns : searchColumns.searchColumns(params)
         }).runPaged({pageSize : params.pageSize || defaultPageSize})
 
         if(pageDate.pageRanges.length > 0)
@@ -793,11 +852,11 @@ define([
                 currPage : params.currPage || 1,
                 pageSize : pageDate.pageSize
             })
-    
+
             pageDate.fetch({
                 index : params.currPage ? --params.currPage : 0
             }).data.forEach(function(res,index){
-                addSublistLine(sublist,index,res,params.disposetype,params.cacheId)
+                addSublistLine(sublist,index,res,params.disposetype,params.cacheId,pageDate.searchDefinition.columns)
             })
         }
     }
@@ -853,9 +912,9 @@ define([
         return searchFilters.searchFilters(params)
     }
 
-    function addSublistLine(sublist,index,res,disposetype,cacheId){
+    function addSublistLine(sublist,index,res,disposetype,cacheId,columns){
         var checkInfo = getCheckInfo(cacheId)
-
+        
         sublist.setSublistValue({
             id : FIELDPR + 'planing',
             line : index,
@@ -876,6 +935,13 @@ define([
             value : res.getValue('custrecord_p_custcol_line')
         })
 
+        if(res.getValue('custrecord_p_custcol_pick_id'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'workorder',
+            line : index,
+            value : res.getValue('custrecord_p_custcol_pick_id')
+        })
+        
         if(res.getValue('custrecord_p_custcol_salesorder'))
         sublist.setSublistValue({
             id : FIELDPR + 'estimate',
@@ -888,6 +954,12 @@ define([
             id : FIELDPR + 'item',
             line : index,
             value : res.getValue('custrecord_p_item')
+        })
+
+        sublist.setSublistValue({
+            id : FIELDPR + 'isexport',
+            line : index,
+            value : res.getValue('custrecord_p_custbody_ifexport') ? 'T' : 'F'
         })
 
         if(res.getValue({
@@ -910,11 +982,11 @@ define([
             value : res.getValue('custrecord_p_custcol_itemtype')
         })
 
-        if(res.getValue('custrecord_p_quantity'))
+        if(res.getValue(columns[5]))
         sublist.setSublistValue({
             id : FIELDPR + 'quantity',
             line : index,
-            value : res.getValue('custrecord_p_quantity')
+            value : res.getValue(columns[5])
         })
 
         if(res.getValue('custrecord_p_expectedshipdate'))
@@ -971,7 +1043,7 @@ define([
             sublist.addMarkAllButtons()
         }
 
-        addFields(sublist,sublistFieldsConfig.sublistFields())
+        addFields(sublist,sublistFieldsConfig.sublistFields(params))
 
         if(params.disposetype === '1')
         {
@@ -1007,6 +1079,13 @@ define([
                 type : 'text',
                 container : 'custpage_lists',
                 displayType : 'disabled'
+            },
+            {
+                id : 'isexport',
+                label : '是否出口',
+                type : 'select',
+                source : 'customlist_whether_list',
+                container : 'custpage_lists'
             }
         ]
     }

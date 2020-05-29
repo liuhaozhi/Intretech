@@ -16,7 +16,6 @@ define([
 
     function updateSalesLineQuantity(newRecord){
         var sublistLines = getLineItems(newRecord)
-
         log.error('sublistLines',sublistLines)
 
         for(var key in sublistLines)
@@ -32,7 +31,7 @@ define([
                 for(var line in item)
                 {
                     var index = getIndex(salesOrd,line)
-                    log.error('index',index)
+                    
                     if(index > -1)
                     {
                         salesOrd.setSublistValue({
@@ -44,7 +43,7 @@ define([
                                     sublistId : 'item',
                                     fieldId : 'custcol_out_of_stock',
                                     line : index
-                                }),
+                                }) || 0,
                                 item[line]
                             )
                         })

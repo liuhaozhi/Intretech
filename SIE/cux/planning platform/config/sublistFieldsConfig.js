@@ -55,6 +55,19 @@ define({
                 type : 'text' 
             },
             {
+                id : 'workorder' ,
+                label : '是否有工单' , 
+                type : 'select',
+                source : 'customlist_y_n_lsit',
+                displayType : params.title === '计划执行平台' ? 'INLINE' : 'HIDDEN'
+            },
+            {
+                id : 'isexport',
+                label : '是否出口',
+                type : 'checkbox',
+                displayType : 'inline'
+            },
+            {
                 id : 'boxes' ,
                 label : '箱数' , 
                 type : 'text' 

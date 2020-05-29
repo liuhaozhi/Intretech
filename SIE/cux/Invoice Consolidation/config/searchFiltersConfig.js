@@ -15,7 +15,7 @@ define({
             },
             {
                 id : 'subsidiary' ,
-                label : '子公司(subsidiary)' ,
+                label : 'Subsidiary/子公司' ,
                 type : 'select' ,
                 source : 'subsidiary' ,
                 container : 'custpage_filters' ,
@@ -24,7 +24,7 @@ define({
             },
             {
                 id : 'trandate' ,
-                label : '日期自' , 
+                label : 'Date from/日期自' , 
                 type : 'date' ,
                 container : 'custpage_filters' ,
                 layoutType : 'startrow' ,
@@ -32,7 +32,7 @@ define({
             },
             {
                 id : 'dateclose' ,
-                label : '至' , 
+                label : 'To/至' , 
                 type : 'date' ,
                 container : 'custpage_filters' ,
                 layoutType : 'endrow' ,
@@ -40,7 +40,7 @@ define({
             },     
             {
                 id : 'receipt' ,
-                label : '单据编号' , 
+                label : 'Delivery notice No./发货通知单号' , 
                 type : 'select' ,
                 source : 'transaction' ,
                 container : 'custpage_filters' ,
@@ -48,7 +48,7 @@ define({
             },   
             {
                 id : 'customer' ,
-                label : '客户(customer)' ,
+                label : 'Customer/客户' ,
                 type : 'select' ,
                 container : 'custpage_filters' ,
                 breakType : 'startcol' ,
@@ -58,7 +58,7 @@ define({
             },
             {
                 id : 'salesorder' ,
-                label : '销售订单(delivery notice)' , 
+                label : 'Sales order No./销售订单号' , 
                 type : 'select' ,
                 source : 'transaction' ,
                 container : 'custpage_filters' ,
@@ -66,14 +66,14 @@ define({
             },       
             {
                 id : 'invoice' ,
-                label : '发票号' , 
+                label : 'Invoice No./发票号' , 
                 type : 'text' ,
                 container : 'custpage_filters' ,
                 defaultValue : params.invoice || ''
             },
             {
                 id : 'currency' ,
-                label : '货币(currency)' , 
+                label : 'Currency/货币' , 
                 type : 'select' ,
                 source : 'currency' ,
                 container : 'custpage_filters' ,
@@ -83,7 +83,7 @@ define({
             },
             {
                 id : 'emoloyee' ,
-                label : '业务员(employee)' , 
+                label : 'Sales/业务员' , 
                 type : 'select' ,
                 source : 'employee' ,
                 container : 'custpage_filters' ,
@@ -91,14 +91,14 @@ define({
             },      
             {
                 id : 'boxnumber' ,
-                label : '装箱号' , 
+                label : 'Packing No./装箱号' , 
                 type : 'text' ,
                 container : 'custpage_filters' ,
                 defaultValue : params.boxnumber || ''
             },
             {
                 id : 'printype' ,
-                label : '打印类型' , 
+                label : 'Print type/打印类型' , 
                 type : 'select' ,
                 source : 'customlist_printype' ,
                 container : 'custpage_filters' ,
@@ -108,8 +108,9 @@ define({
             },
             {
                 id : 'samegoods' ,
-                label : '合并相同货品行' ,
-                type : 'checkbox' ,
+                label : 'Merge the same product line/合并相同货品行' ,
+                type : 'select' ,
+                source : 'customlist_samegoods',
                 container : 'custpage_filters' ,
                 defaultValue : params.samegoods
             }

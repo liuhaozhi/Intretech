@@ -194,6 +194,8 @@ define([
                     value : prinType === '2' ? true : false
                 })
     
+                log.error('salesItem',salesItem)
+
                 try{
                     for(var item in salesItem)
                     {
@@ -201,11 +203,13 @@ define([
                         {
                             var lineItem = invoiceRe.getSublistValue({
                                 sublistId : 'item',
-                                fieldId : 'item',
+                                fieldId : 'custcol_plan_number',
                                 line : i
                             })
     
-                            if(lineItem === salesItem[item].item)
+                            log.error('lineItem',lineItem)
+                            log.error(lineItem === salesItem[item].planum,salesItem[item].planum)
+                            if(lineItem === salesItem[item].planum)
                             {
                                 invoiceRe.setSublistValue({
                                     sublistId : 'item',
@@ -294,6 +298,11 @@ define([
                 quantity : newRecord.getSublistValue({
                     sublistId : sublistId,
                     fieldId : 'custrecord_ci_shuliang',
+                    line : i
+                }),
+                planum : newRecord.getSublistValue({
+                    sublistId : sublistId,
+                    fieldId : 'custrecord_planum',
                     line : i
                 })
             }

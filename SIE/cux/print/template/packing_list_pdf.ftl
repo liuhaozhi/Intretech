@@ -62,31 +62,31 @@
                 <tr><td align="center" colspan="9" style="height:20px;"></td></tr>
                 <tr>
                     <td align="center" colspan="9" style="vertical-align: middle;">
-                        <p class="title">装箱单</p>
+                        <p class="title">PACKING LIST/装箱单</p>
                     </td>
                 </tr>
                 <tr class="borderRow">
                     <td colspan="5" style="border-left:thin solid #000;border-top:thin solid #000;">
                         <table id="shipExport">
-                            <tr><td>Shipper / Exporter:</td></tr>
+                            <tr><td>Shipper / Exporter/（发货人/出口商）：</td></tr>
                             <tr><td>${makesure(data.subsidiaryInfo.legalname)}</td></tr>
                             <tr><td>${makesure(data.subsidiaryInfo.mainaddress_text)}</td></tr>
-                            <tr><td>电话：${makesure(data.subsidiaryInfo.custrecord_subsidiary_phone)}</td></tr>
-                            <tr><td>FAX：${makesure(data.subsidiaryInfo.fax)}</td></tr>
+                            <tr><td>TEL/电话：${makesure(data.subsidiaryInfo.custrecord_subsidiary_phone)}</td></tr>
+                            <tr><td>FAX/传真：${makesure(data.subsidiaryInfo.fax)}</td></tr>
                         </table>
                     </td>
                     <td colspan="4" style="border-left:thin solid #000;border-top:thin solid #000;border-right:thin solid #000;">
                         <table id="shipMethod">
-                            <tr><td>Ship method:${makesure(data.shipInfo.method)}</td></tr>
-                            <tr><td>Pick up date:${makesure(data.shipInfo.packDate)}</td></tr>
-                            <tr><td>Invoice No:${makesure(data.shipInfo.invNum)}</td></tr>
+                            <tr><td>Ship Method/运输方式：${makesure(data.shipInfo.method)}</td></tr>
+                            <tr><td>Shipping  Date/发运日期：${makesure(data.shipInfo.packDate)}</td></tr>
+                            <tr><td>Invoice No./发票号：${makesure(data.shipInfo.invNum)}</td></tr>
                         </table>
                     </td>
                 </tr>
                 <tr class="borderRow" >
                     <td colspan="5" style="border-left:thin solid #000;border-top:thin solid #000;">
                         <table id="consigenee">
-                            <tr><td>Consigenee:</td></tr>
+                            <tr><td>Consignee/收货人：</td></tr>
                             <tr><td>${makesure(data.customerName)}</td></tr>
                         </table>
                     </td>
@@ -96,23 +96,23 @@
                 <tr class="borderRow">
                     <td colspan="5" style="border-left:thin solid #000;border-top:thin solid #000;">
                         <table>
-                            <tr><td>Ship to Address:</td></tr>
+                            <tr><td>Ship to Addres/收货地址：</td></tr>
                             <tr><td>${makesure(data.shipInfo.adress)}</td></tr>
-                            <tr><td>联系人：${makesure(data.shipInfo.emp)}</td></tr>
-                            <tr><td>联系电话：${makesure(data.shipInfo.phone)}</td></tr>
+                            <tr><td>Attn/联系人：${makesure(data.shipInfo.emp)}</td></tr>
+                            <tr><td>TEL/联系电话：${makesure(data.shipInfo.phone)}</td></tr>
                         </table>
                     </td>
                 </tr>
                 <tr id="itemTitle">
-                    <td align="center">项目</td>
-                    <td align="center">箱数</td>
-                    <td align="center">订单单号</td>
-                    <td align="center">货号</td>
-                    <td align="center">货品描述</td>
-                    <td align="center">数量（PCS）</td>
-                    <td align="center">总净重（KGS）</td>
-                    <td align="center">总毛重（KGS）</td>
-                    <td align="center">总立方数（CBM）</td>
+                    <td align="center">Item/项目：</td>
+                    <td align="center">Package /箱数(CTNS)：</td>
+                    <td align="center">PO No./订单单号：</td>
+                    <td align="center">PN/货号：</td>
+                    <td align="center">Description/规格描述：</td>
+                    <td align="center">Qty. /数量（PCS）:</td>
+                    <td align="center">Net Weight/总净重（KGS）:</td>
+                    <td align="center">Gross Weight/总毛重（KGS）:</td>
+                    <td align="center">Measurement /立方数（CBM）:</td>
                 </tr>
                 <tr class="itemSpace">
                     <td colspan="9" style="height:20px;"></td>
@@ -131,7 +131,7 @@
                     </tr>
                 </#list>
                 <tr id="itemAmount">
-                    <td>总计</td>
+                    <td>Total/总计</td>
                     <td align="center">${makenumber(data.itemTotal.boxNum)}</td>
                     <td align="center">/</td>
                     <td align="center">/</td>

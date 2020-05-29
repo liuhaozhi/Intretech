@@ -52,14 +52,27 @@ define([
             {
                 var fieldId = savePlanFields[j].replace(fieldRegExPrefix,'')
 
-                planRecord.setValue({
-                    fieldId : savePlanFields[j],
-                    value : estimate.getSublistValue({
-                        sublistId : 'item',
-                        fieldId : fieldId === 'custcol_cn_cfi' ? 'custcol_cseg_cn_cfi' : fieldId,
-                        line : i
+                if(fieldId === 'custbody_ifexport')
+                {
+                    planRecord.setValue({
+                        fieldId : savePlanFields[j],
+                        value : estimate.getValue({
+                            fieldId : fieldId
+                        })
                     })
-                })
+                }
+                else
+                {
+                    planRecord.setValue({
+                        fieldId : savePlanFields[j],
+                        value : estimate.getSublistValue({
+                            sublistId : 'item',
+                            fieldId : fieldId === 'custcol_cn_cfi' ? 'custcol_cseg_cn_cfi' : fieldId,
+                            line : i
+                        })
+                    })
+                }
+
             }
 
             var planId = planRecord.save()
@@ -69,7 +82,7 @@ define([
                     type : 'customrecord_shipping_plan',
                     id : planId,
                     values : {
-                        custrecord_edit_link : '/app/common/custom/custrecordentry.nl?rectype=629&fromrecord=' + planId
+                        custrecord_edit_link : '/app/common/custom/custrecordentry.nl?rectype=257&fromrecord=' + planId
                     }
                 })
             }

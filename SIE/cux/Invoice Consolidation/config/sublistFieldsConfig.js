@@ -13,6 +13,12 @@ define({
                 displayType : 'hidden'
             },
             {
+                id : 'planum',
+                label : '计划号',
+                type : 'text',
+                displayType : 'hidden'
+            },
+            {
                 id : 'line' ,
                 label : 'line' , 
                 type : 'text' ,
@@ -20,59 +26,59 @@ define({
             },
             {
                 id : 'check' ,
-                label : '选择' , 
+                label : 'Choice/选择' , 
                 type : 'checkbox'
             },
             {
                 id : 'tranid' ,
-                label : '单据编号', 
+                label : 'Delivery notice No./发货通知单号', 
                 type : 'text'
             },
             {
                 id : 'item' ,
-                label : '物料' , 
+                label : 'Description/规格描述' , 
                 type : 'select',
                 source : 'item' ,
                 displayType : 'inline'
             },
             {
                 id : 'currency' ,
-                label : '币别' , 
+                label : 'Currency/币别' , 
                 type : 'text' 
             },
             {
                 id : 'quantity' ,
-                label : '数量' , 
+                label : 'Qty. /数量（PCS）' , 
                 type : 'text' 
             },
             {
                 id : 'quantityshiprecv' ,
-                label : '已实施数量' , 
+                label : 'Delivered Qty./已出库数量' , 
                 type : 'text' 
             },
             {
                 id : 'quantitybilled' ,
-                label : '已开票数量' , 
+                label : 'Invoiced Qty./已开票数量' , 
                 type : 'text' 
             },
             {
                 id : 'rate' ,
-                label : '单价(不含税)' , 
+                label : 'Unit price (excluding tax)/单价(不含税)' , 
                 type : 'text' 
             },
             {
                 id : 'netamountnotax' ,
-                label : '金额' , 
+                label : 'Amount/金额' , 
                 type : 'currency' 
             },
             {
                 id : 'taxamount' ,
-                label : '税额' , 
+                label : 'Tax amount/税额' , 
                 type : 'currency' 
             },
             {
                 id : 'grossamount' ,
-                label : '总金额' , 
+                label : 'Total amount/总金额' , 
                 type : 'currency' 
             },
             {
@@ -83,13 +89,13 @@ define({
             },
             {
                 id : 'currquantity' ,
-                label : '本次开票数量' , 
+                label : 'Quantity invoiced this time/本次开票数量' , 
                 type : 'FLOAT' ,
                 displayType : 'ENTRY'
             },
             {
                 id : 'invnumber' ,
-                label : '发票号（批量开票用）' , 
+                label : 'Invoice No. (for batch Invoicing)/发票号(批量开票用)' , 
                 type : 'text' ,
                 displayType : 'ENTRY'
             }

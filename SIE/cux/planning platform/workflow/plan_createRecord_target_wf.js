@@ -21,7 +21,7 @@ define([
         })
 
         if(planRecords.length === 0)
-        task.create({ //此处后期转工作流触发  一审后
+        task.create({
             taskType : task.TaskType.SCHEDULED_SCRIPT,
             scriptId : 'customscript_sales_planning_task',
             params : {

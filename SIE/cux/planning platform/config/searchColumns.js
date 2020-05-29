@@ -5,9 +5,27 @@
 
 define({
     searchColumns : function (params){
+        var quantityCol = undefined
+
+        if(params.disposetype === '2')
+        {
+            quantityCol = {
+                name : 'formulanumeric',
+                formula: 'TO_NUMBER({custrecord_p_quantity}) - TO_NUMBER( NVL({custrecord_quantity_shipped} , 0) )'
+            }
+        }
+        else
+        {
+            quantityCol = {
+                name : 'custrecord_p_quantity'
+            }
+        }
+
         return  [
             {
                 name : 'custrecord_p_item'
+            },{
+                name : 'custrecord_p_custcol_pick_id'
             },{
                 name : 'displayname',
                 join : 'custrecord_p_item'
@@ -16,9 +34,7 @@ define({
                 sort : 'ASC'
             },{
                 name : 'custrecord_p_custcol_itemtype'
-            },{
-                name : 'custrecord_p_quantity'
-            }, {
+            }, quantityCol, {
                 name : 'custrecord_p_expectedshipdate'
             },{
                 name : 'custrecord_p_custcol_boxes_numbers'
@@ -29,6 +45,9 @@ define({
                 sort : 'ASC'
             },{
                 name : 'custrecord_p_custcol_sup_total'
+            },
+            {
+                name : 'custrecord_p_custbody_ifexport'
             }
         ]
     }

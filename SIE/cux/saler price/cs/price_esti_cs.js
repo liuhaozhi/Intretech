@@ -4,15 +4,13 @@
  */
 define([
     '../public/price_search',
-    '../public/price_update_assistant',
     '../../customer credit/public/helper/credit_sign_of_operation'
 ], function(
     priceSearch,
-    assistant,
     operation
 ) {
     function pageInit(context){
-     console.log(3)
+        console.log(3)
         context.currentRecord.setValue({
             fieldId : 'custbody_price_isupdate',
             value : true
@@ -21,62 +19,115 @@ define([
 
     function fieldChanged(context) {
         var currentRec = context.currentRecord
+        var discount = +currentRec.getCurrentSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_fdiscount'
+        })
+        var rate = currentRec.getCurrentSublistValue({
+            sublistId : 'item',
+            fieldId : 'rate'
+        })
+        var notax = currentRec.getCurrentSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_unit_notax'
+        })
+
+        discount = discount ? discount / 100 : 1
+
         if(context.fieldId === 'quantity')
         {
-            var itemInfo = currItemInfo(currentRec)
-            var itemPrice = priceSearch.ItemResult({
-                items : itemInfo.items,
-                quantitys : itemInfo.quantitys
-            })
-
-            var currentIndex = currentRec.getCurrentSublistIndex({
-                sublistId : 'item'
-            })
-
-            if(itemPrice[itemInfo.item]){
-                var price = itemPrice[itemInfo.item].price
-                var customerDiscount = parseFloat(itemPrice[itemInfo.item].customerDiscount)
+            if(currentRec.getCurrentSublistValue({
+                sublistId : 'item',
+                fieldId : 'item'
+            }))
+            {
+                var itemInfo = currItemInfo(currentRec)
+                var itemPrice = priceSearch.ItemResult({
+                    items : itemInfo.items,
+                    quantitys : itemInfo.quantitys
+                })
+                var currentIndex = currentRec.getCurrentSublistIndex({
+                    sublistId : 'item'
+                })
     
-                if(itemPrice[itemInfo.item])
-                {
-                    setPrice({
-                        currentRec : currentRec,
-                        item : itemInfo.item,   
-                        rate : operation.mul(price , isNaN(customerDiscount) ? 1 :  customerDiscount / 100),
-                        mode : itemPrice[itemInfo.item].mode,
-                        price : price,
-                        customerDiscount : isNaN(customerDiscount) ? '' : customerDiscount
-                    })
-
-                    currentRec.selectLine({
-                        sublistId : 'item',
-                        line : currentIndex
-                    })
+                if(itemPrice[itemInfo.item]){
+                    var price = itemPrice[itemInfo.item].price
+                    var customerDiscount = parseFloat(itemPrice[itemInfo.item].customerDiscount)
+        
+                    if(itemPrice[itemInfo.item])
+                    {
+                        setPrice({
+                            currentRec : currentRec,
+                            item : itemInfo.item,   
+                            rate : operation.mul(price , isNaN(customerDiscount) ? 1 :  customerDiscount / 100),
+                            mode : itemPrice[itemInfo.item].mode,
+                            price : price,
+                            customerDiscount : isNaN(customerDiscount) ? '' : customerDiscount
+                        })
+    
+                        currentRec.selectLine({
+                            sublistId : 'item',
+                            line : currentIndex
+                        })
+                    }
                 }
             }
         }
 
         if(context.fieldId === 'grossamt')
         {
-            changeBeforeDsicountPrice({
-                price : currentRec.getCurrentSublistValue({
+            changePrice({
+                fieldId : 'custcol_unit_tax',
+                first : currentRec.getCurrentSublistValue({
                     sublistId : 'item',
                     fieldId : context.fieldId
                 }),
-                quantity : currentRec.getCurrentSublistValue({
+                second : currentRec.getCurrentSublistValue({
                     sublistId : 'item',
                     fieldId : 'quantity'
                 }),
+                symbol : 'div',
+                currentRec : currentRec
+            })
+        }
+
+        if(context.fieldId === 'rate')
+        {
+            if(rate)
+            changePrice({
+                fieldId : 'custcol_unit_notax',
+                first : rate,
+                second : discount,
+                symbol : 'div',
+                currentRec : currentRec
+            })
+        }
+
+        if(context.fieldId === 'custcol_unit_notax')
+        {
+            if(notax)
+            changePrice({
+                fieldId : 'rate',
+                first : notax,
+                second : discount,
+                symbol : 'mul',
                 currentRec : currentRec
             })
         }
     }
 
-    function changeBeforeDsicountPrice(params){
+    function changePrice(params){
+        var newVal = operation[params.symbol](params.first || 0 , params.second).toFixed(2)
+        var oldVal = +params.currentRec.getCurrentSublistValue({
+            sublistId : 'item',
+            fieldId : params.fieldId
+        })
+
+        if(+oldVal !== +newVal)
         params.currentRec.setCurrentSublistValue({
             sublistId : 'item',
-            fieldId : 'custcol_unit_tax',
-            value : operation.div(params.price , params.quantity)
+            fieldId : params.fieldId,
+            value : newVal
         })
     }
 
@@ -136,7 +187,6 @@ define([
                 value : params.customerDiscount
             })
         }
-
 
         currentRec.setCurrentSublistValue({  //折前单价  不含税
             sublistId : 'item',

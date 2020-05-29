@@ -6,16 +6,15 @@ define([
     'N/cache',
     'N/search',
     'N/record',
-    'N/format',
-    'N/runtime',
     'N/redirect',
     'N/ui/serverWidget',
     '../config/searchFilters',
     '../config/searchColumns',
     '../config/searchFiltersConfig',
-    '../config/sublistFieldsConfig'
+    '../config/sublistFieldsConfig',
+    '../../helper/wrapper_runtime'
 ], function(
-    cache , search , record , format , runtime , redirect , ui , searchFilters , searchColumns , searchFiltersConfig , sublistFieldsConfig
+    cache , search , record , redirect , ui , searchFilters , searchColumns , searchFiltersConfig , sublistFieldsConfig , runtime
 ) {
     var FIELDPR = 'custpage_'
     var defaultPageSize = 200
@@ -180,7 +179,7 @@ define([
     }
 
     function bindSublists(params,form,sublist){
-        var filters = getSearchFilters(params,'myCache','searchFilters')
+        var filters = getSearchFilters(params,runtime.getCurrentUserId() + 'ApproveCache','searchFilters')
         var pageDate = search.create({
             type : 'customrecord_shipping_plan',
             filters : filters,

@@ -6,15 +6,60 @@ define([
     'N/record',
     'N/search'
 ], function(record,search) {
+    function beforeSubmit(context){
+        if(context.type === 'create')
+        {
+            setLineAndExpenDate(context.newRecord)
+        }
+    }
+
+    function setLineAndExpenDate(newRecord){
+        var itemCount = newRecord.getLineCount({
+            sublistId : 'item'
+        })
+  
+        for(var i = 0 ; i < itemCount ; i ++)
+        {
+            var expectedshipdate = newRecord.getSublistValue({
+                sublistId : 'item',
+                fieldId : 'expectedshipdate',
+                line : i
+            })
+
+            if(expectedshipdate)
+            {
+                var suggestDate = newRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_suggest_date',
+                    line : i
+                })
+
+                if(!suggestDate)
+                newRecord.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_suggest_date',
+                    line : i,
+                    value : expectedshipdate
+                })
+            }
+
+            newRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_line',
+                line : i,
+                value : (i + 1).toString()
+            })
+        }
+    }
+
     function afterSubmit(context){
         
         if(context.type === 'create')
         {
-            setLineItemSaleId(context.newRecord)
+            setLineItemSalesId(context.newRecord)
         }
 
         if(context.type === 'edit'){
-            log.error(context.type)
             if(context.newRecord.getValue('custbody_workchange') === true)
             updatePlan(context.newRecord)
         }
@@ -90,7 +135,7 @@ define([
         })
     }
 
-    function setLineItemSaleId(recordInfo){
+    function setLineItemSalesId(recordInfo){
         var newRecord = record.load({
             type : recordInfo.type,
             id : recordInfo.id
@@ -98,38 +143,29 @@ define([
         var itemCount = newRecord.getLineCount({
             sublistId : 'item'
         })
+        var newRranid = updateSalesOrderCode(newRecord)
 
         for(var i = 0 ; i < itemCount ; i ++)
         {
+            var line = newRecord.getSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_line',
+                line : i
+            })
+
+            newRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_plan_number',
+                line : i,
+                value : newRranid.replace(/[0]{1,}/,'') + line
+            })
+
             newRecord.setSublistValue({
                 sublistId : 'item',
                 fieldId : 'custcol_salesorder',
                 line : i,
                 value : recordInfo.id
             })
-
-            if(newRecord.getSublistValue({
-                sublistId : 'item',
-                fieldId : 'expectedshipdate',
-                line : i
-            }))
-            {
-                if(!newRecord.getSublistValue({
-                    sublistId : 'item',
-                    fieldId : 'custcol_before_date',
-                    line : i
-                }))
-                newRecord.setSublistValue({
-                    sublistId : 'item',
-                    fieldId : 'custcol_before_date',
-                    line : i,
-                    value : newRecord.getSublistValue({
-                        sublistId : 'item',
-                        fieldId : 'expectedshipdate',
-                        line : i
-                    })
-                })
-            }  
         }
 
         newRecord.save({
@@ -137,7 +173,40 @@ define([
         })
     }
 
+    function updateSalesOrderCode(orderRecord){
+        var tranid = orderRecord.getValue({'fieldId': 'tranid'})
+        var orderType = orderRecord.getValue({'fieldId' : 'custbody_cust_ordertype'})
+
+        search.create({
+            type : 'customrecord_sales_order_type_code',
+            filters : [
+                {
+                    'name'    : 'custrecord_sales_order_type',
+                    'operator': search.Operator.ANYOF,
+                    'values'  : [orderType]
+                }
+            ],
+            'columns' : [
+                {'name':'custrecord_pre_code'}
+            ]
+        })
+        .run()
+        .each(function(res){
+            var orderTypeCode = res.getValue({'name':'custrecord_pre_code'})
+            tranid = orderTypeCode + tranid
+
+            orderRecord.setValue({
+                fieldId : 'tranid',
+                value : tranid
+            })
+        })
+
+        return tranid
+    }
+
+
     return {
+        beforeSubmit : beforeSubmit,
         afterSubmit: afterSubmit
     }
 });

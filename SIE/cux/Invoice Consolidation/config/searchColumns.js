@@ -35,6 +35,8 @@ define({
             },{
                 name : 'formulanumeric',
                 formula: 'ABS({taxamount} / {exchangerate})'
+            },{
+                name : 'custcol_plan_number'
             }
         ]
     }

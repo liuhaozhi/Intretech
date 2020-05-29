@@ -100,6 +100,13 @@ define({
                 ['custrecord_p_custcol_salesorder.custbody_cust_ordertype' , 'anyof' , [params.ordertype]]
             )
         }
+        else
+        {
+            filters.push(
+                'AND',
+                ['custrecord_p_custcol_salesorder.custbody_cust_ordertype' , 'noneof' , ['1' , '7']]
+            )
+        }
 
         if(params.isintercompany)
         {

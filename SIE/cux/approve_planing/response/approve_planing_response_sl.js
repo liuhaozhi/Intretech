@@ -147,7 +147,17 @@ define([
                     value : format.parse({
                         type : format.Type.DATE,
                         value : item.custrecord_p_expectedshipdate
-                    })    
+                    })
+                })
+
+                orderRecord.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_before_date',
+                    line : line,
+                    value : format.parse({
+                        type : format.Type.DATE,
+                        value : item.custrecord_p_custcol_before_date
+                    })
                 })
         
                 if(item.oldQuantity !== item.custrecord_p_quantity)
@@ -183,11 +193,19 @@ define([
 
     function insterSublists(orderRecord,items){
         items.map(function(item){
+            var prix  = orderRecord.getValue('tranid')
             var index = getInsetIndex(item.custrecord_p_custcol_line,orderRecord)
-        
+            
             orderRecord.insertLine({
                 sublistId : 'item',
                 line : index
+            })
+  
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_plan_number',
+                line : index,
+                value : prix.replace(/[0]{1,}/,'') + item.custrecord_p_custcol_line.replace('.','-')
             })
     
             orderRecord.setSublistValue({
@@ -220,16 +238,16 @@ define([
                     value : item.custrecord_p_expectedshipdate
                 })    
             })
-    
+
             orderRecord.setSublistValue({
                 sublistId : 'item',
-                fieldId : 'custrecord_p_custcol_before_date',
+                fieldId : 'custcol_suggest_date',
                 line : index,
                 value : format.parse({
                     type : format.Type.DATE,
                     value : item.custrecord_p_expectedshipdate
                 })    
-            }) 
+            })
     
             orderRecord.setSublistValue({
                 sublistId : 'item',
@@ -287,14 +305,6 @@ define([
                 fieldId : 'custcol_work_order_number',
                 line : index,
                 value :item.custrecord_p_custcol_work_order_number
-            })
-
-            if(item.custrecord_p_custcol_plan_number)
-            orderRecord.setSublistValue({
-                sublistId : 'item',
-                fieldId : 'custcol_plan_number',
-                line : index,
-                value :item.custrecord_p_custcol_plan_number
             })
 
             if(item.custrecord_p_custcol_boxes_numbers)
@@ -401,7 +411,7 @@ define([
                 value : item.custrecord_p_taxcode
             })
 
-            if(item.custrecord_p_taxcode)
+            if(item.item.custcol_cgoodscode)
             orderRecord.setSublistValue({
                 sublistId : 'item',
                 fieldId : 'custcol_cgoodscode',

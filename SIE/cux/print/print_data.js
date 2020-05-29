@@ -7,8 +7,9 @@ define([
     'N/search',
     'N/record',
     'N/format',
+    '../helper/wrapper_runtime',
     '../helper/operation_assistant'
-],function(file , search , record , format ,  operation) {
+],function(file , search , record , format , runtime , operation) {
     var sublistId = 'recmachcustrecord185'
 
     function getPackListData(id){
@@ -108,7 +109,10 @@ define([
                 }),
                 invDay : format.format({
                     type : format.Type.DATE , 
-                    value : toDay()
+                    value : operation.getDateWithTimeZone({
+                        date: new Date(),
+                        timezone: runtime.getUserTimezone()
+                    })
                 }),
                 port : recordInfo.getText({
                     fieldId : 'custrecord_port_of_loading'
@@ -166,7 +170,10 @@ define([
                 }),
                 invDay : format.format({
                     type : format.Type.DATE , 
-                    value : toDay()
+                    value : operation.getDateWithTimeZone({
+                        date : new Date(),
+                        timezone : runtime.getUserTimezone()
+                    })
                 }),
                 method : recordInfo.getText({
                     fieldId : 'custrecord_yunshufangshi'
@@ -190,11 +197,6 @@ define([
             items : paymentInvLineInfo.itemLines,
             itemTotal : paymentInvLineInfo.itemTotal,
         }
-    }
-
-    function toDay(){
-        var date = new Date()
-        return new Date(date.getTime() + 8 * 1000 * 60 * 60)
     }
 
     function getPaymentInvLineInfo(detailRecord){
@@ -224,12 +226,14 @@ define([
                 itemDes : getSublistValue(detailRecord,'custrecord_ci_kehuwuliaomingchen',index),
                 quantity : quantity,
                 price : getSublistValue(detailRecord,'custrecord_ci_danjia',index),
-                amount : getSublistValue(detailRecord,'custrecord_ci_zongjine_',index)
+                amount : getSublistValue(detailRecord,'custrecord_ci_zongjine_',index),
+                interItem : getSublistValue(detailRecord,'custrecord_ci_wuliaobianma',index)
             })
         }
 
-        if(detailRecord.getValue('custrecord_hebingxiangtonghuoping') === true)
-        itemLines = CombineSameGoods(itemLines , ['itemNum','price'] , ['quantity','amount'])
+        itemLines = detailRecord.getValue('custrecord_hebingxiangtonghuoping') === '2' ?
+        CombineSameGoods(itemLines , ['itemNum','price'] , ['quantity','amount']) :
+        CombineSameGoods(itemLines , ['interItem','price'] , ['quantity','amount'])
 
         return {
             itemTotal : itemTotal,
@@ -315,12 +319,18 @@ define([
                     fieldId : 'grossamt',
                     line : index
                 }),
-                remark : detailRecord.getValue('custbody_invoice_number')
+                remark : detailRecord.getValue('custbody_invoice_number'),
+                interItem : detailRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'item',
+                    line : index
+                })
             })
         }
 
-        if(detailRecord.getValue('custrecord_hebingxiangtonghuoping') === true)
-        itemLines = CombineSameGoods(itemLines , ['itemNum','price'] , ['quantity','amount'])
+        itemLines = detailRecord.getValue('custrecord_hebingxiangtonghuoping') === '2' ?
+        CombineSameGoods(itemLines , ['itemNum','price'] , ['quantity','amount']) :
+        CombineSameGoods(itemLines , ['interItem','price'] , ['quantity','amount'])
 
         return {
             itemTotal : itemTotal,
@@ -354,12 +364,14 @@ define([
                 itemDes : getSublistValue(detailRecord,'custrecord_ci_kehuwuliaomingchen',index),
                 quantity : quantity,
                 price : getSublistValue(detailRecord,'custrecord_ci_danjia',index),
-                amount : getSublistValue(detailRecord,'custrecord_ci_zongjine_',index)
+                amount : getSublistValue(detailRecord,'custrecord_ci_zongjine_',index),
+                interItem : getSublistValue(detailRecord,'custrecord_ci_wuliaobianma',index)
             })
         }
 
-        if(detailRecord.getValue('custrecord_hebingxiangtonghuoping') === true)
-        itemLines = CombineSameGoods(itemLines , ['itemNum','price'] , ['quantity','amount'])
+        itemLines = detailRecord.getValue('custrecord_hebingxiangtonghuoping') === '2' ?
+        CombineSameGoods(itemLines , ['itemNum','price'] , ['quantity','amount']) :
+        CombineSameGoods(itemLines , ['interItem','price'] , ['quantity','amount'])
 
         return {
             itemTotal : itemTotal,
@@ -385,6 +397,7 @@ define([
             var suttle =  getSublistValue(detailRecord,'custrecord_ci_zongjingzhong',index)
             var rough = getSublistValue(detailRecord,'custrecord_ci_zongmaozhong',index)
             var cube = getSublistValue(detailRecord,'custrecord_ci_zonglifangshu',index)
+            var interItem = getSublistValue(detailRecord,'custrecord_ci_wuliaobianma',index)
 
             if(!packDate)
             packDate = getSublistText(detailRecord,'custrecord_ci_jiaoqi',index)
@@ -403,12 +416,14 @@ define([
                 quantity : quantity,
                 suttle : suttle,
                 rough : rough,
-                cube : cube
+                cube : cube,
+                interItem : interItem
             })
         }
 
-        if(detailRecord.getValue('custrecord_hebingxiangtonghuoping') === true)
-        itemLines = CombineSameGoods(itemLines , ['itemNum'] , ['quantity','boxNum','suttle','rough','cube'])
+        itemLines = detailRecord.getValue('custrecord_hebingxiangtonghuoping') === '2' ?
+        CombineSameGoods(itemLines , ['itemNum'] , ['quantity','boxNum','suttle','rough','cube']) :
+        CombineSameGoods(itemLines , ['interItem'] , ['quantity','boxNum','suttle','rough','cube'])
 
         return {
             packDate : packDate,

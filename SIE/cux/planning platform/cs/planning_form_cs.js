@@ -109,13 +109,13 @@ define([
             .siblings()
 
             parent
-            .css("cssText", parent.attr('style') + ";background-color: red !important;")
+            .css("cssText", parent.attr('style') + ";background-color: #95D179 !important;")
            
             for(var i = 0 ; i < parentSiblings.length ; i ++)
             {
                 console.log(jQuery(parentSiblings[i]).attr('style'))
                 jQuery(parentSiblings[i])
-                .css("cssText",jQuery(parentSiblings[i]).attr('style') + ";background-color: red !important;")
+                .css("cssText",jQuery(parentSiblings[i]).attr('style') + ";background-color: #95D179 !important;")
             }
         })
     }
@@ -130,12 +130,58 @@ define([
         window.onbeforeunload = function(){}
     }
 
+    function verifySasChecked(params){
+        var hasChecked = false
+      
+        for(var i = 0 ; i < params.lineCount; i ++)
+        {
+            var checked = currentRec.getSublistValue({
+                sublistId : sublistId,
+                fieldId : 'custpage_check',
+                line : i
+            })
+
+            params.checkInfo[currentRec.getSublistValue({
+                sublistId : sublistId,
+                fieldId : 'custpage_planing',
+                line : i
+            })] = {
+                checked : currentRec.getSublistText({
+                    sublistId : sublistId,
+                    fieldId : 'custpage_check',
+                    line : i
+                }),
+                quantity : currentRec.getSublistText({
+                    sublistId : sublistId,
+                    fieldId : 'custpage_quantity',
+                    line : i
+                }),
+                isexport : currentRec.getSublistValue({
+                    sublistId : sublistId,
+                    fieldId : 'custpage_isexport',
+                    line : i
+                })
+            }
+
+            if(!hasChecked)
+            {
+                if(checked)
+                {
+                    hasChecked = true
+                }
+            }
+        }
+
+        return hasChecked
+    }
+
     function saveRecord(context) {
-        var hasChecked= false
         var lineCount = currentRec.getLineCount({
             sublistId : sublistId
         })
-        
+        var cacheId   = currentRec.getValue('custpage_cacheid')
+        var checkInfo = new Object()
+
         if(currentRec.getValue('custpage_isintercompany') === '2')
         {
             if(!currentRec.getValue('custpage_endcustomer'))
@@ -145,25 +191,73 @@ define([
             }
         }
 
-        for(var i = 0 ; i < lineCount; i ++)
+        if(cacheId)
         {
-            var checked = currentRec.getSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custpage_check',
-                line : i
-            })
+            var checkCache = getCacge(cacheId)
 
-            if(checked === true)
+            if(checkCache)
+            checkInfo  = JSON.parse(checkCache)
+        }
+
+        var hasChecked = verifySasChecked({
+            checkInfo : checkInfo,
+            lineCount : lineCount
+        })
+        var isexport   = verifyExport(checkInfo)
+
+
+        if(!hasChecked)
+        {
+            alert('您没有选择任何一个物料')
+            return hasChecked
+        } 
+
+        if(!isexport)
+        {
+            if(!currentRec.getValue('custpage_isexport'))
             {
-                hasChecked = true
-
-                break
+                alert('您所选择的物料行包含出口与非出口，请指定是否出口')
+                return isexport
             }
         }
 
-        if(!hasChecked) alert('您没有选择任何一个物料')
+        return true
+    }
 
-        return hasChecked
+    function verifyExport(checkInfo){
+        var first = true
+        var firstExport = undefined
+
+        for(var key in checkInfo)
+        {
+            if(checkInfo[key].checked === 'T')
+            {
+                if(first)
+                {
+                    first = !first
+                    firstExport = checkInfo[key].isexport
+                }
+                else
+                {
+                    var currExport = checkInfo[key].isexport
+    
+                    if(firstExport !== currExport)
+                    {
+                        return false
+                    }
+                }
+            }
+        }
+
+        if(!currentRec.getValue('custpage_isexport'))
+        {
+            currentRec.setValue({
+                fieldId : 'custpage_isexport',
+                value : firstExport ? '1' : '2'
+            })
+        }
+
+        return true
     }
 
     function fieldChanged(context) {
@@ -285,6 +379,14 @@ define([
         })
     }
 
+    function getCacge(cacheId){
+        return  search.lookupFields({
+            type : 'customrecord_cache_record',
+            id : cacheId,
+            columns : ['custrecord_salesorder_cache']
+        }).custrecord_salesorder_cache
+    }
+
     function setCheckCache(){
         var checkCache = undefined
         var lineCount = currentRec.getLineCount({
@@ -294,12 +396,9 @@ define([
 
         if(cacheId)
         {
-            checkCache = search.lookupFields({
-                type : 'customrecord_cache_record',
-                id : cacheId,
-                columns : ['custrecord_salesorder_cache']
-            }).custrecord_salesorder_cache
-        }else
+            checkCache = getCacge(cacheId)
+        }
+        else
         {
             cacheId = record.create({
                 type : 'customrecord_cache_record'
@@ -319,11 +418,23 @@ define([
                 sublistId : sublistId,
                 fieldId : 'custpage_planing',
                 line : i
-            })] = currentRec.getSublistText({
-                sublistId : sublistId,
-                fieldId : 'custpage_check',
-                line : i
-            })
+            })] = {
+                checked : currentRec.getSublistText({
+                    sublistId : sublistId,
+                    fieldId : 'custpage_check',
+                    line : i
+                }),
+                quantity : currentRec.getSublistText({
+                    sublistId : sublistId,
+                    fieldId : 'custpage_quantity',
+                    line : i
+                }),
+                isexport : currentRec.getSublistValue({
+                    sublistId : sublistId,
+                    fieldId : 'custpage_isexport',
+                    line : i
+                })
+            } 
         }
 
         record.submitFields({

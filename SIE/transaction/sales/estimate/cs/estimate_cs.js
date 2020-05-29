@@ -10,15 +10,10 @@ define([
     operation
 ) {
     var mode = undefined
-    var maxIndex = 0
     var oldQuantity = new Object()
     function pageInit(context){
         console.log('pageinit')
         mode = context.mode
-        if(mode === 'copy' || mode === 'edit')
-        {  
-            maxIndex = maxLine(context.currentRecord)
-        }
 
         if(mode === 'edit')
         {
@@ -63,29 +58,20 @@ define([
         return countArr[countArr.length - 1]
     }
 
-    function setLineNoInfo(currentRecord){
-        currentRecord.setCurrentSublistValue({
+    function validateLine(context) {
+        var currentRec = context.currentRecord
+        var lineCount = currentRec.getLineCount({
+            sublistId : 'item'
+        })
+        var currIndex = currentRec.getCurrentSublistIndex({
+            sublistId : 'item'
+        })
+
+        currentRec.setCurrentSublistValue({
             sublistId : 'item',
             fieldId : 'custcol_line',
-            value : ++maxIndex
+            value : operation.add(currIndex, 1)
         })
-    }
-
-    function validateLine(context) {
-        console.log(maxIndex)
-        var currentRec = context.currentRecord
-        if(mode === 'create' || mode === 'copy' || mode === 'edit')
-        {
-            if(currentRec.getLineCount({
-                sublistId : 'item'
-            })
-            === currentRec.getCurrentSublistIndex({
-                sublistId : 'item'
-            }))
-            {
-                setLineNoInfo(currentRec)
-            }
-        }
 
         if(mode === 'edit')
         {
@@ -111,19 +97,25 @@ define([
             sublistId : 'item',
             fieldId : 'quantity'
         })
+        var amount = currentRec.getCurrentSublistValue({
+            sublistId : 'item',
+            fieldId : 'amount'
+        })
+        var taxAmt = currentRec.getCurrentSublistValue({
+            sublistId : 'item',
+            fieldId : 'tax1amt'
+        })
+        var exchangerate =  currentRec.getValue({
+            fieldId : 'exchangerate'
+        })
 
         currentRec.setCurrentSublistValue({ //折后含税总金额（本币）
             sublistId : 'item',
             fieldId : 'custcol_trueamount',
-            value : operation.mul(
-                currentRec.getCurrentSublistValue({
-                    sublistId : 'item', 
-                    fieldId : 'grossamt'
-                }) , 
-                currentRec.getValue({
-                    fieldId : 'exchangerate'
-                })
-             )
+            value : operation.add(
+                operation.mul(amount,exchangerate).toFixed(2),
+                operation.mul(taxAmt,exchangerate).toFixed(2)
+            )
         })
 
         currentRec.setCurrentSublistValue({ //折扣额
@@ -133,11 +125,11 @@ define([
                 operation.sub( currentRec.getCurrentSublistValue({
                     sublistId : 'item',
                     fieldId : 'custcol_unit_tax'
-                }) || 0, 
+                }) || 0 ,  
                 currentRec.getCurrentSublistValue({
                     sublistId : 'item',
                     fieldId : 'custcol_funit'
-                }) || 0) || 0,
+                }) || 0) || 0 ,
                 quantity
             ) 
         })
@@ -226,9 +218,14 @@ define([
         }
     }
 
+    function validateInsert(context){
+        return mode !== 'edit'
+    }
+
     return {
         pageInit : pageInit,
         fieldChanged : fieldChanged,
-        validateLine : validateLine
+        validateLine : validateLine,
+        validateInsert : validateInsert
     }
 });

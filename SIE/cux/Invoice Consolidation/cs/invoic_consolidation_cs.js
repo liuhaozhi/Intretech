@@ -305,6 +305,11 @@ define([
                     sublistId : allFields.sublistId,
                     fieldId : 'custpage_invnumber',
                     line : i
+                }),
+                planum : currentRec.getSublistText({
+                    sublistId : allFields.sublistId,
+                    fieldId : 'custpage_planum',
+                    line : i
                 })
             }         
         }

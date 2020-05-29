@@ -16,7 +16,10 @@ define([
     var allFields = {
         item : 'custpage_item',
         check : 'custpage_check',
+        boxnum : 'custpage_boxnum',
+        advice : 'custpage_advice',
         cacheid : 'custpage_cacheid',
+        isexport : 'custpage_isexport',
         currpage : 'custpage_currpage',
         pagesize : 'custpage_pagesize',
         emoloyee : 'custpage_emoloyee',
@@ -26,8 +29,11 @@ define([
         available: 'custpage_available',
         dateclose : 'custpage_dateclose',
         sublistId : 'custpage_lines',
+        invoicenum : 'custpage_invoicenum',
         salesorder : 'custpage_salesorder',
         subsidiary : 'custpage_subsidiary',
+        department : 'custpage_department',
+        customerord  : 'custpage_customerord',
         currquantity : 'custpage_currquantity',
         abbprovequantity : 'custpage_abbprovequantity'
     }
@@ -47,25 +53,7 @@ define([
             })
 
             for(var i = 0 ; i < lineCount ; i ++)
-            {
-                if(!currentRec.getSublistValue({
-                    sublistId : allFields.sublistId,
-                    fieldId : allFields.location,
-                    line : i
-                }))
-                {
-                    currentRec.selectLine({
-                        sublistId : allFields.sublistId,
-                        line : i
-                    })
-
-                    currentRec.setCurrentSublistValue({
-                        sublistId : allFields.sublistId,
-                        fieldId : allFields.check,
-                        value : false
-                    })
-                }    
-        
+            {   
                 var currquantity = currentRec.getSublistValue({
                     sublistId : allFields.sublistId,
                     fieldId : allFields.currquantity,
@@ -197,16 +185,16 @@ define([
                 })
             } 
 
-            var available = validAvailable()
+            // var available = validAvailable()
 
-            if(available || available === 0)
-            {
-                currentRec.setCurrentSublistValue({
-                    sublistId : allFields.sublistId,
-                    fieldId : allFields.currquantity,
-                    value : available.toString()
-                })
-            }
+            // if(available || available === 0)
+            // {
+            //     currentRec.setCurrentSublistValue({
+            //         sublistId : allFields.sublistId,
+            //         fieldId : allFields.currquantity,
+            //         value : available.toString()
+            //     })
+            // }
         }
 
         if(context.fieldId === allFields.location){
@@ -241,18 +229,6 @@ define([
     }
 
     function validLine(){
-        if(!currentRec.getCurrentSublistValue({
-            sublistId : allFields.sublistId,
-            fieldId : allFields.location
-        }))
-        {
-            currentRec.setCurrentSublistValue({
-                sublistId : allFields.sublistId,
-                fieldId : allFields.check,
-                value : false
-            })
-        }    
-
         var currquantity = currentRec.getCurrentSublistValue({
             sublistId : allFields.sublistId,
             fieldId : allFields.currquantity
@@ -404,34 +380,34 @@ define([
                 fieldId : 'custpage_line',
                 line : i
             })] =  {
-                item : currentRec.getSublistText({
+                item : currentRec.getSublistValue({
                     sublistId : allFields.sublistId,
-                    fieldId : 'custpage_item',
+                    fieldId : 'custpage_itemid',
                     line : i
                 }),
-                checked : currentRec.getSublistText({
+                checked : currentRec.getSublistValue({
                     sublistId : allFields.sublistId,
                     fieldId : 'custpage_check',
                     line : i
                 }),
-                quantity : currentRec.getSublistText({
+                quantity : currentRec.getSublistValue({
                     sublistId : allFields.sublistId,
                     fieldId : 'custpage_currquantity',
                     line : i
                 }),
-                salesorder : currentRec.getSublistText({
+                salesorder : currentRec.getSublistValue({
                     sublistId : allFields.sublistId,
                     fieldId : 'custpage_salesorder',
                     line : i
                 }),
-                custline : currentRec.getSublistText({
+                custline : currentRec.getSublistValue({
                     sublistId : allFields.sublistId,
                     fieldId : 'custpage_custline',
                     line : i
                 }),
-                location : currentRec.getSublistText({
+                invDetails : currentRec.getSublistValue({
                     sublistId : allFields.sublistId,
-                    fieldId : 'custpage_location',
+                    fieldId : 'custpage_detail',
                     line : i
                 })
             }         
@@ -497,6 +473,7 @@ define([
 
     function searchParams(){
         return {
+            advice : currentRec.getValue(allFields.advice),
             cacheid : currentRec.getValue(allFields.cacheid),
             pageSize : currentRec.getValue(allFields.pagesize),
             emoloyee : currentRec.getValue(allFields.emoloyee),
@@ -505,7 +482,12 @@ define([
             dateclose : currentRec.getText(allFields.dateclose),
             sublistId : currentRec.getValue(allFields.sublistId),
             salesorder : currentRec.getValue(allFields.salesorder),
-            subsidiary : currentRec.getValue(allFields.subsidiary)
+            subsidiary : currentRec.getValue(allFields.subsidiary),
+            location : currentRec.getValue(allFields.location),
+            department : currentRec.getValue(allFields.department),
+            invoicenum : currentRec.getValue(allFields.invoicenum),
+            isexport : currentRec.getValue(allFields.isexport),
+            customerord : currentRec.getValue(allFields.customerord)
         }
     }
     

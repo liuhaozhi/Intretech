@@ -188,7 +188,7 @@ define([
             sublist.addMarkAllButtons()
         }
 
-        addFields(sublist,sublistFieldsConfig.sublistFields())
+        addFields(sublist,sublistFieldsConfig.sublistFields(params))
     }
 
     function sublistCountConfig(){

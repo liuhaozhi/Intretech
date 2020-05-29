@@ -54,12 +54,37 @@ define([
                 fieldId : 'custcol_fdiscount',
                 line : index
             }))
+            var textRate   = parseFloat(params.newRecord.getSublistText({
+                sublistId : 'item',
+                fieldId : 'taxrate1',
+                line : index
+            }))
+            var quantity = params.newRecord.getSublistValue({
+                sublistId : 'item',
+                fieldId : 'quantity',
+                line : index
+            })
+            var amount = params.newRecord.getSublistValue({
+                sublistId : 'item',
+                fieldId : 'amount',
+                line : index
+            })
+            var taxAmt = params.newRecord.getSublistValue({
+                sublistId : 'item',
+                fieldId : 'tax1amt',
+                line : index
+            })
+            var exchangerate =  params.newRecord.getValue({
+                fieldId : 'exchangerate'
+            })
+            var rate = operation.mul(params.price , discount / 100)
+            var amount = operation.mul(rate,quantity).toFixed(2)
+            var taxAmt = operation.mul(amount,isNaN(textRate) ? 0 : textRate / 100).toFixed(2)
 
-            log.error(index,operation.mul(params.price , discount / 100))
             params.newRecord.setSublistValue({
                 sublistId : 'item',
                 fieldId : 'rate',
-                value : operation.mul(params.price , discount / 100),
+                value : rate,
                 line : index
             })
 
@@ -68,6 +93,56 @@ define([
                 fieldId : 'custcol_unit_notax',
                 value : params.price,
                 line : index
+            })
+    
+            params.newRecord.setSublistValue({  //折前单价  含税
+                sublistId : 'item',
+                fieldId : 'custcol_unit_tax',
+                line : index,
+                value : operation.mul(params.price , operation.add(1 , isNaN(textRate) ? 0 : textRate / 100 ))
+            })
+    
+            params.newRecord.setSublistValue({  //折后单价  含税
+                sublistId : 'item',
+                fieldId : 'custcol_funit',
+                line : index,
+                value : operation.mul(rate , operation.add(1 , isNaN(textRate) ? 0 : textRate / 100 ))
+            })
+
+            params.newRecord.setSublistValue({ //折后含税总金额（本币）
+                sublistId : 'item',
+                fieldId : 'custcol_trueamount',
+                line : index,
+                value : operation.add(
+                    operation.mul(amount,exchangerate).toFixed(2),
+                    operation.mul(taxAmt,exchangerate).toFixed(2)
+                )
+            })
+
+            params.newRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_before_tax',
+                line : index,
+                value : operation.mul(operation.mul(params.price,quantity) , (1 + (isNaN(textRate) ? 0 : textRate / 100 ))) 
+            })
+
+            params.newRecord.setSublistValue({ //折扣额
+                sublistId : 'item',
+                fieldId : 'custcol_discount',
+                line : index,
+                value : operation.mul(
+                    operation.sub(params.newRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_unit_tax',
+                        line : index
+                    }) || 0 ,  
+                    params.newRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_funit',
+                        line : index
+                    }) || 0) || 0 ,
+                    quantity
+                ) 
             })
         })
     }

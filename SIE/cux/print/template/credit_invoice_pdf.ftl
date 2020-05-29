@@ -62,32 +62,32 @@
                 <tr><td align="center" colspan="9" style="height:20px;"></td></tr>
                 <tr>
                     <td align="center" colspan="9" style="vertical-align: middle;">
-                        <p class="title">Credit Note</p>
+                        <p class="title">Credit Note/贷项发票</p>
                     </td>
                 </tr>
                 <tr class="borderRow">
                     <td colspan="4" style="border-left:thin solid #000;border-top:thin solid #000;">
                         <table id="shipExport">
-                            <tr><td>Shipper / Exporter:</td></tr>
+                            <tr><td>Shipper / Exporter/（发货人/出口商）:</td></tr>
                             <tr><td>${makesure(data.subsidiaryInfo.legalname)}</td></tr>
                             <tr><td>${makesure(data.subsidiaryInfo.mainaddress_text)}</td></tr>
-                            <tr><td>TelePhone：${makesure(data.subsidiaryInfo.custrecord_subsidiary_phone)}</td></tr>
+                            <tr><td>TelePhone/电话：${makesure(data.subsidiaryInfo.custrecord_subsidiary_phone)}</td></tr>
                         </table>
                     </td>
                     <td colspan="4" rowspan="2" style="border-left:thin solid #000;border-top:thin solid #000;border-right:thin solid #000;">
                         <table id="shipMethod">
-                            <tr><td>Note Number:${makesure(data.tranid)}</td></tr>
-                            <tr><td>Date:${makesure(data.trandate)}</td></tr>
+                            <tr><td>Note Number/贷项发票号：${makesure(data.tranid)}</td></tr>
+                            <tr><td>Note Date/开票日期：${makesure(data.trandate)}</td></tr>
                             <tr>
                                 <td>
                                      <table id="bankinfo">
-                                        <tr><td>Paying bank information</td></tr>
-                                        <tr><td>Account Name:${makesure(data.bankInfo.subsidiary)}</td></tr>
-                                        <tr><td>Account No:${makesure(data.bankInfo.account)}</td></tr>
-                                        <tr><td>Bank Name:${makesure(data.bankInfo.branch)}</td></tr>
-                                        <tr><td>Bank Address:${makesure(data.bankInfo.adress)}</td></tr>
-                                        <tr><td>Swift Code:${makesure(data.bankInfo.code)}</td></tr>
-                                        <tr><td align="left">Beneficiary's TEL:${makesure(data.bankInfo.tel)}</td></tr>
+                                        <tr><td>Paying Bank  Information/付款银行信息：</td></tr>
+                                        <tr><td>Account Name/账户名称:${makesure(data.bankInfo.subsidiary)}</td></tr>
+                                        <tr><td>Account No/银行账号:${makesure(data.bankInfo.account)}</td></tr>
+                                        <tr><td>Bank Name/开户银行:${makesure(data.bankInfo.branch)}</td></tr>
+                                        <tr><td>Bank Address/银行地址:${makesure(data.bankInfo.adress)}</td></tr>
+                                        <tr><td>Swift Code/银行代码:${makesure(data.bankInfo.code)}</td></tr>
+                                        <tr><td align="left">Beneficiary's TEL/联系电话:${makesure(data.bankInfo.tel)}</td></tr>
                                     </table>
                                 </td>
                             </tr>
@@ -97,21 +97,21 @@
                 <tr class="borderRow" >
                     <td colspan="4" style="border-left:thin solid #000;border-top:thin solid #000;">
                         <table id="consigenee">
-                            <tr><td>Credit to:</td></tr>
+                            <tr><td>Credit  To/收票人:</td></tr>
                             <tr><td>${makesure(data.bill.adress)}</td></tr>
-                            <tr><td>Atten : ${makesure(data.bill.emp)}</td></tr>
+                            <tr><td>Attn/联系人：${makesure(data.bill.emp)}</td></tr>
                         </table>
                     </td>
                 </tr>
                 <tr id="itemTitle">
-                    <td align="center">Item</td>
-                    <td align="center">PO NO.</td>
-                    <td align="center">PN</td>
-                    <td align="center">Desprtion</td>
-                    <td align="center">Q'ty(PCS)</td>
-                    <td align="center">Unit price（${makesure(data.currencySymbol)}）</td>
-                    <td align="center">Amount（${makesure(data.currencySymbol)}）</td>
-                    <td align="center">Remark</td>
+                    <td align="center">Item/序号：</td>
+                    <td align="center">PO No./订单单号：</td>
+                    <td align="center">PN/货号：</td>
+                    <td align="center">Description/规格描述：</td>
+                    <td align="center">Qty. /数量（PCS）:</td>
+                    <td align="center">Unit Price/单价（${makesure(data.currencySymbol)}）</td>
+                    <td align="center">Amount/总金额(${makesure(data.currencySymbol)}）</td>
+                    <td align="center">Remark/备注：</td>
                 </tr>
                 <#list data.items as item>
                     <tr class="itemRows">
@@ -126,7 +126,7 @@
                     </tr>
                 </#list>
                 <tr id="itemAmount">
-                    <td>Total</td>
+                    <td>Total/总计</td>
                     <td align="center"></td>
                     <td align="center"></td>
                     <td align="center"></td>
@@ -146,7 +146,7 @@
                     <td></td>
                 </tr>
                 <tr class="itemSpace" style="height:20px;">
-                    <td colspan="8" style="border-right:thin solid #000;">合计：${makesure(data.itemTotal.chinaAmount)}</td>
+                    <td colspan="8" style="border-right:thin solid #000;">SAY/合计：${makesure(data.itemTotal.chinaAmount)}</td>
                 </tr>
                 <tr class="borderRow">
                     <td colspan="4" style="border-left:thin solid #000;border-bottom:thin solid #000;border-top:thin solid #000;height:200px">
