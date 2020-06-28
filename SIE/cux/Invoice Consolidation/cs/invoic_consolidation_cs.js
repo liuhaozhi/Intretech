@@ -23,6 +23,7 @@ define([
         printype : 'custpage_printype',
         customer : 'custpage_customer',
         trandate : 'custpage_trandate',
+        invnumber : 'custpage_invnumber',
         outputype : 'custpage_outputype',
         dateclose : 'custpage_dateclose',
         samegoods : 'custpage_samegoods',
@@ -30,6 +31,7 @@ define([
         boxnumber : 'custpage_boxnumber',
         salesorder : 'custpage_salesorder',
         subsidiary : 'custpage_subsidiary',
+        internalid : 'custpage_internalid',
         invoicentry : 'custpage_invoicentry',
         currquantity : 'custpage_currquantity',
         abbprovequantity : 'custpage_abbprovequantity'
@@ -90,29 +92,132 @@ define([
             }
         }
 
-        var hasChecked= false
+        return volidLineItem()
+    }
+
+    function volidLineItem(){  
+        var printype  = currentRec.getValue({
+            fieldId : 'custpage_printype'
+        })
+        var cacheid   = currentRec.getValue({
+            fieldId : 'custpage_cacheid'
+        })
         var lineCount = currentRec.getLineCount({
             sublistId : allFields.sublistId
         })
+        var checkInfo = filterCheckInfo(getCheckInfo(cacheid,lineCount))
 
-        for(var i = 0 ; i < lineCount; i ++)
+        if(checkInfo.length === 0)
         {
-            var checked = currentRec.getSublistValue({
-                sublistId : allFields.sublistId,
-                fieldId : 'custpage_check',
-                line : i
-            })
+            alert('您没有选择任何一行')
+            return false
+        }
 
-            if(checked === true)
+        var internalidRefer   = checkInfo[0].internalid
+        var billaddresRefer   = checkInfo[0].billaddress
+        var shipaddresRefer   = checkInfo[0].shipaddress
+        var different = checkInfo.filter(function(item){
+            return item.billaddress !==  billaddresRefer || item.shipaddress !== shipaddresRefer
+        })
+
+        if(printype === '1')
+        {
+            if(different.length > 0)
             {
-                hasChecked = true
-                break
+                alert('收获地址或收票地址不匹配')
+                return false
+            }
+
+            currentRec.setValue({
+                fieldId : allFields.internalid,
+                value : internalidRefer
+            })
+        }
+        else
+        {
+            if(different.length > 0)
+            {
+                currentRec.setValue({
+                    fieldId : allFields.internalid,
+                    value : ''
+                })
+            }
+            else
+            {
+                currentRec.setValue({
+                    fieldId : allFields.internalid,
+                    value : internalidRefer
+                })
             }
         }
 
-        if(!hasChecked) alert('您没有选择任何一个物料')
+        return true
+    }
+
+    function filterCheckInfo(checkInfo){
+        var hasChecked = new Array()
+
+        for(var key in checkInfo)
+        {
+            for(var subkey in checkInfo[key])
+            {
+                if(checkInfo[key][subkey].checked === 'T')
+                {
+                    checkInfo[key][subkey].internalid = key
+                    hasChecked.push(checkInfo[key][subkey])
+                }
+            }
+        }
 
         return hasChecked
+    }
+
+    function getCheckInfo(cacheid,lineCount){
+        var checkInfo = new Object()
+
+        if(cacheid)
+        {
+            checkInfo = JSON.parse(search.lookupFields({
+                type : 'customrecord_cache_record',
+                id : cacheId,
+                columns : ['custrecord_salesorder_cache']
+            }).custrecord_salesorder_cache)
+        }
+
+        for(var i = 0 ; i < lineCount; i ++)
+        {
+            var internalid = currentRec.getSublistValue({
+                sublistId : allFields.sublistId,
+                fieldId : allFields.internalid,
+                line : i
+            })
+
+            if(!checkInfo[internalid]) checkInfo[internalid] = new Object()
+
+            checkInfo[internalid][currentRec.getSublistValue({
+                sublistId : allFields.sublistId,
+                fieldId : 'custpage_line',
+                line : i
+            })] =  {
+                checked : currentRec.getSublistText({
+                    sublistId : allFields.sublistId,
+                    fieldId : 'custpage_check',
+                    line : i
+                }),
+                billaddress : currentRec.getSublistValue({
+                    sublistId : allFields.sublistId,
+                    fieldId : 'custpage_billaddress',
+                    line : i
+                }),
+                shipaddress : currentRec.getSublistValue({
+                    sublistId : allFields.sublistId,
+                    fieldId : 'custpage_shipaddress',
+                    line : i
+                })
+            }
+        }
+
+        return checkInfo
     }
 
     function fieldChanged(context) {
@@ -148,11 +253,26 @@ define([
         if(context.fieldId === allFields.invoice)
         {
             disabledField(currentRec.getValue(context.fieldId),allFields.invoicentry)
+            disabledSublistField(currentRec.getValue(context.fieldId),allFields.invnumber)
         }
 
         if(context.fieldId === allFields.invoicentry)
         {
             disabledField(currentRec.getValue(context.fieldId),allFields.invoice)
+            disabledSublistField(currentRec.getValue(context.fieldId),allFields.invnumber)
+        }
+
+        if(context.fieldId === allFields.invnumber)
+        {
+            disabledField(currentRec.getCurrentSublistValue({
+                sublistId : allFields.sublistId,
+                fieldId : context.fieldId
+            }),allFields.invoice)
+
+            disabledField(currentRec.getCurrentSublistValue({
+                sublistId : allFields.sublistId,
+                fieldId : context.fieldId
+            }),allFields.invoicentry)
         }
 
         if(context.fieldId === allFields.currquantity)
@@ -173,6 +293,21 @@ define([
         if(context.fieldId === allFields.customer)
         {
             setCustomerCurrency(context.fieldId)
+        }
+    }
+
+    function disabledSublistField(value,fieldId){
+        var lineCount = currentRec.getLineCount({
+            sublistId : allFields.sublistId
+        })
+
+        for(var i = 0 ; i < lineCount ; i ++)
+        {
+            currentRec.getSublistField({
+                sublistId : allFields.sublistId,
+                fieldId : allFields.invnumber,
+                line : i
+            }).isDisabled = !!value
         }
     }
 
@@ -211,18 +346,9 @@ define([
     }
 
     function disabledField(value,fieldId){
-        if(value)
-        {
-            currentRec.getField({
-                fieldId : fieldId
-            }).isDisabled = true
-        }
-        else
-        {
-            currentRec.getField({
-                fieldId : fieldId
-            }).isDisabled = false
-        }
+        currentRec.getField({
+            fieldId : fieldId
+        }).isDisabled = !!value
     }
 
     function turnPage(params){
@@ -303,12 +429,22 @@ define([
                 }),
                 invnumber :  currentRec.getSublistText({
                     sublistId : allFields.sublistId,
-                    fieldId : 'custpage_invnumber',
+                    fieldId : allFields.invnumber,
                     line : i
                 }),
                 planum : currentRec.getSublistText({
                     sublistId : allFields.sublistId,
                     fieldId : 'custpage_planum',
+                    line : i
+                }),
+                billaddress : currentRec.getSublistText({
+                    sublistId : allFields.sublistId,
+                    fieldId : 'custpage_billaddress',
+                    line : i
+                }),
+                shipaddress : currentRec.getSublistText({
+                    sublistId : allFields.sublistId,
+                    fieldId : 'custpage_shipaddress',
                     line : i
                 })
             }         
@@ -414,7 +550,8 @@ define([
             boxnumber : currentRec.getValue(allFields.boxnumber),
             salesorder : currentRec.getValue(allFields.salesorder),
             subsidiary : currentRec.getValue(allFields.subsidiary),
-            invoicentry : currentRec.getValue(allFields.invoicentry)
+            invoicentry : currentRec.getValue(allFields.invoicentry),
+            internalid : currentRec.getValue(allFields.invoicentry)
         }
     }
     

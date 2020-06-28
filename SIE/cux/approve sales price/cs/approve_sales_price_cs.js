@@ -5,12 +5,13 @@
 define([
     'N/url',
     'N/util',
+    'N/https',
     'N/search',
     'N/record',
     'N/ui/message',
     'N/currentRecord',
     '../../helper/operation_assistant'
-], function(url , util , search , record , message , currentRecord , operation
+], function(url , util , https , search , record , message , currentRecord , operation
 ) {
     var sublistId = 'custpage_lines'
     var currentRec = undefined
@@ -43,7 +44,7 @@ define([
             title : '已完成！' , 
             type :  message.Type.CONFIRMATION , 
             message : '处理完成！'
-        }).show()
+        }).show({ duration : 3000 })
     }
 
     function setCurrentRec(){
@@ -101,13 +102,12 @@ define([
         }
     }
 
-
     function turnPage(params){
         setCheckCache()
 
         location.href = url.resolveScript({
-            scriptId : 'customscript_approve_planing_sl',
-            deploymentId : 'customdeploy_approve_planing_sl',
+            scriptId : 'customscript_approve_sales_price',
+            deploymentId : 'customdeploy_approve_sales_price',
             params : util.extend(searchParams(),{
                 action : 'search',
                 pagetype : 'turnpage',
@@ -117,7 +117,7 @@ define([
         })
     }
 
-    function setCheckCache(){
+    function getCheckCache(){
         var checkCache = undefined
         var lineCount = currentRec.getLineCount({
             sublistId : sublistId
@@ -149,18 +149,31 @@ define([
         {
             checkInfo[currentRec.getSublistValue({
                 sublistId : sublistId,
-                fieldId : 'custpage_planing',
+                fieldId : 'custpage_priceitem',
                 line : i
-            })] = currentRec.getSublistText({
-                sublistId : sublistId,
-                fieldId : 'custpage_check',
-                line : i
-            })
+            })] = {
+                checked : currentRec.getSublistText({
+                    sublistId : sublistId,
+                    fieldId : 'custpage_check',
+                    line : i
+                }),
+                memo : currentRec.getSublistText({
+                    sublistId : sublistId,
+                    fieldId : 'custpage_fusereason',
+                    line : i
+                })
+            } 
         }
+
+        return checkInfo
+    }
+
+    function setCheckCache(){
+        var checkInfo = getCheckCache()
 
         record.submitFields({
             type : 'customrecord_cache_record',
-            id : cacheId,
+            id : currentRec.getValue('custpage_cacheid'),
             values : {
                 custrecord_salesorder_cache : JSON.stringify(checkInfo)
             }
@@ -181,8 +194,8 @@ define([
         if (!volidMandatory()) return false
 
         location.href = url.resolveScript({
-            scriptId : 'customscript_approve_planing_sl',
-            deploymentId : 'customdeploy_approve_planing_sl',
+            scriptId : 'customscript_approve_sales_price',
+            deploymentId : 'customdeploy_approve_sales_price',
             params : util.extend(searchParams(),{
                 action : 'search',
                 pagetype : 'create',
@@ -196,27 +209,78 @@ define([
             item : currentRec.getValue('custpage_item'),
             cacheid : currentRec.getValue('custpage_cacheid'),  
             apptype : currentRec.getValue('custpage_apptype'),  
+            customer : currentRec.getValue('custpage_customer'),  
+            employee : currentRec.getValue('custpage_employee'),  
+            pricenum : currentRec.getValue('custpage_pricenum'),  
+            department : currentRec.getValue('custpage_department'),  
             subsidiary : currentRec.getValue('custpage_subsidiary'), 
             salesorder : currentRec.getValue('custpage_salesorder'),
+            customeritem : currentRec.getValue('custpage_customeritem'),
             deliverydatend : currentRec.getText('custpage_deliverydatend'),
             deliverydatestar : currentRec.getText('custpage_deliverydatestar')
         }
     }
     
     function ratifyPlan(){ //批准
-        location.href = url.resolveScript({
-            scriptId : 'customscript_approve_planing_sl',
-            deploymentId : 'customdeploy_approve_planing_sl',
-            params : util.extend(searchParams(),{
-                action : 'search',
-                pagetype : 'create',
-                pageSize : pageSize || ''
+        if(!saveRecord())
+        return false
+
+        message.create({
+            title : '处理中！' , 
+            type :  message.Type.CONFIRMATION , 
+            message : '请稍后。。。'
+        }).show()
+
+        https.get.promise({
+            url : url.resolveScript({
+                scriptId : 'customscript_approve_sales_price_respons',
+                deploymentId : 'customdeploy_approve_sales_price_respons',
+                params : {
+                    action : 'ratify',
+                    cacheid : currentRec.getValue('custpage_cacheid'),  
+                    checked : JSON.stringify(getCheckCache())
+                } 
             })
+        })
+        .then(function(res){
+            if(res.body === 'sucess')
+            location.href = location.href + '&status=sucess'
+        })
+        .catch(function(e){
+            alert(e.message)
+            console.log(e)
         })
     }
 
     function refusePlan(){ //拒绝
+        if(!saveRecord())
+        return false
         
+        message.create({
+            title : '处理中！' , 
+            type :  message.Type.CONFIRMATION , 
+            message : '请稍后。。。'
+        }).show()
+
+        https.get.promise({
+            url : url.resolveScript({
+                scriptId : 'customscript_approve_sales_price_respons',
+                deploymentId : 'customdeploy_approve_sales_price_respons',
+                params : {
+                    action : 'refuse',
+                    cacheid : currentRec.getValue('custpage_cacheid'),  
+                    checked : JSON.stringify(getCheckCache())
+                } 
+            })
+        })
+        .then(function(res){
+            if(res.body === 'sucess')
+            location.href = location.href + '&status=sucess'
+        })
+        .catch(function(e){
+            alert(e.message)
+            console.log(e)
+        })
     }
 
     return {

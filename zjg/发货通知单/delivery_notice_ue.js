@@ -38,7 +38,9 @@ function(log,record,search) {
             fieldId:'total'
         });
         
-        if(approve == null && type =="view"){
+        if(neRecord.getValue({
+            fieldId:'custbody_sales_status'
+        }) === '3' && type =="view"){
             from.addButton({
                 id : 'custpage_search',
                 label : '跨客户开发票',
@@ -113,7 +115,7 @@ function(log,record,search) {
 
 
         var mySearch = search.load({
-            id: 'customsearch_customer_pay'
+            id: 'customsearch_om_pay'
         });
 
         var filters= mySearch.filters;

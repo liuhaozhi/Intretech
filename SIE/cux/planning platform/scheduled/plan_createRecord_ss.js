@@ -82,7 +82,7 @@ define([
                     type : 'customrecord_shipping_plan',
                     id : planId,
                     values : {
-                        custrecord_edit_link : '/app/common/custom/custrecordentry.nl?rectype=257&fromrecord=' + planId
+                        custrecord_edit_link : '/app/common/custom/custrecordentry.nl?rectype=403&fromrecord=' + planId
                     }
                 })
             }

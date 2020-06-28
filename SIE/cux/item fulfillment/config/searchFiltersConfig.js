@@ -44,9 +44,10 @@ define({
                 id : 'location' ,
                 label : '仓位(location)' , 
                 type : 'select' ,
-                source : 'location',
                 container : 'custpage_filters' ,
-                defaultValue : params.location || ''
+                isMandatory : true ,
+                defaultValue : params.location || '',
+                selectOptions : params.locationSelectOptions
             },
             {
                 id : 'customer' ,

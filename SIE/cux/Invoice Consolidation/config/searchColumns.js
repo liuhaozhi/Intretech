@@ -37,6 +37,14 @@ define({
                 formula: 'ABS({taxamount} / {exchangerate})'
             },{
                 name : 'custcol_plan_number'
+            },{
+                name : 'trandate'
+            },{
+                name : 'custbody_goodsman'
+            },{
+                name : 'shipaddress'
+            },{
+                name : 'billaddress'
             }
         ]
     }

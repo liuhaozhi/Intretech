@@ -108,6 +108,8 @@ define([
 
     function transPrintToInvoice(newRecord){
         var sublistLines = getSublistLines(newRecord)
+
+        log.error('sublistLines',sublistLines)
         
         for(var key in sublistLines)
         {
@@ -122,8 +124,8 @@ define([
                 {
                     var index = salesorder.findSublistLineWithValue({
                         sublistId : 'item',
-                        fieldId : 'item',
-                        value : sublistLines[key][line].item
+                        fieldId : 'custcol_line',
+                        value : line
                     })
 
                     if(index > -1)
@@ -159,7 +161,69 @@ define([
         if(!context.oldRecord)
         {
             updateSalesorder(context.newRecord)
+            backwashInvoice(context.newRecord)
         }
+    }
+
+    function backwashInvoice(newRecord){
+        var invoicenum= newRecord.getValue('custrecord_ci_fapiaohao')
+        var lineCount = newRecord.getLineCount({
+            sublistId : sublistId
+        })
+        var salesorderIds = newRecord.getValue('custrecord_fahuotongzhidanmingxi')
+        var salesorders   = salesorderIds.map(function(id){
+            return record.load({
+                type : 'salesorder',
+                id : id
+            })
+        })
+        
+        for(var i = 0 ; i < lineCount ; i ++)
+        {
+            var planum = newRecord.getSublistValue({
+                sublistId : sublistId,
+                fieldId : 'custrecord_ci_hanghao',
+                line : i
+            })
+
+            salesorders.map(function(rec){
+                var salesLineCount = rec.getLineCount({
+                    sublistId : 'item'
+                })
+
+                for(var j = 0 ; j < salesLineCount ; j ++)
+                {
+                    var salesPlanum = rec.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_line',
+                        line : j
+                    })
+
+                    if(planum === salesPlanum)
+                    {
+                        var salesInvoiceNum = rec.getSublistValue({
+                            sublistId : 'item',
+                            fieldId : 'custcol_pubg_id',
+                            line : j
+                        })
+
+                        if(salesInvoiceNum)
+                        invoicenum = ',' + invoicenum
+
+                        rec.setSublistValue({
+                            sublistId : 'item',
+                            fieldId : 'custcol_pubg_id',
+                            line : j,
+                            value : salesInvoiceNum + invoicenum
+                        })
+                    }
+                }
+            })
+        }
+
+        salesorders.map(function(rec){
+            rec.save({ignoreMandatoryFields : true})
+        })
     }
 
     function transFormToInvoice(lines,internalId,prinType,invoiceNum){
@@ -197,19 +261,21 @@ define([
                 log.error('salesItem',salesItem)
 
                 try{
+                    var lineItems = new Array()
+
                     for(var item in salesItem)
                     {
+                        lineItems.push(item)
+
                         for(var i = 0 ; i < lineCount ; i ++)
                         {
                             var lineItem = invoiceRe.getSublistValue({
                                 sublistId : 'item',
-                                fieldId : 'custcol_plan_number',
+                                fieldId : 'custcol_line',
                                 line : i
                             })
     
-                            log.error('lineItem',lineItem)
-                            log.error(lineItem === salesItem[item].planum,salesItem[item].planum)
-                            if(lineItem === salesItem[item].planum)
+                            if(lineItem === item)
                             {
                                 invoiceRe.setSublistValue({
                                     sublistId : 'item',
@@ -220,6 +286,9 @@ define([
                             }
                         }
                     }
+
+                    deleteOtherLine(invoiceRe,lineCount,lineItems)
+
                     invoiceIds[key] = invoiceRe.save({
                         ignoreMandatoryFields : true
                     })
@@ -231,6 +300,25 @@ define([
        }
 
        updateInvoiceIds(internalId,invoiceIds)
+    }
+
+    function deleteOtherLine(invoiceRe,lineCount,lineItems){
+        while(lineCount > 0)
+        {
+            var lineItem = invoiceRe.getSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_line',
+                line : --lineCount
+            })
+
+            if(lineItems.indexOf(lineItem) < 0)
+            {
+                invoiceRe.removeLine({
+                    sublistId : 'item',
+                    line : lineCount
+                })
+            }
+        }
     }
 
     function updateInvoiceIds(internalId,invoiceIds){

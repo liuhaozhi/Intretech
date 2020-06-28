@@ -15,11 +15,11 @@ define([
     function printElement(params){
         setWindowChanged(window, false)
 
-        window.location = url.resolveScript({
+        window.open( url.resolveScript({
             scriptId : 'customscript_print_response',
             deploymentId : 'customdeploy_print_response',
             params : params
-        })
+        }))
     }
 
     function printPdf(id){

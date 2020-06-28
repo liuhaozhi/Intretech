@@ -19,6 +19,78 @@ define([
                 quantity : getAvailableQuantity(params)
             }))
         }
+
+        if(request.method === 'GET' && params.action === 'getCustomerSelectOption')
+        {
+            response.write(JSON.stringify({
+                selectOption : getCustomerSelectOption(params)
+            }))
+        }
+
+        if(request.method === 'GET' && params.action === 'getLocationSelectOption')
+        {
+            response.write(JSON.stringify({
+                selectOption : getLocationSelectOption(params)
+            }))
+        }
+    }
+
+    function getLocationSelectOption(params){
+        var filters = new Array()
+        var selectOption = new Array()
+
+        if(params.subsidiary)
+        filters.push(['subsidiary' , 'anyof' , [params.subsidiary]])
+
+        if(params.isExport)
+        filters.push(
+            'AND',
+            ['custrecord_bonded_under_bond' , 'anyof' , [params.isExport]]
+        )
+
+        search.create({
+            type : 'location',
+            filters : filters,
+            columns : [
+                'name',
+                'internalid'
+            ]
+        }).run().each(function(res){
+            selectOption.push({
+                id : res.getValue('internalid'),
+                name : res.getValue('name') 
+            })
+
+            return true
+        })
+
+        return selectOption
+    }
+
+    function getCustomerSelectOption(params){
+        var selectOption = new Array()
+
+        search.create({
+            type : 'customer',
+            filters : [
+                ['msesubsidiary.internalid' , 'anyof' , [params.subsidiary]]
+            ],
+            columns : [
+                'internalid',
+                'entityid',
+                'companyname'
+            ]
+        }).run().each(function(res){
+            selectOption.push({
+                id : res.getValue('internalid'),
+                entityid : res.getValue('entityid') ,
+                companyname :  res.getValue('companyname')
+            })
+
+            return true
+        })
+
+        return selectOption
     }
 
     function getAvailableQuantity(params){

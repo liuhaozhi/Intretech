@@ -273,7 +273,10 @@ define([
     }
 
     function editAndDeletePlanRecord(context){
-        var newRecord = context.newRecord
+        var newRecord = record.load({
+            type : context.newRecord.type,
+            id : context.newRecord.id
+        }) 
         var oldRecord = context.oldRecord
         var history   = modifyHistory()
         var newLines  = geiLineItems(newRecord)
@@ -438,7 +441,7 @@ define([
                 }),
                 recordId : currRecord.getSublistValue({
                     sublistId : sublistId,
-                    fieldId : 'custrecord_planrecord',
+                    fieldId : 'id',
                     line : i
                 })
             })
@@ -631,7 +634,10 @@ define([
 
     function addPlanRecord(orderRecord,context,lineitems,updateParent){
         var planRecords = new Array()
-        var newRecord = context.newRecord
+        var newRecord = record.load({
+            type : context.newRecord.type,
+            id : context.newRecord.id
+        }) 
         var lineItems = lineitems || geiLineItems(newRecord)
         var fromrecord = newRecord.getValue('custrecord_inv_source')
 
@@ -1126,6 +1132,14 @@ define([
             value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_effective_mode'})
         })
 
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_custorder'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_custorder',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_custorder'})
+        })
+
         if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_cn_cfi'}))
         orderRecord.setSublistValue({
             sublistId : 'item',
@@ -1216,26 +1230,26 @@ define([
     function updatePlanRecord(newRecord,planRecords,updateParent){
         if(updateParent)    updateParentRecordQuantity(newRecord)
 
-        var parentRecord = record.load({
-            type : newRecord.type,
-            id : newRecord.id
-        })
+        // var parentRecord = record.load({
+        //     type : newRecord.type,
+        //     id : newRecord.id
+        // })
 
-        planRecords.map(function(res){
-            parentRecord.setSublistValue({
-                sublistId : 'recmachcustrecord_l_link',
-                fieldId : 'custrecord_planrecord',
-                line : res.index,
-                value : res.recordId
-            })
-        })
+        // planRecords.map(function(res){
+        //     parentRecord.setSublistValue({
+        //         sublistId : 'recmachcustrecord_l_link',
+        //         fieldId : 'id',
+        //         line : res.index,
+        //         value : res.recordId
+        //     })
+        // })
 
-        try{
-            parentRecord.save()
-        }
-        catch(e){
-            parentRecord.save()
-        } 
+        // try{
+        //     parentRecord.save()
+        // }
+        // catch(e){
+        //     parentRecord.save()
+        // } 
     }
 
     return {

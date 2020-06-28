@@ -46,7 +46,7 @@ define([
 
         serviceRecord.setValue({
             fieldId : 'account',
-            value : 748
+            value : 661
         })
 
         serviceRecord.setValue({

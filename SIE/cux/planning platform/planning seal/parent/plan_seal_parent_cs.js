@@ -298,7 +298,7 @@ define([
         var currentRec = context.currentRecord
         var recordId   = currentRec.getCurrentSublistValue({
             sublistId : 'recmachcustrecord_l_link',
-            fieldId : 'custrecord_planrecord',
+            fieldId : 'id',
         })
 
         if(recordId){
@@ -306,7 +306,7 @@ define([
                 type : 'customrecord_shipping_plan',
                 id : currentRec.getCurrentSublistValue({
                     sublistId : 'recmachcustrecord_l_link',
-                    fieldId : 'custrecord_planrecord',
+                    fieldId : 'id',
                 }),
                 columns : [
                     'custrecord_salesorder_shipped'

@@ -493,6 +493,14 @@ define([
                 line : index,
                 value : item.custrecord_p_custcol_cn_cfi
             })
+
+            if(item.custrecord_p_custcol_custorder)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_custorder',
+                line : index,
+                value : item.custrecord_p_custcol_custorder
+            })
     
             var parentIndex =  orderRecord.findSublistLineWithValue({
                 sublistId : 'item',

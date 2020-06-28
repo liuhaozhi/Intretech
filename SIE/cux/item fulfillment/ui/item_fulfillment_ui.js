@@ -55,6 +55,7 @@ define([
 
         if(params.subsidiary)
         {
+            params.locationSelectOptions = getLocationSelectOption(params)
             params.customerSelectOptions = getCustomerSelectOption(params.subsidiary)
         }
 
@@ -73,6 +74,41 @@ define([
         }
 
         response.writePage(form)
+    }
+
+    function getLocationSelectOption(params){
+        var filters = new Array()
+        var locationSelectOption = [{
+            text : ' ',
+            value : -1
+        }]
+
+        if(params.subsidiary)
+        filters.push(['subsidiary' , 'anyof' , [params.subsidiary]])
+
+        if(params.isExport)
+        filters.push(
+            'AND',
+            ['custrecord_bonded_under_bond' , 'anyof' , [params.isexport]]
+        )
+
+        search.create({
+            type : 'location',
+            filters : filters,
+            columns : [
+                'name',
+                'internalid'
+            ]
+        }).run().each(function(res){
+            locationSelectOption.push({
+                value : res.getValue('internalid'),
+                text : res.getValue('name') 
+            })
+
+            return true
+        })
+
+        return locationSelectOption
     }
 
     function addButtons(form){
@@ -281,15 +317,21 @@ define([
                 sublistId : 'item'
             })
             var invDetail    = JSON.stringify(items[item].invDetails)
-            var invDetailArr = invDetail.split('\\u0005')
+            var invDetailArr = invDetail.indexOf('\\u0005') ? invDetail.split('\\u0005') : [invDetail]
 
             invDetailArr = invDetailArr.map(function(i){
-                var formatStr = '{' + i.replace(/\;/ig,',') + '}'
+                var invDetai  = new Object()
+                var formatArr = i.replace(/\"/ig,'').split(';')
 
-                formatStr = formatStr.replace(/\"/ig,'')
-                return (new Function("return " + formatStr))()
+                formatArr = formatArr.map(function(list){
+                    var listArr = list.split(':')
+
+                    invDetai[listArr[0]] = listArr[1]
+                })
+
+                return invDetai
             })
-
+   
             for(var i = 0 ; i < lineCount ; i ++){
                 var a = fulfillRecord.getSublistValue({
                     sublistId : 'item',
@@ -314,6 +356,11 @@ define([
                         line : i
                     })
 
+                    fulfillRecord.removeCurrentSublistSubrecord({
+                        sublistId : 'item',
+                        fieldId : 'inventorydetail'
+                    })
+
                     fulfillRecord.setCurrentSublistValue({
                         sublistId : 'item',
                         fieldId : 'quantity',
@@ -323,27 +370,29 @@ define([
                     fulfillRecord.setCurrentSublistValue({
                         sublistId : 'item',
                         fieldId : 'location',
-                        value : params.custpage_location,
+                        value : params.custpage_location
                     })
 
                     var subDetail = fulfillRecord.getCurrentSublistSubrecord({
                         sublistId : 'item',
                         fieldId : 'inventorydetail'
                     })
-            
-                    invDetailArr.map(function(invList){
-                        var invQuantity = invList['数量']
+
+                    for(var j = 0 ; j < invDetailArr.length ; j ++)
+                    {
+                        var invQuantity = invDetailArr[j]['数量']
 
                         if(quantity > +invQuantity)
                         {
                             quantity = operation.sub(quantity , invQuantity)
-                            inventoryLine(subDetail , +invQuantity , invList['批次号'])
+                            inventoryLine(subDetail , +invQuantity , invDetailArr[j]['批次号'])
                         }
                         else
                         {
-                            inventoryLine(subDetail, +quantity , invList['批次号'])
+                            inventoryLine(subDetail, quantity , invDetailArr[j]['批次号'])
+                            break
                         }
-                    })
+                    }
 
                     fulfillRecord.commitLine({
                         sublistId : 'item'
@@ -474,17 +523,18 @@ define([
     }
 
     function getLineItemInvent(items,location){
+        log.error('items',items)
         var invent   = new Object()
         var invCount = new Object()
         var mySearch = search.load({
-            id : 'customsearch_inventory_number'
+            id : 'customsearch_om_invennum'
         })
 
         mySearch.filters = mySearch.filters.concat(
             {
                 name : 'item',
                 operator : 'anyof',
-                values : [items.map(function(i){return i.item})]
+                values : items.map(function(i){return i.item})
             },
             {
                 name : 'location',
@@ -495,7 +545,7 @@ define([
 
         mySearch.run().each(function(res){
             var item = res.getValue('item')
-            var expirationdate = res.getValue('expirationdate')
+            var expirationdate = res.getValue('expirationdate') || 'null'
             var inventorynumber = res.getValue('inventorynumber')
             var quantityavailable = res.getValue('quantityavailable')
   
@@ -525,16 +575,21 @@ define([
                 var itemInvent = inventInfo.invent[item.item]
                 var detailInfo = getInventDetail(itemQuantiy,itemInvent,[])
                 var detailArr  = detailInfo.detailArr
-      
-                detailArr = detailArr.map(function(item){
-                    return item.join(';')
-                })
 
-                sublist.setSublistValue({
-                    id : FIELDPR + 'detail',
-                    line : item.index,
-                    value : detailArr.join('\r\n')
-                })
+                log.error('inventInfo',inventInfo)
+
+                if(detailArr.length)
+                {
+                    detailArr = detailArr.map(function(item){
+                        return item.join(';')
+                    })
+    
+                    sublist.setSublistValue({
+                        id : FIELDPR + 'detail',
+                        line : item.index,
+                        value : detailArr.join('\r\n')
+                    })
+                }
 
                 if(inventInfo.invCount[item.item])
                 sublist.setSublistValue({
@@ -543,26 +598,23 @@ define([
                     value : inventInfo.invCount[item.item].toString()
                 })
 
-                if(detailInfo.itemQuantiy)
-                {
-                    sublist.setSublistValue({
-                        id : FIELDPR + 'currquantity',
-                        line : item.index,
-                        value : operation.sub(itemQuantiy, detailInfo.itemQuantiy).toString()
-                    })
-    
-                    sublist.setSublistValue({
-                        id : FIELDPR + 'abbprovequantity',
-                        line : item.index,
-                        value : operation.sub(itemQuantiy, detailInfo.itemQuantiy).toString()
-                    })  
+                sublist.setSublistValue({
+                    id : FIELDPR + 'currquantity',
+                    line : item.index,
+                    value : operation.sub(itemQuantiy, detailInfo.itemQuantiy || 0).toString()
+                })
 
-                    sublist.setSublistValue({
-                        id : FIELDPR + 'surplusquantity',
-                        line : item.index,
-                        value : detailInfo.itemQuantiy.toString()
-                    })  
-                }
+                sublist.setSublistValue({
+                    id : FIELDPR + 'abbprovequantity',
+                    line : item.index,
+                    value : operation.sub(itemQuantiy, detailInfo.itemQuantiy || 0).toString()
+                })  
+
+                sublist.setSublistValue({
+                    id : FIELDPR + 'surplusquantity',
+                    line : item.index,
+                    value : (detailInfo.itemQuantiy || 0).toString()
+                })  
             }
         })     
     }
@@ -590,7 +642,7 @@ define([
             list.quantity = operation.sub(list.quantity , itemQuantiy)
             detailArr.push([
                 '批次号:' + key,
-                '数量' + itemQuantiy,
+                '数量:' + itemQuantiy,
                 '到期日期:' +  list.expirationdate
             ])
 
@@ -601,6 +653,7 @@ define([
     }
 
     function bindSublists(params,form,sublist){
+        var items = new Array()
         var filters = getSearchFilters(params , runtime.getCurrentUserId() + 'ItemfullCache' , 'searchFilters')
         var Mysearch= search.create({
             type : 'salesorder',
@@ -611,7 +664,7 @@ define([
 
         if(pageDate.pageRanges.length > 0)
         {
-            var checkInfo = getCheckInfo(params.cacheid)
+            // var checkInfo = getCheckInfo(params.cacheid)
 
             addPageFields({
                 form : form,
@@ -624,9 +677,12 @@ define([
             pageDate.fetch({
                 index : params.currPage ? --params.currPage : 0
             }).data.forEach(function(res,index){
-                addSublistLine(sublist,index,res,checkInfo,params.location)
+                addSublistLine(sublist,index,res,items)
             })
         }
+
+        if(items.length)
+        setLineItemInvent(sublist,items,params.location)
     }
 
     function saveCache(cacheName,key,cacheData){
@@ -680,9 +736,8 @@ define([
         return searchFilters.searchFilters(params)
     }
 
-    function addSublistLine(sublist,index,res,checkInfo,location){
+    function addSublistLine(sublist,index,res,items){
         var line = res.getValue('line')
-        var items = new Array()
         var custline = res.getValue('custcol_line')
         var quantity = Math.abs(res.getValue('quantity'))
         var backordered = res.getValue('quantitypicked')
@@ -812,9 +867,7 @@ define([
             value : quantity.toString()
         }) //数量
 
-    
-        setCacheLine(checkInfo,res,line,sublist,index,currQuantity)
-        setLineItemInvent(sublist,items,location)
+        // setCacheLine(checkInfo,res,line,sublist,index,currQuantity)
     }
 
     function setCacheLine(checkInfo,res,line,sublist,index,currQuantity){

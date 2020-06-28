@@ -245,6 +245,8 @@ define([
         })
         var columns = getAllSalesLineFields()
 
+        log.error('columns',columns)
+
         columns.push('custrecord_quantity_shipped')
         setHeadFieldsValue(salesOrder,params)
         var shipInfo = setLineItemValue(salesOrder,planLists,columns)
@@ -309,6 +311,7 @@ define([
 
     function setLineItemValue(salesOrder,planLists,columns){
         var index = 0
+        var items = new Array()
         var shipInfo = new Array()
         var allDateField = dateFields()
         var allPercentFields = percentFields()
@@ -354,13 +357,19 @@ define([
                     line : index
                 })
 
-                if(fieldId === 'expectedshipdate')
-                salesOrder.setSublistValue({
-                    sublistId : 'item',
-                    fieldId : 'custcol_dedate',
-                    value : value,
-                    line : index
-                })
+                if(fieldId === 'custcol_dedate')
+                {
+                    if(value)
+                    salesOrder.setSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_dedate',
+                        value : operation.getDateWithTimeZone({
+                            date: value,
+                            timezone: runtime.getUserTimezone()
+                        }),
+                        line : index
+                    })
+                }
 
                 if(fieldId === 'custcol_cn_cfi')
                 salesOrder.setSublistValue({
@@ -381,6 +390,9 @@ define([
                     shipList.quantity = value
                 }
 
+                if(fieldId === 'item')
+                items.push(value)
+
                 if(fieldId === 'custrecord_quantity_shipped')
                 shipList.shiped = value
             }
@@ -400,7 +412,8 @@ define([
             'custrecord_p_custcol_completion_date',
             'custrecord_p_custbody_ordering_time',
             'custrecord_p_custcol_before_date',
-            'custrecord_p_custcol_change_date'
+            'custrecord_p_custcol_change_date',
+            'custrecord_p_custcol_dedate'
         ]
     }
 
@@ -556,24 +569,24 @@ define([
                 type : searchInfo.type,
                 id : searchInfo.id,
                 columns : [searchInfo.fieldId]
-            })[searchInfo.fieldId][0]
+            })[searchInfo.fieldId]
 
-            if(location)
+            if(location[0])
             {
                 salesOrder.setValue({
                     fieldId : 'custbody_rece_locations',
-                    value : location.value
+                    value : location[0].value
                 })
             }
 
-            salesOrder.setValue({
+            salesOrder.setValue({ 
                 fieldId : 'custbody_whether_ntercompany_transact',
                 value : true
             })
 
             salesOrder.setValue({
                 fieldId : 'customform',
-                value : 164  //sb2  154
+                value : 133  //sb2  154
             })
 
             if(params.custpage_isintercompany === '2')
@@ -733,6 +746,7 @@ define([
         })
 
         salesOrder.setValue({
+
             fieldId : 'subsidiary',
             value : params.custpage_subsidiary
         })
@@ -755,6 +769,7 @@ define([
             value : params.custpage_isexport === '1' ? true : false
         })
 
+        if(userObj.department)
         salesOrder.setValue({
             fieldId : 'department',
             value : userObj.department

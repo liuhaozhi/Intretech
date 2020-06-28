@@ -93,12 +93,22 @@ define({
             )
         }
 
-        if(params.ordertype && params.ordertype !== '-1')
+        if(params.ordertype)
         {
-            filters.push(
-                'AND',
-                ['custrecord_p_custcol_salesorder.custbody_cust_ordertype' , 'anyof' , [params.ordertype]]
-            )
+            if(params.ordertype !== '-1')
+            {
+                filters.push(
+                    'AND',
+                    ['custrecord_p_custcol_salesorder.custbody_cust_ordertype' , 'anyof' , [params.ordertype]]
+                )
+            }
+            else
+            {
+                filters.push(
+                    'AND',
+                    ['custrecord_p_custcol_salesorder.custbody_cust_ordertype' , 'noneof' , ['1' , '7']]
+                )
+            }
         }
         else
         {

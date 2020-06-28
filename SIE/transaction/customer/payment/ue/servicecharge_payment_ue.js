@@ -74,7 +74,7 @@ define([
         serviceRecord.setCurrentSublistValue({
             sublistId : 'line',
             fieldId : 'account',
-            value : 748
+            value : 661
         })
 
         serviceRecord.setCurrentSublistValue({

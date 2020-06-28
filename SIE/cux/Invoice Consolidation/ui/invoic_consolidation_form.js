@@ -279,7 +279,7 @@ define([
             })
 
             setLineItemValue(amountInfo,newRecord,key,lines[key])
-            setHeadFieldsValue(newRecord,params,[key])
+            setHeadFieldsValue(newRecord,params,[key],'batch')
             setAmountInfo(newRecord,amountInfo)
             newRecord.save()
         }
@@ -304,7 +304,7 @@ define([
         }
 
         setAmountInfo(newRecord,amountInfo)
-        setHeadFieldsValue(newRecord,params,orderDetails)
+        setHeadFieldsValue(newRecord,params,orderDetails,'combine')
        
         newRecord.save()
     }
@@ -393,7 +393,11 @@ define([
                 newRecord.setCurrentSublistValue({
                     sublistId : 'recmachcustrecord185',
                     fieldId : 'custrecord_ci_hanghao',
-                    value : line
+                    value : salesRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_line',
+                        line : index
+                    })
                 })
 
                 newRecord.setCurrentSublistValue({
@@ -675,103 +679,13 @@ define([
         return false
     }
 
-    function setHeadFieldsValue(newRecord,params,salesorders){
+    function setHeadFieldsValue(newRecord,params,salesorders,type){
         var customer = params.custpage_customer
 
-        if(customer){
-            var customerAdress = getCustomerAdress(customer)
-
-            if(customerAdress.ship)
-            {
-                if(customerAdress.ship.emp)
-                {
-                    newRecord.setValue({
-                        fieldId : 'custrecord_shouhuoren',
-                        value : customerAdress.ship.emp
-                    })
-                }
-                
-                if(customerAdress.ship.empIphone)
-                {
-                    newRecord.setValue({
-                        fieldId : 'custrecord_shouhuorendianhua',
-                        value : customerAdress.ship.empIphone
-                    })
-                }
-
-                if(customerAdress.ship.empFax)
-                {
-                    newRecord.setValue({
-                        fieldId : 'custrecord_shouhuorenchuanzhen',
-                        value : customerAdress.ship.empFax
-                    })
-                }
-
-                if(customerAdress.ship.empEmail)
-                {
-                    newRecord.setValue({
-                        fieldId : 'custrecord_shouhuorenyoujian',
-                        value : customerAdress.ship.empEmail
-                    })
-                }
-
-                if(customerAdress.ship.adress)
-                {
-                    newRecord.setValue({
-                        fieldId : 'custrecord_shouhuodizhi',
-                        value : customerAdress.ship.adress
-                    })
-                }
-            }
-
-            if(customerAdress.bill)
-            {
-                if(customerAdress.bill.empEmail)
-                {
-                    newRecord.setValue({
-                        fieldId : 'custrecord_shoupiaorenyoujian',
-                        value : customerAdress.bill.empEmail
-                    })
-                }
-
-                if(customerAdress.bill.empFax)
-                {
-                    newRecord.setValue({
-                        fieldId : 'custrecord_shoupiaorenchuanzhen',
-                        value : customerAdress.bill.empFax
-                    })
-                }
-
-                if(customerAdress.bill.empIphone)
-                {
-                    newRecord.setValue({
-                        fieldId : 'custrecord_shoupiaorendianhua',
-                        value : customerAdress.bill.empIphone
-                    })
-                }
-
-                if(customerAdress.bill.emp)
-                {
-                    newRecord.setValue({
-                        fieldId : 'custrecord_shoupiaoren',
-                        value : customerAdress.bill.emp
-                    })
-                }
-
-                if(customerAdress.bill.adress)
-                {
-                    newRecord.setValue({
-                        fieldId : 'custrecord_kehudizhi',
-                        value : customerAdress.bill.adress
-                    })
-                }
-            }
-
-            newRecord.setValue({
-                fieldId : 'custrecord_kehu_fapiao',
-                value : customer
-            })
-        }
+        newRecord.setValue({
+            fieldId : 'custrecord_kehu_fapiao',
+            value : customer
+        })
 
         newRecord.setValue({
             fieldId : 'custrecord_huobi_fapiao',
@@ -835,19 +749,30 @@ define([
             })
         })
 
+        if(type === 'batch')
+        {
+            setOtherFields(newRecord,salesorders)
+        }
+        else
+        {
+            if(params.custpage_internalid)
+            setOtherFields(newRecord,[params.custpage_internalid])
+        }
+    }
+
+    function setOtherFields(newRecord,salesorders){
         search.create({
             type : 'salesorder',
             filters : [
-                ['mainline' , 'is' , 'F'],
-                'AND',
-                ['taxline' , 'is' , 'F'],
-                'AND',
+                ['mainline' , 'is' , 'T'],'AND',
+                ['taxline' , 'is' , 'F'],'AND',
                 ['internalid' , 'anyof' , salesorders]
             ],
             columns : [
-                'tranid',
-                'terms',
-                'custbody_loading_port'
+                'tranid','terms','custbody_loading_port', 'custbody_vperson',
+                'custbody_tel', 'custbody_emailss', 'custbody_vtax','shipaddress',
+                'custbody_goodsman', 'custbody_phones','custbody_emails', 'custbody_taxs',
+                'billaddress'
             ]
         })
         .run()
@@ -861,7 +786,55 @@ define([
                 fieldId : 'custrecord_payment_term',
                 value : res.getText('terms')
             })   
+
+            setSalesAdressInfo(newRecord,res)
+
+            return true
         })
+    }
+
+
+    function setSalesAdressInfo(newRecord,res){
+        newRecord.setValue({
+            fieldId : 'custrecord_kehudizhi',
+            value : res.getValue('billaddress')
+        })   
+        newRecord.setValue({
+            fieldId : 'custrecord_shoupiaoren',
+            value : res.getValue('custbody_vperson')
+        })   
+        newRecord.setValue({
+            fieldId : 'custrecord_shoupiaorendianhua',
+            value : res.getValue('custbody_tel')
+        })   
+        newRecord.setValue({
+            fieldId : 'custrecord_shoupiaorenyoujian',
+            value : res.getValue('custbody_emailss')
+        }) 
+        newRecord.setValue({
+            fieldId : 'custrecord_shoupiaorenchuanzhen',
+            value : res.getValue('custbody_vtax')
+        }) 
+        newRecord.setValue({
+            fieldId : 'custrecord_shouhuodizhi',
+            value : res.getValue('shipaddress')
+        }) 
+        newRecord.setValue({
+            fieldId : 'custrecord_shouhuoren',
+            value : res.getValue('custbody_goodsman')
+        }) 
+        newRecord.setValue({
+            fieldId : 'custrecord_shouhuorendianhua',
+            value : res.getValue('custbody_phones')
+        }) 
+        newRecord.setValue({
+            fieldId : 'custrecord_shouhuorenyoujian',
+            value : res.getValue('custbody_emails')
+        }) 
+        newRecord.setValue({
+            fieldId : 'custrecord_shouhuorenchuanzhen',
+            value : res.getValue('custbody_taxs')
+        }) 
     }
 
     function getPlanListIds(params,response,checkInfo){
@@ -1201,6 +1174,34 @@ define([
             line : index,
             value : res.getValue('tranid')
         }) //单据编号
+
+        if(res.getValue('custbody_goodsman'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'consignee',
+            line : index,
+            value : res.getValue('custbody_goodsman')
+        }) //收货人
+
+        if(res.getValue('shipaddress'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'shipaddress',
+            line : index,
+            value : res.getValue('shipaddress')
+        }) //收获地址
+
+        if(res.getValue('billaddress'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'billaddress',
+            line : index,
+            value : res.getValue('billaddress')
+        }) //收票地址
+
+        if(res.getValue('trandate'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'trandate',
+            line : index,
+            value : res.getValue('trandate')
+        }) //创建日期
 
         if(res.getValue('item'))
         sublist.setSublistValue({

@@ -6,10 +6,39 @@ define([
     'N/record',
     'N/search'
 ], function(record,search) {
+    function beforeLoad(context){
+        changeTitle(context)
+        addChangeButton(context)
+    }
+
     function beforeSubmit(context){
-        if(context.type === 'create')
+        if(context.type === 'create' || context.type === 'edit')
         {
             setLineAndExpenDate(context.newRecord)
+        }
+    }
+
+    function addChangeButton(context){
+        context.form.clientScriptModulePath = '../cs/estimate_cs'
+
+        context.form.addButton({
+            id : 'custpage_changethis',
+            label : '变更',
+            functionName : 'changethis('+ context.newRecord.id +')'
+        })
+    }
+
+    function changeTitle(context){
+        var newRecord = context.newRecord
+    
+        if(newRecord){
+            if(newRecord.getValue('custbody_ordtype'))
+            {
+                var title =  context.newRecord.getText('custbody_ordtype')
+
+                if(title)
+                context.form.title = title
+            }
         }
     }
 
@@ -43,6 +72,11 @@ define([
                 })
             }
 
+            if(!newRecord.getSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_line',
+                line : i
+            }))
             newRecord.setSublistValue({
                 sublistId : 'item',
                 fieldId : 'custcol_line',
@@ -53,11 +87,8 @@ define([
     }
 
     function afterSubmit(context){
-        
-        if(context.type === 'create')
-        {
-            setLineItemSalesId(context.newRecord)
-        }
+        if(context.type === 'create' || context.type === 'edit')
+        setLineItemSalesId(context.newRecord , context.type)
 
         if(context.type === 'edit'){
             if(context.newRecord.getValue('custbody_workchange') === true)
@@ -135,7 +166,7 @@ define([
         })
     }
 
-    function setLineItemSalesId(recordInfo){
+    function setLineItemSalesId(recordInfo , type){
         var newRecord = record.load({
             type : recordInfo.type,
             id : recordInfo.id
@@ -143,7 +174,12 @@ define([
         var itemCount = newRecord.getLineCount({
             sublistId : 'item'
         })
-        var newRranid = updateSalesOrderCode(newRecord)
+        var newRranid = type === 'create' ? updateSalesOrderCode(newRecord) : newRecord.getValue('tranid')
+
+        newRecord.setValue({
+            fieldId : 'custbody_change',
+            value : '/app/common/custom/custrecordentry.nl?rectype=677' + '&estimate=' + recordInfo.id
+        })
 
         for(var i = 0 ; i < itemCount ; i ++)
         {
@@ -206,6 +242,7 @@ define([
 
 
     return {
+        beforeLoad : beforeLoad,
         beforeSubmit : beforeSubmit,
         afterSubmit: afterSubmit
     }

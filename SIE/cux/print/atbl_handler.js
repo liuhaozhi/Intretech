@@ -6,7 +6,7 @@ define([
     'N/file',
     './wrapper_render'
 ],function(file, render){
-    function handleAsPDF(path , data) { 
+    function handleAsPDF(path , data , name) { 
         render.setTemplateContents(file.load({
             id : path
         }).getContents())
@@ -18,12 +18,12 @@ define([
         })
 
         var pdfFile = render.renderAsPdf()
-        pdfFile.name = 'test.pdf'
+        pdfFile.name = name + '.pdf'
 
         return pdfFile
     }
 
-    function handleAsExcel(path , data) {
+    function handleAsExcel(path , data , name) {
         render.setTemplateContents(file.load({
             id : path
         }).getContents())
@@ -35,7 +35,7 @@ define([
         })
 
         var excelFile = file.create({
-            name: 'test.xls',
+            name: name + '.xls',
             fileType: file.Type.PLAINTEXT,
             contents: render.renderAsString()
         })

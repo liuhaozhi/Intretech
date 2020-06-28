@@ -3,9 +3,13 @@
  *@NScriptType ClientScript
  */
 define([
+    'N/url',
+    'N/https',
     'N/search',
     '../../../helper/operation_assistant'
 ], function(
+    url,
+    https,
     search,
     operation
 ) {
@@ -19,6 +23,15 @@ define([
         {
             setOldQuantity(context.currentRecord)
         }
+
+        changeTitle(context)
+    }
+
+    function changeTitle(context){
+        var currentRec = context.currentRecord
+        var title = currentRec.getText('custbody_ordtype')
+
+        jQuery('h1.uir-record-type').text(title)
     }
 
     function setOldQuantity(currentRec){
@@ -36,28 +49,6 @@ define([
         }
     }
 
-    function maxLine(currentRecord){
-        var countArr = new Array()
-        var count = currentRecord.getLineCount({
-            sublistId : 'item'
-        })
-
-        for(var i = 0 ; i < count ; i ++)
-        {
-            countArr.push(+currentRecord.getSublistValue({
-                sublistId : 'item',
-                fieldId : 'custcol_line',
-                line : i
-            }))
-        }
-
-        countArr.sort(function(a,b){
-            return a - b
-        })
-
-        return countArr[countArr.length - 1]
-    }
-
     function validateLine(context) {
         var currentRec = context.currentRecord
         var lineCount = currentRec.getLineCount({
@@ -73,22 +64,25 @@ define([
             value : operation.add(currIndex, 1)
         })
 
-        if(mode === 'edit')
+        if(currentRec.getValue('custbody_order_status') !== '1')
         {
-            var lineCount = currentRec.getLineCount({
-                sublistId : 'item'
-            })
-            var currIndex = currentRec.getCurrentSublistIndex({
-                sublistId : 'item'
-            })
-
-            if(lineCount === currIndex)
+            if(mode === 'edit')
             {
-                return false
+                var lineCount = currentRec.getLineCount({
+                    sublistId : 'item'
+                })
+                var currIndex = currentRec.getCurrentSublistIndex({
+                    sublistId : 'item'
+                })
+    
+                if(lineCount === currIndex)
+                {
+                    return false
+                }
             }
         }
 
-        doSomeThing(currentRec)
+        // doSomeThing(currentRec)
         return true
     }
 
@@ -148,15 +142,44 @@ define([
 
     function fieldChanged(context){
         var currentRec = context.currentRecord
+
+        if(context.fieldId === 'custcol_cgoodscode')
+        {
+            var customerItem = currentRec.getCurrentSublistValue({
+                sublistId : 'item',
+                fieldId : context.fieldId
+            })
+
+            if(customerItem)
+            setIntreItem({
+                currentRec : currentRec,
+                body : {
+                    action : 'getRelated',
+                    fieldId : 'custcol_cgoodscode',
+                    customerItem : customerItem
+                }
+            })
+        }
+
         if(context.fieldId === 'item')
         {
             var item = currentRec.getCurrentSublistValue({
                 sublistId : 'item',
-                fieldId : 'item'
+                fieldId : context.fieldId
             })
 
             if(item)
-            setCashFlow(item,currentRec)
+            {
+                setItemRelated({
+                    currentRec : currentRec,
+                    body : {
+                        item : item,
+                        fieldId : 'item',
+                        action : 'getRelated',
+                        subsidiary : currentRec.getValue('subsidiary')
+                    }
+                })
+            }
         }
 
         if(mode === 'edit')
@@ -185,6 +208,70 @@ define([
         }
     }
 
+    function setItemRelated(params){
+        var currentRec = params.currentRec
+        var response = https.post({
+            url : url.resolveScript({
+                scriptId : 'customscript_om_changefield_response',
+                deploymentId : 'customdeploy_om_changefield_response'
+            }),
+            body : params.body
+        })
+        var body = JSON.parse(response.body)
+
+        if(body.cashFlow)
+        currentRec.setCurrentSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_cseg_cn_cfi',
+            value : body.cashFlow
+        })
+
+        if(body.material)
+        currentRec.setCurrentSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_wip_material_properties',
+            value : body.material
+        })
+
+        if(body.customerItem)
+        {
+            if(currentRec.getCurrentSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_cgoodscode',
+            }) !== body.customerItem)
+            currentRec.setCurrentSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_cgoodscode',
+                value : body.customerItem
+            })
+        }
+    }
+
+    function setIntreItem(params){
+        var currentRec = params.currentRec
+        var response = https.post({
+            url : url.resolveScript({
+                scriptId : 'customscript_om_changefield_response',
+                deploymentId : 'customdeploy_om_changefield_response'
+            }),
+            body : params.body
+        })
+        var body = JSON.parse(response.body)
+
+        if(body.intreItem)
+        {
+            if(currentRec.getCurrentSublistIndex({
+                sublistId : 'item',
+                fieldId : 'item',
+            }) !== body.intreItem)
+            currentRec.setCurrentSublistValue({
+                sublistId : 'item',
+                fieldId : 'item',
+                value : body.intreItem
+            })
+        }
+    } 
+
     function validQuantity(currentRec,currIndex){
         var newValue = currentRec.getCurrentSublistValue({
             sublistId : 'item',
@@ -194,38 +281,58 @@ define([
         return Number(newValue) > Number(oldQuantity[currIndex])
     }
 
-    function setCashFlow(item,currentRec){
-        var account = search.lookupFields({
-            type : 'item',
-            id : item,
-            columns : ['incomeaccount']
-        }).incomeaccount
+    function validateInsert(context){
+        var currentRec = context.currentRecord
+        
+        if(currentRec.getValue('custbody_order_status') !== '1')
+        return mode !== 'edit'
 
-        if(account[0])
+        return true
+    }
+
+    function lineInit(context){
+        var currentRec = context.currentRecord
+        var salesMan = currentRec.getValue('custbody_pc_salesman')
+        var department = currentRec.getValue('department')
+
+        if(!department)
         {
-            var cashFlow = search.lookupFields({
-                type : 'account',
-                id : account[0].value,
-                columns : ['custrecord_n112_cseg_cn_cfi']
-            }).custrecord_n112_cseg_cn_cfi
-
-            if(cashFlow[0])
-            currentRec.setCurrentSublistValue({
-                sublistId : 'item',
-                fieldId : 'custcol_cseg_cn_cfi',
-                value : cashFlow[0].value
-            })
+            if(salesMan)
+            {
+                var response = https.post({
+                    url : url.resolveScript({
+                        scriptId : 'customscript_om_changefield_response',
+                        deploymentId : 'customdeploy_om_changefield_response'
+                    }),
+                    body : {
+                        action : 'getRelated',
+                        salesMan : salesMan,
+                        fieldId : 'department'
+                    }
+                })
+                var body = JSON.parse(response.body)
+        
+                if(body.department)
+                {
+                    currentRec.setValue({
+                        fieldId : 'department',
+                        value : body.department
+                    })
+                }
+            }
         }
     }
 
-    function validateInsert(context){
-        return mode !== 'edit'
+    function changethis(id){
+        window.open('/app/common/custom/custrecordentry.nl?rectype=677' + '&estimate=' + id)
     }
 
     return {
+        lineInit : lineInit,
         pageInit : pageInit,
         fieldChanged : fieldChanged,
         validateLine : validateLine,
-        validateInsert : validateInsert
+        validateInsert : validateInsert,
+        changethis : changethis
     }
 });

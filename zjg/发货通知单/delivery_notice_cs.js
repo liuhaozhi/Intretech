@@ -33,7 +33,7 @@ function(search,log,noticeUe,record,url,https,format) {
         console.log("获取的sublistId="+sublistId+"，获取的fieldId="+fieldId+"，获取的line="+line);
         if(fieldId=='custbody_merge_id'){
             var mySearch = search.load({
-                id: 'customsearch_customer_pay'
+                id: 'customsearch_om_pay'
             });
     
             var filters= mySearch.filters;
@@ -47,7 +47,7 @@ function(search,log,noticeUe,record,url,https,format) {
                 values: ["92128"]
             })
             mySearch = search.load({
-                id: 'customsearch_customer_pay'
+                id: 'customsearch_om_pay'
             });
             for (var i = 0; i < filters.length; i++) {
                 console.log("22222222222222222获得的"+JSON.stringify(filters[i]));

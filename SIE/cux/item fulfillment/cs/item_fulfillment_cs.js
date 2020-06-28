@@ -9,8 +9,9 @@ define([
     'N/search',
     'N/record',
     'N/ui/message',
-    'N/currentRecord'
-], function(url , util , https , search , record , message , currentRecord 
+    'N/currentRecord',
+    '../../helper/operation_assistant'
+], function(url , util , https , search , record , message , currentRecord , operation
 ) {
     var currentRec= undefined
     var allFields = {
@@ -19,6 +20,7 @@ define([
         boxnum : 'custpage_boxnum',
         advice : 'custpage_advice',
         cacheid : 'custpage_cacheid',
+        quantity : 'custpage_quantity',
         isexport : 'custpage_isexport',
         currpage : 'custpage_currpage',
         pagesize : 'custpage_pagesize',
@@ -35,6 +37,8 @@ define([
         department : 'custpage_department',
         customerord  : 'custpage_customerord',
         currquantity : 'custpage_currquantity',
+        surplusquantity : 'custpage_surplusquantity',
+        quantityshiprecv : 'custpage_quantityshiprecv',
         abbprovequantity : 'custpage_abbprovequantity'
     }
 
@@ -149,12 +153,20 @@ define([
                 var customerField = currentRec.getField({
                     fieldId : allFields.customer
                 })
+                var locationField = currentRec.getField({
+                    fieldId : allFields.location
+                })
     
                 customerField.removeSelectOption({
                     value : null
                 })
+
+                locationField.removeSelectOption({
+                    value : null
+                })
     
                 changeCustomerSelectOption(customerField,currentRec.getValue(context.fieldId))
+                changeLocationSelectOption(locationField,currentRec.getValue(context.fieldId),currentRec.getValue(allFields.isexport))
             }
         }
 
@@ -174,7 +186,7 @@ define([
         if(context.fieldId === allFields.currquantity)
         {
             if(validQuantity())
-            {  
+            {
                 currentRec.setCurrentSublistValue({
                     sublistId : allFields.sublistId,
                     fieldId : allFields.currquantity,
@@ -185,47 +197,99 @@ define([
                 })
             } 
 
-            // var available = validAvailable()
-
-            // if(available || available === 0)
-            // {
-            //     currentRec.setCurrentSublistValue({
-            //         sublistId : allFields.sublistId,
-            //         fieldId : allFields.currquantity,
-            //         value : available.toString()
-            //     })
-            // }
+            changeSurplusquantity()
         }
 
-        if(context.fieldId === allFields.location){
-            var location = currentRec.getCurrentSublistValue({
-                sublistId : allFields.sublistId,
-                fieldId : context.fieldId
+        if(context.fieldId === allFields.advice){
+            var advice = currentRec.getValue({
+                fieldId : allFields.advice
             })
 
-            if(location)
-            {
-                var index = currentRec.getCurrentSublistIndex({
-                    sublistId : allFields.sublistId
-                })
-
-                getAvailable(location,index,currentRec.getSublistValue({
-                    sublistId : allFields.sublistId,
-                    fieldId : allFields.item,
-                    line : index
-                }))
-            }
+            setIsexport(advice)
         }
 
         if(context.fieldId === allFields.check){
-            if(currentRec.getCurrentSublistValue({
+            var checked = currentRec.getCurrentSublistValue({
                 sublistId : allFields.sublistId,
                 fieldId : allFields.check
-            }))
+            })
+
+            if(checked)
             {
                 validLine()
             }
         }
+
+        if(context.fieldId === allFields.isexport){
+            var locationField = currentRec.getField({
+                fieldId : allFields.location
+            })
+            var subsidiary = currentRec.getField({
+                fieldId : allFields.subsidiary
+            })
+
+            if(subsidiary)
+            {
+                locationField.removeSelectOption({
+                    value : null
+                })
+
+                changeLocationSelectOption(locationField,subsidiary,currentRec.getValue(allFields.isexport))
+            }
+        }
+    }
+
+    function setIsexport(advice){
+        if(advice)
+        {
+            var isexport = search.lookupFields({
+                type : 'salesorder',
+                id : advice,
+                columns : ['custbody_ifexport']
+            }).custbody_ifexport
+
+            currentRec.setValue({
+                fieldId : allFields.isexport,
+                value : isexport ? '1' : '2'
+            })
+        }
+        else
+        {
+            currentRec.setValue({
+                fieldId : allFields.isexport,
+                value : ''
+            })
+        }
+    }
+
+    function changeSurplusquantity(){
+        var index = currentRec.getCurrentSublistIndex({
+            sublistId : allFields.sublistId
+        })
+
+        currentRec.setCurrentSublistValue({
+            sublistId : allFields.sublistId,
+            fieldId : allFields.surplusquantity,
+            value : operation.sub(
+                currentRec.getSublistValue({
+                    sublistId : allFields.sublistId,
+                    fieldId : allFields.quantity,
+                    line : index
+                }) || 0,
+                operation.add(
+                    currentRec.getSublistValue({
+                        sublistId : allFields.sublistId,
+                        fieldId : allFields.currquantity,
+                        line : index
+                    }) || 0,
+                    currentRec.getSublistValue({
+                        sublistId : allFields.sublistId,
+                        fieldId : allFields.quantityshiprecv,
+                        line : index
+                    }) || 0
+                )
+            ).toString()
+        })
     }
 
     function validLine(){
@@ -428,22 +492,60 @@ define([
             text : ' '
         })
 
-        search.create({
-            type : 'customer',
-            filters : [
-                ['msesubsidiary.internalid' , 'anyof' , [subsidiary]]
-            ],
-            columns : [
-                'internalid',
-                'entityid',
-                'companyname'
-            ]
-        }).run().each(function(res){
-            customerField.insertSelectOption({
-                value : res.getValue('internalid'),
-                text : res.getValue('entityid') + '&nbsp;&nbsp;' + res.getValue('companyname')
+        https.get.promise({
+            url : url.resolveScript({
+                scriptId : 'customscript_item_fulfillment_response',
+                deploymentId : 'customdeploy_item_fulfillment_response',
+                params : {
+                    subsidiary : subsidiary,
+                    action : 'getCustomerSelectOption'
+                } 
             })
-            return true
+        })
+        .then(function(res){
+            var body = JSON.parse(res.body)
+  
+            body.selectOption.map(function(item){
+                customerField.insertSelectOption({
+                    value : item.id,
+                    text : item.entityid + '&nbsp;&nbsp;' + item.companyname
+                })
+            })
+        })
+        .catch(function(e){
+            console.log(e)
+        })
+    }
+
+    function changeLocationSelectOption(locationField,subsidiary,isexport){
+        locationField.insertSelectOption({
+            value : -1,
+            text : ' '
+        })
+
+        https.get.promise({
+            url : url.resolveScript({
+                scriptId : 'customscript_item_fulfillment_response',
+                deploymentId : 'customdeploy_item_fulfillment_response',
+                params : {
+                    isExport : isexport,
+                    subsidiary : subsidiary,
+                    action : 'getLocationSelectOption'
+                } 
+            })
+        })
+        .then(function(res){
+            var body = JSON.parse(res.body)
+  
+            body.selectOption.map(function(item){
+                locationField.insertSelectOption({
+                    value : item.id,
+                    text : item.name
+                })
+            })
+        })
+        .catch(function(e){
+            console.log(e)
         })
     }
 
@@ -451,6 +553,12 @@ define([
         if(!currentRec.getValue(allFields.subsidiary))
         {
             alert('请输入值：子公司')
+            return false
+        }
+
+        if(!currentRec.getValue(allFields.location))
+        {
+            alert('请输入值：仓位')
             return false
         }
 

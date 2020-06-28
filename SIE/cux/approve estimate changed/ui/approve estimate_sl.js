@@ -6,18 +6,17 @@ define([
     'N/cache',
     'N/search',
     'N/record',
-    'N/format',
-    'N/runtime',
-    'N/redirect',
     'N/ui/serverWidget',
     '../config/searchFilters',
     '../config/searchColumns',
+    '../../helper/wrapper_runtime',
     '../config/searchFiltersConfig',
     '../config/sublistFieldsConfig'
 ], function(
-    cache , search , record , format , runtime , redirect , ui , searchFilters , searchColumns , searchFiltersConfig , sublistFieldsConfig
+    cache , search , record , ui , searchFilters , searchColumns , runtime , searchFiltersConfig , sublistFieldsConfig
 ) {
     var FIELDPR = 'custpage_'
+    var searchColumn = undefined
     var defaultPageSize = 200
 
     function onRequest(context) {
@@ -31,13 +30,17 @@ define([
         }
         if(request.method === 'POST')
         {
-            salesOrdCreate(params,request,response)
+            approveElement(params,request,response)
         }
+    }
+
+    function approveElement(){
+
     }
 
     function searchPage(params,response){
         var form = ui.createForm({
-            title :  '拆分计划审批'
+            title :  '销售订单批量审批平台'
         })
 
         form.addFieldGroup({
@@ -50,7 +53,7 @@ define([
             label : '审批列表'
         })
 
-        form.clientScriptModulePath = '../cs/approve_planing_cs'
+        form.clientScriptModulePath = '../cs/approve estimate_cs'
 
         if(!params.action)
         {
@@ -168,10 +171,6 @@ define([
         }
     }
 
-    function salesOrdCreate(params,request,response){
-        
-    }
-
     function getCheckInfo(cacheId){
         var checkCache = undefined
 
@@ -188,12 +187,16 @@ define([
     }
 
     function bindSublists(params,form,sublist){
-        var filters = getSearchFilters(params,'myCache','searchFilters')
-        var pageDate = search.create({
-            type : 'customrecord_shipping_plan',
-            filters : filters,
-            columns : searchColumns.searchColumns()
-        }).runPaged({pageSize : params.pageSize || defaultPageSize})
+        var filters = getSearchFilters(params, runtime.getCurrentUserId() + 'ApprovePriceCache', 'searchFilters')
+        var mySearch = search.load({
+            id : 'customsearch_om_sales_order'
+        })
+
+        searchColumn = searchColumns.searchColumns()
+        mySearch.columns = mySearch.columns.concat({name:'custbody_workflow'})
+        mySearch.filterExpression = mySearch.filterExpression.concat(filters)
+
+        var pageDate = mySearch.runPaged({pageSize : params.pageSize || defaultPageSize})
 
         if(pageDate.pageRanges.length > 0)
         {
@@ -267,12 +270,6 @@ define([
     function addSublistLine(sublist,index,res,cacheId){
         var checkInfo = getCheckInfo(cacheId)
 
-        sublist.setSublistValue({
-            id : FIELDPR + 'planing',
-            line : index,
-            value : res.id
-        })
-
         if(checkInfo[res.id] === 'T')
         sublist.setSublistValue({
             id : FIELDPR + 'check',
@@ -280,68 +277,51 @@ define([
             value : checkInfo[res.id]
         })
 
-        if(res.getValue('custrecord_p_custcol_line'))
         sublist.setSublistValue({
-            id : FIELDPR + 'line',
+            id : FIELDPR + 'internalid',
             line : index,
-            value : res.getValue('custrecord_p_custcol_line')
+            value : res.id
         })
 
-        if(res.getValue('custrecord_p_custcol_salesorder'))
+        if(res.getValue('custbody_workflow'))
         sublist.setSublistValue({
-            id : FIELDPR + 'estimate',
+            id : FIELDPR + 'role',
             line : index,
-            value : res.getValue('custrecord_p_custcol_salesorder')
+            value : res.getValue('custbody_workflow')
         })
 
-        if(res.getValue('custrecord_p_item'))
-        sublist.setSublistValue({
-            id : FIELDPR + 'item',
-            line : index,
-            value : res.getValue('custrecord_p_item')
-        })
+        searchColumn.map(function(item){
+            var getType = 'getValue'
+            var valueFields = getTextFields()
+            if(valueFields.indexOf(item.name) > -1)
+            getType = 'getText'
 
-        if(res.getValue({
-            name : 'displayname',
-            join : 'custrecord_p_item'
-        }))
-        sublist.setSublistValue({
-            id : FIELDPR + 'itemname',
-            line : index,
-            value : res.getValue({
-                name : 'displayname',
-                join : 'custrecord_p_item'
-            })
-        })
+            if(res[getType](item))
+            {
+                var value = res[getType](item)
+                if(item.name === 'tranid')
+                value = '<a target="_blank" style="color:blue!important" href="'
+                +'/app/accounting/transactions/estimate.nl?id='+ res.id +'&whence=">'+value+'</a>'
 
-        if(res.getValue('custrecord_p_quantity'))
-        sublist.setSublistValue({
-            id : FIELDPR + 'quantity',
-            line : index,
-            value : res.getValue('custrecord_p_quantity')
+                sublist.setSublistValue({
+                    id : FIELDPR + (item.join ? (item.join + item.name.slice(-10)).toLowerCase() : item.name.slice(-10).toLowerCase()),
+                    line : index,
+                    value : value
+                })
+            }
         })
+    }
 
-        if(res.getValue('custrecord_p_expectedshipdate'))
-        sublist.setSublistValue({
-            id : FIELDPR + 'expectedshipdate',
-            line : index,
-            value : res.getValue('custrecord_p_expectedshipdate')
-        })
-
-        if(res.getValue('custrecord_p_custcol_suggest_date'))
-        sublist.setSublistValue({
-            id : FIELDPR + 'starexpectedshipdate',
-            line : index,
-            value : res.getValue('custrecord_p_custcol_suggest_date')
-        })
-
-        if(res.getValue('custrecord_p_custbody_wip_documentmaker'))
-        sublist.setSublistValue({
-            id : FIELDPR + 'creater',
-            line : index,
-            value : res.getValue('custrecord_p_custbody_wip_documentmaker')
-        })
-        
+    function getTextFields(){
+        return [
+            'item',
+            'department',
+            'custbody_cust_ordertype',
+            'custbody_wip_documentmaker',
+            'custbody_pc_salesman',
+            'currency',
+            'custrecord_item_effective_date'
+        ]
     }
 
     function addSublist(form,params,callBackFun){
@@ -360,7 +340,20 @@ define([
 
         sublist.addMarkAllButtons()
         
-        addFields(sublist,sublistFieldsConfig.sublistFields())
+        addFields(sublist,sublistFieldsConfig.sublistFields([
+            {
+                name : 'internalid',
+                label : 'internalid',
+                type : 'text',
+                displayType : 'hidden'
+            },
+            {
+                name : 'role',
+                label : 'role',
+                type : 'text',
+                displayType : 'hidden'
+            }
+        ]))
    
         if(callBackFun) callBackFun(params,form,sublist)
     }

@@ -54,7 +54,7 @@ define([
                 fieldId : 'custcol_fdiscount',
                 line : index
             }))
-            var textRate   = parseFloat(params.newRecord.getSublistText({
+            var textRate   = parseFloat(params.newRecord.getSublistValue({
                 sublistId : 'item',
                 fieldId : 'taxrate1',
                 line : index

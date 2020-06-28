@@ -14,6 +14,13 @@ define({
                 defaultValue : params.cacheid || ''
             },
             {
+                id : 'internalid' ,
+                label : 'internalid', 
+                type : 'text',
+                displayType : 'hidden' ,
+                defaultValue : params.internalid || ''
+            },
+            {
                 id : 'subsidiary' ,
                 label : 'Subsidiary/子公司' ,
                 type : 'select' ,

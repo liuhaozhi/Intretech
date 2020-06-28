@@ -17,6 +17,11 @@ define({
                 label : '计划号',
                 type : 'text',
                 displayType : 'hidden'
+            }, {
+                id : 'billaddress',
+                label : 'billaddress',
+                type : 'text',
+                displayType : 'hidden'
             },
             {
                 id : 'line' ,
@@ -28,6 +33,21 @@ define({
                 id : 'check' ,
                 label : 'Choice/选择' , 
                 type : 'checkbox'
+            },
+            {
+                id : 'trandate',
+                label : '创建日期(trandate)',
+                type : 'text'
+            },
+            {
+                id : 'consignee',
+                label : '收货人(consignee)',
+                type : 'text'
+            },
+            {
+                id : 'shipaddress',
+                label : '收获地址(shipaddress)',
+                type : 'text'
             },
             {
                 id : 'tranid' ,

@@ -102,7 +102,7 @@ define({
         {
             filters.push(
                 'AND',
-                ['custbody_invoice_number' , 'is' , [params.invoice]]
+                ['custbody_invoice_number' , 'contains' , [params.invoice]]
             )
         }
 
@@ -110,7 +110,7 @@ define({
         {
             filters.push(
                 'AND',
-                ['custbody_packing_number' , 'is' , [params.boxnumber]]
+                ['custbody_packing_number' , 'contains' , [params.boxnumber]]
             )
         }
 
