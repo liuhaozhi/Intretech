@@ -112,7 +112,7 @@ define({
         {
             filters.push(
                 'AND',
-                ['expectedshipdate' , 'onorafter' , [params.deliverydatestar]]
+                ['custcol_dedate' , 'onorafter' , [params.deliverydatestar]]
             )
         }
 
@@ -120,7 +120,7 @@ define({
         {
             filters.push(
                 'AND',
-                ['expectedshipdate' , 'onorbefore' , [params.deliverydatend]]
+                ['custcol_dedate' , 'onorbefore' , [params.deliverydatend]]
             )
         }
 

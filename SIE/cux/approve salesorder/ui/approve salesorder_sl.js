@@ -187,7 +187,7 @@ define([
     }
 
     function bindSublists(params,form,sublist){
-        var filters = getSearchFilters(params, runtime.getCurrentUserId() + 'ApprovePriceCache', 'searchFilters')
+        var filters = getSearchFilters(params, runtime.getCurrentUserId() + 'ApproveSalsOrdCache', 'searchFilters')
         var mySearch = search.load({
             id : 'customsearch_om_delivery_notice'
         })
@@ -316,6 +316,7 @@ define([
         return [
             'item',
             'department',
+            'custcol_cgoodscode',
             'custcol_salesorder',
             'custbody_cust_ordertype',
             'custbody_wip_documentmaker',

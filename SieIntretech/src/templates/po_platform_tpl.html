@@ -1,0 +1,295 @@
+<div id="platformContainer">
+    <style type="text/css">
+        .platformLayout {
+            table-layout: fixed;
+            border-collapse: collapse;
+            width: 100%;
+            padding: 5px 10px;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .platformLayout th {
+            background-color: #607799;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .platformLayout td {
+            overflow: hidden;
+        }
+
+        .platformLayout input[type="text"] {
+            width: 100px;
+        }
+
+        .platformLayout input[type="date"] {
+            width: 130px;
+        }
+        
+        #platformLeftTopContainer {
+            display: none;
+        }
+
+        #platformLeftBottomContainer {
+            display: none;
+        }
+
+        #platformRightTopContainer {
+            display: none;
+        }
+
+        #platformRightBottomContainer {
+            width: ${renderData.defaultWidth}px;
+            height: 600px;
+        }
+
+        #custpage_select_all {
+            display: block;
+            margin: 0px auto;
+        }
+
+        .platformSpecContainers {
+            overflow-y: scroll;
+            overflow-x: scroll;
+            background-color: white;
+        }
+
+        .platformContainerCell {
+            vertical-align: top;
+            padding: 0px;
+            margin: 0px;
+        }
+
+        .platformLayout input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+        }
+
+        .platformSelectedLine {
+            background-color: yellow;
+        }
+
+        .platformHideColumn {
+            display: none;
+        }
+
+        .platformDisableLine {
+            background-color: #e8e5e5 !important;
+        }
+    </style>
+    <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="platformContainerCell" style="width:100px;">
+                <div id="platformLeftTopContainer" class="platformSpecContainers">
+                    <table border="1" class="platformLayout">
+                        <tr>
+                            <th>
+                                全选<input type="checkbox" id="custpage_select_all" />
+                                <input type="hidden" name="custpage_total_line_count"
+                                    value="${renderData.totalLineCount}">
+                            </th>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+            <td class="platformContainerCell">
+                <div id="platformRightTopContainer" class="platformSpecContainers">
+                    <table id="platformFreezeHeader" class="platformLayout" border="1">
+                        <tr>
+                            <#list renderData.titles as title>
+                                <th <#if title.display == 'hidden'>class="platformHideColumn"</#if> >
+                                    ${title.value}
+                                </th>
+                            </#list>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class="platformContainerCell">
+                <div id="platformLeftBottomContainer" class="platformSpecContainers">
+                    <table id="platformFreezeSelector" class="platformLayout" border="1">
+                        <#list renderData.lines as line>
+                            <tr>
+                                <td><input type="checkbox" name="${line.lineId}" /></td>
+                            </tr>
+                        </#list>
+                    </table>
+                </div>
+            </td>
+            <td class="platformContainerCell">
+                <div id="platformRightBottomContainer" class="platformSpecContainers">
+                    <table id="platformSublist" class="platformLayout" border="1">
+                        <tr>
+                            <#list renderData.titles as title>
+                                <th <#if title.display == 'hidden'>class="platformHideColumn"</#if> >
+                                    ${title.value}
+                                </th>
+                            </#list>
+                        </tr>
+                        <#list renderData.lines as line>
+                            <tr class="${line.lineId}">
+                                <#list line.values as value>
+                                    <td <#if value.display == 'hidden'>class="platformHideColumn"</#if> >
+                                        ${value.html}
+                                    </td>
+                                </#list>
+                            </tr>
+                        </#list>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function (event) {
+            try {//检测浏览器
+                let testArr = [...[1]];
+            } catch (ex) {
+                alert('您的浏览器过于老旧，很多功能将无法正常使用。请使用最新版的Chrome，Firefox或者Edge浏览器');
+                return true;
+            }
+
+            const doc = this;
+            let leftTopContainer = doc.querySelector('#platformLeftTopContainer'),
+                leftBottomContainer = doc.querySelector('#platformLeftBottomContainer'),
+                rightTopContainer = doc.querySelector('#platformRightTopContainer'),
+                sublistContainer = doc.querySelector('#platformRightBottomContainer'),
+                platformSublist = sublistContainer.querySelector('#platformSublist'),
+                platformFreezeHeader = rightTopContainer.querySelector('#platformFreezeHeader'),
+                headerLine = platformSublist.querySelector('tr:first-child'),
+                // checkboxCells = platformSublist.querySelectorAll('td:first-child'),
+                leftFreezeCells = leftBottomContainer.querySelectorAll('td:first-child'),
+                dataSecondColumnCells = platformSublist.querySelectorAll('td:last-child'),
+                winWidth = window.innerWidth || 1366,
+                winHeight = window.innerHeight || 768,
+                containerWidth = (winWidth - 100) + 'px',
+                containerHeight = (winHeight - 300) + 'px',
+                isInit = false,
+                lastScrollTop = 0,
+                lastScrollLeft = 0,
+                singColumnWidth = 1200,
+                columnSeparates = ${renderData.columnSeparates},
+                tableWidth = singColumnWidth * columnSeparates + 'px',
+                selectedClass = 'platformSelectedLine';
+
+            // checkboxCells = [...checkboxCells];
+            leftFreezeCells = [...leftFreezeCells];
+            dataSecondColumnCells = [...dataSecondColumnCells];
+
+            //隐藏本来的横条和列
+            headerLine.style.display = 'none';
+            // checkboxCells.forEach((cell, index) => {
+            //     cell.style.display = 'none';
+            // });
+
+            //设置容器宽度高度
+            rightTopContainer.style.width = sublistContainer.style.width = containerWidth;
+            leftBottomContainer.style.height = sublistContainer.style.height = containerHeight;
+
+            //设置表格的宽度
+            platformFreezeHeader.style.width = platformSublist.style.width = tableWidth;
+
+            //显示冻结行列
+            leftTopContainer.style.display = 'block';
+            leftBottomContainer.style.display = 'block';
+            rightTopContainer.style.display = 'block';
+
+            //同步行高度
+            dataSecondColumnCells.forEach((cell, index) => {
+                let currentHeight = cell.clientHeight,
+                    freezeHeight = leftFreezeCells[index].clientHeight;
+                currentHeight = Math.max(currentHeight, freezeHeight);
+                currentHeight = (currentHeight + 1) + 'px';
+                leftFreezeCells[index].height = currentHeight;
+                cell.height = currentHeight;
+            });
+
+            //顶部标题行高度同步
+            let rightTopContainerHeight = rightTopContainer.querySelector('th:last-child').clientHeight;
+            let leftTopContainerHeight = leftTopContainer.querySelector('th').clientHeight;
+            rightTopContainerHeight = Math.max(rightTopContainerHeight, leftTopContainerHeight);
+            rightTopContainerHeight = (rightTopContainerHeight + 1) + 'px';
+            leftTopContainer.querySelector('th').height = rightTopContainerHeight;
+            rightTopContainer.querySelector('th:last-child').height = rightTopContainerHeight;
+
+            //设置偏移量，以隐藏滚动条
+            let topOffset = rightTopContainer.offsetHeight - rightTopContainer.clientHeight;
+            let leftOffset = rightTopContainer.offsetWidth - rightTopContainer.clientWidth;
+            topOffset = '-' + topOffset + 'px';
+            leftOffset = '-' + leftOffset + 'px';
+
+            leftBottomContainer.style.marginTop = topOffset;
+            rightTopContainer.style.marginLeft = leftOffset;
+            sublistContainer.style.marginTop = topOffset;
+            sublistContainer.style.marginLeft = leftOffset;
+
+            const toggleSelectLine = (eventTarget, $ = jQuery) => {
+                let $platformSublist = $(platformSublist);
+                let seletName = eventTarget.attr('name');
+                if (eventTarget.is(':checked')) {
+                    $platformSublist.find('tr.' + seletName).addClass(selectedClass);
+                    eventTarget.closest('tr').addClass(selectedClass);
+                } else {
+                    $platformSublist.find('tr.' + seletName).removeClass(selectedClass);
+                    eventTarget.closest('tr').removeClass(selectedClass);
+                }
+            }
+
+            //关联滚动事件
+            sublistContainer.addEventListener('scroll', event => {
+                const $ = jQuery;
+                const _self = $(sublistContainer);
+                let currentScrollTop = _self.scrollTop();
+                let currentScrollLeft = _self.scrollLeft();
+                if (!isInit) {
+                    leftBottomContainer = $(leftBottomContainer);
+                    rightTopContainer = $(rightTopContainer);
+                    isInit = true;
+                }
+
+                if (currentScrollTop !== lastScrollTop) {
+                    leftBottomContainer.scrollTop(currentScrollTop);
+                    lastScrollTop = currentScrollTop;
+                } else if (currentScrollLeft !== lastScrollLeft) {
+                    rightTopContainer.scrollLeft(currentScrollLeft);
+                    lastScrollLeft = currentScrollLeft;
+                }
+            });
+
+            //冻结勾选框设置点击事件
+            leftBottomContainer.addEventListener('click', event => {
+                const $ = jQuery;
+                let eventTarget = $(event.target);
+                if (eventTarget.attr('name').indexOf('custpage_sublist_line') === 0) {
+                    toggleSelectLine(eventTarget, $);
+                }
+                event.stopPropagation();
+            });
+
+            //全选
+            leftTopContainer.querySelector('#custpage_select_all').addEventListener('click', event => {
+                const $ = jQuery;
+                let $selectAllButton = $(event.target);
+                let lineSelector = '';
+                if ($selectAllButton.is(':checked')) {
+                    lineSelector = 'input[name^="custpage_sublist_line"]:not(:checked)';
+                } else {
+                    lineSelector = 'input[name^="custpage_sublist_line"]:checked';
+                }
+
+                $(leftBottomContainer).find(lineSelector).each((index, element) => {
+                    let eventTarget = $(element);
+                    eventTarget.trigger('click');
+                    toggleSelectLine(eventTarget, $);
+                });
+
+                event.stopPropagation();
+            });
+        });
+    </script>
+</div>

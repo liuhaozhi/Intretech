@@ -75,7 +75,7 @@ define([
     function addButtons(form){
         form.addButton({
             id : 'custpage_search',
-            label : 'search',
+            label : 'Search',
             functionName : 'searchLines'
         })
 

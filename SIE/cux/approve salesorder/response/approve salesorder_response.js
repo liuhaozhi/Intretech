@@ -67,7 +67,7 @@ define([
                     recordType : 'salesorder',
                     recordId   : res.getValue(mySearch.columns[0]),
                     workflowId : 'customworkflow_out_approve',
-                    actionId : 'workflowaction3051'
+                    actionId : 'workflowaction2977'
                 })
             }
 
@@ -77,7 +77,7 @@ define([
                     recordType : 'salesorder',
                     recordId   : res.getValue(mySearch.columns[0]),
                     workflowId : 'customworkflow_out_approve',
-                    actionId : 'workflowaction3042'
+                    actionId : 'workflowaction2978'
                 })
             }
 

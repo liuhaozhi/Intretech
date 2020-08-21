@@ -65,7 +65,13 @@ define({
                 layoutType : 'endrow' ,
                 defaultValue : params.deliverydatend || ''
             },
-        
+            {
+                id : 'k3order' ,
+                label : 'k3订单号' , 
+                type : 'text' ,
+                container : 'custpage_filters' ,
+                defaultValue : params.k3order
+            },
             {
                 id : 'customer' ,
                 label : '客户(customer)' ,
@@ -103,14 +109,6 @@ define({
                 defaultValue : params.currency || ''
             },
             {
-                id : 'item' ,
-                label : '货品(item)' , 
-                type : 'select' ,
-                source : 'item' ,
-                container : 'custpage_filters' ,
-                defaultValue : params.item || ''
-            },
-            {
                 id : 'ordertype' ,
                 label : '订单类型(ordertype)' , 
                 type : 'select' ,
@@ -118,6 +116,14 @@ define({
                 isMandatory : params.disposetype === '2' ? true : false,
                 defaultValue : params.ordertype || '',
                 selectOptions : params.orderTypeSelectOptions,
+            },
+            {
+                id : 'item' ,
+                label : '货品(item)' , 
+                type : 'MULTISELECT' ,
+                source : 'item' ,
+                container : 'custpage_filters' ,
+                defaultValue : params.item ? JSON.parse(params.item) : ''
             },
             {
                 id : 'salesorder' ,

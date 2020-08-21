@@ -17,14 +17,14 @@ define([
 
     function updateSalesExpectedDate(newRecord){
         var salesOrderId= newRecord.getValue('createdfrom')
-        var approveDate = newRecord.getValue('custbody_appdate')
+        var approveDate = newRecord.getValue('custbody_appdate_3')
 
         if(salesOrderId && approveDate)
         {
             var timeLong = search.lookupFields({
                 type : 'salesorder',
                 id : salesOrderId,
-                columns : ['custbody_datetime']
+                columns : ['custbody_datetime_4']
             }).custbody_datetime
 
             if(timeLong)

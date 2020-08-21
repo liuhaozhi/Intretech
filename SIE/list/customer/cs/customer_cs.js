@@ -39,5 +39,15 @@ define({
             }
             console.log(currRec.getValue('custentity_credit_alarm_limit'))
         }
+
+        if(fieldId === 'receivablesaccount')
+        {
+            var currRec = context.currentRecord
+            
+            currRec.setValue({
+                fieldId : 'openingbalanceaccount',
+                value : currRec.getValue('receivablesaccount')
+            })
+        }
     }
 });

@@ -3,8 +3,10 @@
  *@NScriptType ClientScript
  */
 define([
+    'N/format',
     '../../../helper/operation_assistant'
 ], function(
+    format,
     operation
 ) {
     var currentRec = undefined
@@ -14,9 +16,10 @@ define([
 
         if(context.fieldId === 'custcol_unit_notax' || context.fieldId === 'custcol_fdiscount' || context.fieldId === 'quantity' || context.fieldId === 'taxrate1' ||  context.fieldId === 'currency')
         {
-            var exchangerate = currentRec.getValue('exchangerate')
-            var quantity = getCurrentSubValue('quantity')
-            var price = getCurrentSubValue('custcol_unit_notax')
+            debugger
+            var exchangerate = currentRec.getValue('exchangerate') || 1
+            var quantity = getCurrentSubValue('quantity') || 0
+            var price = getCurrentSubValue('custcol_unit_notax') || 0
             var textRate = parseFloat(getCurrentSubValue('taxrate1'))
             var fdiscount = parseFloat(getCurrentSubValue('custcol_fdiscount'))
             var rate = operation.mul(price || 0, isNaN(fdiscount) ? 1 :  fdiscount / 100)
@@ -60,7 +63,25 @@ define([
         })
     }
 
+    function lineInit(context){
+        console.log('enter')
+        var domesticTotal = operation.mul(currentRec.getValue('total') , currentRec.getValue('exchangerate'))
+
+        jQuery('#domesticTotal').html(format.format({
+            type : format.Type.CURRENCY,
+            value :domesticTotal
+        }))
+
+        return true
+    }
+  
+   function pageInit(context){
+     currentRec = context.currentRecord
+   }
+
     return {
+        pageInit : pageInit,
+        lineInit : lineInit,
         fieldChanged : fieldChanged
     }
 });

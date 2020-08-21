@@ -5,11 +5,12 @@
 define([
     'N/search',
     'N/util',
+    'N/runtime',
     'N/ui/serverWidget',
     '../config/searchFiltersConfig',
     '../config/sublistFieldsConfig'
 ], function(
-    search , util , ui , searchFiltersConfig , sublistFieldsConfig
+    search , util , runtime , ui , searchFiltersConfig , sublistFieldsConfig
 ) {
     var FIELDPR = 'custpage_'
 
@@ -30,6 +31,7 @@ define([
         var form = ui.createForm({
             title : params.title
         })
+        var currentUser = runtime.getCurrentUser()
 
         form.addFieldGroup({
             id : 'custpage_filters',
@@ -42,6 +44,9 @@ define([
         })
 
         form.clientScriptModulePath = '../cs/planning_form_cs'
+
+        if(!params.subsidiary)
+        params.subsidiary = currentUser.subsidiary
 
         if(params.subsidiary)
         {

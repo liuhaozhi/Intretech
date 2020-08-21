@@ -77,7 +77,7 @@ define({
             },
             {
                 id : 'available' ,
-                label : '库存量',
+                label : '现有库存量',
                 type : 'text' 
             },
             {
@@ -92,7 +92,7 @@ define({
             },
             {
                 id : 'quantity' ,
-                label : '数量' ,
+                label : '应发数量' ,
                 type : 'text' 
             },
             {
@@ -102,13 +102,13 @@ define({
             },
             {
                 id : 'abbprovequantity' ,
-                label : '本次出库数量' ,
+                label : '实发数量' ,
                 type : 'text' ,
                 displayType : 'hidden'
             },
             {
                 id : 'currquantity' ,
-                label : '本次出库数量' ,
+                label : '实发数量' ,
                 type : 'text' ,
                 displayType : 'ENTRY'
             },

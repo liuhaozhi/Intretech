@@ -46,6 +46,7 @@ define([
         var form = ui.createForm({
             title :  params.title
         })
+        var userObj = runtime.getCurrentUser()
 
         form.addFieldGroup({
             id : 'custpage_filters',
@@ -58,6 +59,11 @@ define([
         })
 
         form.clientScriptModulePath = '../cs/planning_form_cs'
+
+        if(!params.disposetype) params.disposetype = '1'
+
+        if(!params.subsidiary)
+        params.subsidiary = userObj.subsidiary
 
         if(params.subsidiary)
         {
@@ -96,7 +102,7 @@ define([
 
         form.addButton({
             id : 'custpage_search',
-            label : 'search',
+            label : 'Search',
             functionName : 'searchLines'
         })
     }
@@ -245,14 +251,13 @@ define([
         })
         var columns = getAllSalesLineFields()
 
-        log.error('columns',columns)
-
         columns.push('custrecord_quantity_shipped')
-        setHeadFieldsValue(salesOrder,params)
-        var shipInfo = setLineItemValue(salesOrder,planLists,columns)
+        setHeadFieldsValue(salesOrder , params)
+        var shipInfo = setLineItemValue(salesOrder , planLists , columns , params.custpage_expectedshipdate)
 
         try{
-            var salesOrderId  = salesOrder.save({ignoreMandatoryFields : false})
+            logElement(salesOrder)
+            var salesOrderId  = salesOrder.save()
 
             if(salesOrderId)
             {
@@ -268,6 +273,7 @@ define([
                     pagetype : 'create',
                     item : params.custpage_item,
                     title : params.custpage_title,
+                    k3order : params.custpage_k3order,
                     pageSize : params.custpage_pagesize,  
                     currency : params.custpage_currency,
                     trandate : params.custpage_trandate,
@@ -281,13 +287,100 @@ define([
                     salesOrderId : salesOrderId,
                     deliverydatend : params.custpage_deliverydatend,
                     deliverydatestar : params.custpage_deliverydatestar,
-                    isintercompany : params.custpage_isintercompany
+                    isintercompany : params.custpage_isintercompany,
+                    expectedshipdate : params.custpage_expectedshipdate
                 }
             })
         }catch(e){
             throw(e)
         }
 
+    }
+
+    function logElement(salesOrder){
+        log.error('custcol_salesorder' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_salesorder',
+            line : 0
+        }))
+
+        log.error('custcol_k3order_num' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_k3order_num',
+            line : 0
+        }))
+
+        log.error('custcol_line' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_line',
+            line : 0
+        }))
+
+        log.error('item' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'item',
+            line : 0
+        }))
+
+        log.error('custcol_goodsname' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_goodsname',
+            line : 0
+        }))
+
+        log.error('custcol_itemtype' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_itemtype',
+            line : 0
+        }))
+
+        log.error('unit' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'unit',
+            line : 0
+        }))
+
+        log.error('quantity' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'quantity',
+            line : 0
+        }))
+
+        log.error('custcol_unit_notax' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_unit_notax',
+            line : 0
+        }))
+
+        log.error('rate' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'rate',
+            line : 0
+        }))
+
+        log.error('custcol_unit_tax' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_unit_tax',
+            line : 0
+        }))
+
+        log.error('amount' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'amount',
+            line : 0
+        }))
+
+        log.error('tax1amt' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'tax1amt',
+            line : 0
+        }))
+
+        log.error('tax1amt' , salesOrder.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'tax1amt',
+            line : 0
+        }))
     }
 
     function updatePlanList(shipInfo){
@@ -309,7 +402,7 @@ define([
         })
     }
 
-    function setLineItemValue(salesOrder,planLists,columns){
+    function setLineItemValue(salesOrder , planLists , columns , expectedshipdate){
         var index = 0
         var items = new Array()
         var shipInfo = new Array()
@@ -333,29 +426,39 @@ define([
                 if(allDateField.indexOf(columns[i].name) > -1)
                 {
                     if(!!value)
-                    {
-                        value = format.parse({
-                            type : format.Type.DATE,
-                            value : value
-                        })
-                    }
+                    value = format.parse({
+                        type : format.Type.DATE,
+                        value : value
+                    })
                 }
 
                 if(allPercentFields.indexOf(columns[i].name) > -1)
                 {
-                    if(!!value)
-                    {
-                        value = parseFloat(value)
-                    }
+                    if(!!value) 
+                    value = parseFloat(value)
                 }
                 
-                if(fieldId !== 'amount' && fieldId !== 'custcol_cn_cfi' && fieldId !== 'custrecord_quantity_shipped')
-                salesOrder.setSublistValue({
-                    sublistId : 'item',
-                    fieldId : fieldId,
-                    value : value,
-                    line : index
-                })
+                if(fieldId !== 'custcol_cn_cfi' && fieldId !== 'custrecord_quantity_shipped')
+                {
+                    if(value)
+                    salesOrder.setSublistValue({
+                        sublistId : 'item',
+                        fieldId : fieldId,
+                        value : value,
+                        line : index
+                    })
+                }
+
+                if(fieldId === 'rate')
+                {
+                    if(!value)
+                    salesOrder.setSublistValue({
+                        sublistId : 'item',
+                        fieldId : fieldId,
+                        value : 0,
+                        line : index
+                    })
+                }
 
                 if(fieldId === 'custcol_dedate')
                 {
@@ -395,6 +498,28 @@ define([
 
                 if(fieldId === 'custrecord_quantity_shipped')
                 shipList.shiped = value
+            }
+
+            if(expectedshipdate)
+            {
+                var formatExpectedshipdate = format.parse({
+                    type : format.Type.DATE,
+                    value : expectedshipdate
+                })
+
+                salesOrder.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_dedate',
+                    value : formatExpectedshipdate,
+                    line : index
+                })
+
+                salesOrder.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'expectedshipdate',
+                    value : formatExpectedshipdate,
+                    line : index
+                })
             }
 
             index ++
@@ -547,38 +672,101 @@ define([
         return false
     }
 
+    function getRadeMethods(customer){
+        var tradeMethods = Object.create(null)
+
+        search.create({
+            type : 'customrecord_goodsrecords',
+            filters : [
+                ['custrecord195' , 'anyof' , [customer]],
+                'AND',
+                ['custrecord_ifmoren' , 'is' , 'T']
+            ],
+            columns : [
+                'custrecord_trade_mode','custrecord_shipping','custrecord_deliverytime'
+            ]
+        })
+        .run()
+        .each(function(res){
+            tradeMethods.mode = res.getValue('custrecord_trade_mode')
+            tradeMethods.shipMethod = res.getValue('custrecord_shipping')
+            tradeMethods.deliverytime = res.getValue('custrecord_deliverytime')
+        })
+
+        return tradeMethods
+    }
+
+    function setLocation(salesOrder,params){
+        var searchInfo
+
+        if(params.custpage_isintercompany === '2') //对外销售
+        {
+            if(params.custpage_ordertype === '4')
+            {
+                searchInfo = {
+                    id : params.custpage_endcustomer,
+                    type : 'customer',
+                    fieldId : 'custentity_vmi'
+                }
+            }
+            else
+            {
+                var subsidiary = search.lookupFields({
+                    type : 'customer',
+                    id : params.custpage_customer,
+                    columns : ['custentity_deputy_subsidiaries']
+                }).custentity_deputy_subsidiaries
+                
+                if(subsidiary && subsidiary[0])
+                searchInfo = {
+                    id : subsidiary[0].value,
+                    type : 'subsidiary',
+                    fieldId : 'custrecord_intre_intercompany_location'
+                }
+            }
+        }
+        else
+        {
+            var subsidiary = search.lookupFields({
+                type : 'customer',
+                id : params.custpage_customer,
+                columns : ['custentity_deputy_subsidiaries']
+            }).custentity_deputy_subsidiaries
+            
+            if(subsidiary && subsidiary[0])
+            searchInfo = {
+                id : subsidiary[0].value,
+                type : 'subsidiary',
+                fieldId : 'custrecord_intre_intercompany_location'
+            }
+        }
+
+        if(searchInfo)
+        var location = search.lookupFields({
+            type : searchInfo.type,
+            id : searchInfo.id,
+            columns : [searchInfo.fieldId]
+        })[searchInfo.fieldId]
+
+        if(location && location[0])
+        {
+            salesOrder.setValue({
+                fieldId : 'custbody_rece_locations',
+                value : location[0].value
+            })
+        }
+    }
+
     function setHeadFieldsValue(salesOrder,params){
         var userObj = runtime.getCurrentUser()
         var customerAdress = getCustomerAdress(params.custpage_customer)
+        var tradeMethods   = getRadeMethods(params.custpage_customer)
         var billingaddress = salesOrder.getSubrecord('billingaddress')
         var shippingaddress = salesOrder.getSubrecord('shippingaddress')
 
         if(params.custpage_isintercompany)
         {
-            var searchInfo = params.custpage_ordertype === '4' ? {
-                id : params.custpage_customer,
-                type : 'customer',
-                fieldId : 'custentity_vmi'
-            } : {
-                id : params.custpage_subsidiary,
-                type : 'subsidiary',
-                fieldId : 'custrecord_intre_intercompany_location'
-            }
-
-            var location = search.lookupFields({
-                type : searchInfo.type,
-                id : searchInfo.id,
-                columns : [searchInfo.fieldId]
-            })[searchInfo.fieldId]
-
-            if(location[0])
-            {
-                salesOrder.setValue({
-                    fieldId : 'custbody_rece_locations',
-                    value : location[0].value
-                })
-            }
-
+            setLocation(salesOrder,params)
             salesOrder.setValue({ 
                 fieldId : 'custbody_whether_ntercompany_transact',
                 value : true
@@ -740,13 +928,30 @@ define([
             })
         }
 
+        if(tradeMethods.mode)
+        salesOrder.setValue({
+            fieldId : 'custbody_trade_mode',
+            value : tradeMethods.mode
+        })
+
+        if(tradeMethods.shipMethod)
+        salesOrder.setValue({
+            fieldId : 'custbody_shipmethod',
+            value : tradeMethods.shipMethod
+        })
+
+        if(tradeMethods.deliverytime)
+        salesOrder.setValue({
+            fieldId : 'custbody_datetime',
+            value : tradeMethods.deliverytime
+        })
+
         salesOrder.setValue({
             fieldId : 'entity',
             value : params.custpage_customer
         })
 
         salesOrder.setValue({
-
             fieldId : 'subsidiary',
             value : params.custpage_subsidiary
         })
@@ -803,6 +1008,8 @@ define([
                 lists[key] = checkInfo[key].quantity
             }
         }
+
+        log.error('lists',lists)
 
         return lists
     }
@@ -867,6 +1074,8 @@ define([
                 currPage : params.currPage || 1,
                 pageSize : pageDate.pageSize
             })
+
+            log.error('sucess')
 
             pageDate.fetch({
                 index : params.currPage ? --params.currPage : 0
@@ -1004,6 +1213,12 @@ define([
             value : res.getValue(columns[5])
         })
 
+        sublist.setSublistValue({
+            id : FIELDPR + 'opquantity',
+            line : index,
+            value : res.getValue(columns[5])
+        })
+
         if(res.getValue('custrecord_p_expectedshipdate'))
         sublist.setSublistValue({
             id : FIELDPR + 'expectedshipdate',
@@ -1023,6 +1238,19 @@ define([
             id : FIELDPR + 'pallet',
             line : index,
             value : res.getValue('custrecord_p_custcol_sup_total')
+        })
+
+        if(res.getValue('custrecord_p_quantity'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'allquantity',
+            line : index,
+            value : res.getValue('custrecord_p_quantity')
+        })
+
+        sublist.setSublistValue({
+            id : FIELDPR + 'quantityshipped',
+            line : index,
+            value : res.getValue('custrecord_quantity_shipped') || '0'
         })
 
         if(disposetype === '1')
@@ -1090,7 +1318,7 @@ define([
             },
             {
                 id : 'boardcount',
-                label : '总展板数',
+                label : '总栈板数',
                 type : 'text',
                 container : 'custpage_lists',
                 displayType : 'disabled'
@@ -1100,6 +1328,12 @@ define([
                 label : '是否出口',
                 type : 'select',
                 source : 'customlist_whether_list',
+                container : 'custpage_lists'
+            },
+            {
+                id : 'expectedshipdate',
+                label : '实际出货日',
+                type : 'date',
                 container : 'custpage_lists'
             }
         ]

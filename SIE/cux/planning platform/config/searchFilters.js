@@ -5,6 +5,8 @@
 
 define({
     searchFilters : function (params){
+        if(params.item)
+        var items = JSON.parse(params.item)
         var filters = [
             ['custrecord_p_custcol_salesorder.mainline' , 'is' , 'T'],
             'AND',
@@ -13,11 +15,19 @@ define({
             ['custrecord_salesorder_shipped' , 'is' , 'F']
         ]
 
-        if(params.item)
+        if(items && items.length && items[0])
         {
             filters.push(
                 'AND',
-                ['custrecord_p_item' , 'anyof' , [params.item]]
+                ['custrecord_p_item' , 'anyof' , items]
+            )
+        }
+
+        if(params.k3order)
+        {
+            filters.push(
+                'AND',
+                ['custrecord_p_custcol_k3order_num' , 'contains' , params.k3order]
             )
         }
 

@@ -91,7 +91,7 @@ define([
 
         form.addButton({
             id : 'custpage_search',
-            label : 'search/查询',
+            label : 'Search/查询',
             functionName : 'searchLines'
         })
     }
@@ -247,7 +247,12 @@ define([
         }
     }
 
-    function setAmountInfo(newRecord,amountInfo){
+    function setAmountInfo(newRecord,amountInfo,disCountTotal){
+        newRecord.setValue({
+            fieldId : 'custrecord_ci_duplicate_top',
+            value : disCountTotal
+        })
+
         newRecord.setValue({
             fieldId : 'custrecord_buhanshuiheji_hebing',
             value : amountInfo.amount
@@ -278,9 +283,9 @@ define([
                 isDynamic : true
             })
 
-            setLineItemValue(amountInfo,newRecord,key,lines[key])
+            var disCountTotal = setLineItemValue(amountInfo,newRecord,key,lines[key])
             setHeadFieldsValue(newRecord,params,[key],'batch')
-            setAmountInfo(newRecord,amountInfo)
+            setAmountInfo(newRecord,amountInfo,disCountTotal)
             newRecord.save()
         }
     }
@@ -296,14 +301,15 @@ define([
             type : 'customrecord_hebingfapiao',
             isDynamic : true
         })
+        var disCountTotal = 0
 
         for(var key in lines)
         {
             orderDetails.push(key)
-            setLineItemValue(amountInfo,newRecord,key,lines[key])
+            disCountTotal = operation.add(disCountTotal , setLineItemValue(amountInfo,newRecord,key,lines[key]))
         }
 
-        setAmountInfo(newRecord,amountInfo)
+        setAmountInfo(newRecord,amountInfo,disCountTotal)
         setHeadFieldsValue(newRecord,params,orderDetails,'combine')
        
         newRecord.save()
@@ -323,6 +329,7 @@ define([
     }
 
     function setLineItemValue(amountInfo,newRecord,orderId,lines){
+        var disCountTotal = 0
         var salesRecord = record.load({
             type : 'salesorder',
             id : orderId
@@ -356,13 +363,13 @@ define([
                     sublistId : 'item',
                     fieldId : 'taxcode',
                     line : index
-                })
+                }) || 0
+                if(taxcode)
                 taxcode = search.lookupFields({
                     type : 'salestaxitem',
                     id : taxcode,
                     columns : ['rate']
                 }).rate
-
                 var scale = operation.div(
                     lines[line].quantity || 0,
                     salesRecord.getSublistValue({
@@ -371,11 +378,19 @@ define([
                         line : index
                     })
                 ).toFixed(2)
-
+                var noDisCountPrice = salesRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_unit_tax',
+                    line : index
+                })
                 var amount = operation.mul(rate , lines[line].quantity)
                 var taxamount = operation.mul(amount , parseFloat(taxcode) / 100)
                 var total = operation.add(amount , taxamount)
+                var noDisCountTotal = operation.mul(operation.mul(noDisCountPrice,lines[line].quantity) , 1 + parseFloat(taxcode) / 100) 
+                var hasDiscountTotal = operation.mul(operation.mul(rate,lines[line].quantity) , 1 + parseFloat(taxcode) / 100) 
+                var LineDisCountTotal = operation.sub(noDisCountTotal || 0,hasDiscountTotal || 0)
 
+                disCountTotal = operation.add(disCountTotal,LineDisCountTotal)
                 amountInfo.total = operation.add(amountInfo.total , total)
                 amountInfo.amount = operation.add(amountInfo.amount , amount)
                 amountInfo.taxamount = operation.add(amountInfo.taxamount , taxamount)
@@ -388,6 +403,42 @@ define([
                     sublistId : 'recmachcustrecord185',
                     fieldId : 'custrecord_ci_danjubianhao',
                     value : orderId
+                })
+
+                newRecord.setCurrentSublistValue({
+                    sublistId : 'recmachcustrecord185',
+                    fieldId : 'custrecord_ci_zheqiandanjia',
+                    value : noDisCountPrice
+                })
+
+                newRecord.setCurrentSublistValue({
+                    sublistId : 'recmachcustrecord185',
+                    fieldId : 'custrecord_ci_total_before_discount',
+                    value : operation.mul(noDisCountPrice || 0,lines[line].quantity)
+                })
+
+                newRecord.setCurrentSublistValue({
+                    sublistId : 'recmachcustrecord185',
+                    fieldId : 'custrecord_ci_buhanshuiheji',
+                    value : operation.mul(rate,lines[line].quantity)
+                })
+
+                newRecord.setCurrentSublistValue({
+                    sublistId : 'recmachcustrecord185',
+                    fieldId : 'custrecord_ci_zongjine_',
+                    value : hasDiscountTotal
+                })
+
+                newRecord.setCurrentSublistValue({
+                    sublistId : 'recmachcustrecord185',
+                    fieldId : 'custrecord_ci_total_amount_before_discou',
+                    value : noDisCountTotal
+                })
+
+                newRecord.setCurrentSublistValue({
+                    sublistId : 'recmachcustrecord185',
+                    fieldId : '	custrecord_ci_duplicate_top',
+                    value : LineDisCountTotal
                 })
 
                 newRecord.setCurrentSublistValue({
@@ -564,6 +615,8 @@ define([
                 })
             }
         }
+
+        return disCountTotal
     }
 
     function getCustomerAdress(customer){

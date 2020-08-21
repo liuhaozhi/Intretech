@@ -11,8 +11,9 @@ define([
 ) {
     function fieldChanged(context) {
         var currtRec = context.currentRecord
+        var fieldId  = context.fieldId
 
-        if(context.fieldId === 'name' || context.fieldId === 'custrecord_intretech_goods')
+        if(fieldId === 'name' || fieldId === 'custrecord_intretech_goods')
         {
             var fieldValue = currtRec.getCurrentSublistValue({
                 sublistId : 'recmachcustrecord_connactid',
@@ -26,6 +27,29 @@ define([
                 fieldValue : fieldValue
             })
         }
+    }
+
+    function setDefault (currRec){
+
+        currRec.setCurrentSublistValue({
+            sublistId : 'recmachcustrecord_connactid',
+            fieldId : 'custrecord_company_son',
+            value : currRec.getValue('custrecord_companys')
+        })
+
+        currRec.setCurrentSublistValue({
+            sublistId : 'recmachcustrecord_connactid',
+            fieldId : 'custrecord_depart',
+            value : currRec.getValue('custrecord_departments')
+        })
+
+        currRec.setCurrentSublistValue({
+            sublistId : 'recmachcustrecord_connactid',
+            fieldId : 'custrecord_customer',
+            value : currRec.getValue('custrecord_cust')
+        })
+
+        return true
     }
 
     function volidRepeat(params){
@@ -64,7 +88,7 @@ define([
                 value : params.fieldValue,
                 action : 'volidRepeat',
                 fieldId : params.fieldId,
-              	companys : params.currtRec.getValue('custrecord_companys'),
+              	 companys : params.currtRec.getValue('custrecord_companys'),
                 department : params.currtRec.getValue('custrecord_departments'),
                 customer : params.currtRec.getValue('custrecord_cust')
             }
@@ -89,6 +113,8 @@ define([
         {
             alert(body.message)
         }
+
+        setDefault(params.currtRec)
 
         console.log(response)
     }

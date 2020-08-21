@@ -12,6 +12,8 @@ define({
             'AND',
             ['mainline' , 'is' , 'F'],
             'AND',
+            ['custbody_sales_status' , 'noneof' , '14'],
+            'AND',
             ['custcol_salesorder.taxline' , 'is' , 'F'],
             'AND',
             ['custcol_salesorder.mainline' , 'is' , 'T'],
@@ -20,6 +22,14 @@ define({
             'AND',
             ['formulanumeric: ABS({quantity}) - ABS({quantitypicked})' , 'greaterthan' , 0]
         )
+
+        if(params.k3order)
+        {
+            filters.push(
+                'AND',
+                ['custcol_k3order_num' , 'contains' , [params.k3order]]
+            )
+        }
 
         if(params.subsidiary)
         {

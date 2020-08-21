@@ -281,11 +281,21 @@ function(https,search,log,record,urll,operation) {
                 if(zRate=="" || zRate=="NaN" || zRate==null){
                     zRate=0;
                 }
+                var fdiscount = parseFloat(cuRecord.getCurrentSublistValue({
+                    sublistId: 'item',
+                    fieldId: 'custcol_fdiscount',
+                    line: i
+                }))
                 //console.log("将要赋值的zRate = "+ zRate);
                 cuRecord.setCurrentSublistValue({
                     sublistId:"item",
                     fieldId:"rate",
                     value:zRate
+                });
+                cuRecord.setCurrentSublistValue({
+                    sublistId:"item",
+                    fieldId:"custcol_unit_notax",
+                    value: zRate / (isNaN(fdiscount) ? 1 :  fdiscount / 100)
                 });
                 cuRecord.commitLine({
                     sublistId: 'item'

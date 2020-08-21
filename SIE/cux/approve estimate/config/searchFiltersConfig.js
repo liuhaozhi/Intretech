@@ -110,6 +110,13 @@ define({
                 defaultValue : params.isapprove || ''
             },
             {
+                id : 'myself',
+                label : '是否本角色审批',
+                type : 'checkbox',
+                container : 'custpage_filters' ,
+                defaultValue : params.myself
+            },
+            {
                 id : 'estimate' ,
                 label : '单据编号(tranid)' ,
                 type : 'select' ,
@@ -149,6 +156,14 @@ define({
                 source : 'customer' ,
                 container : 'custpage_filters' ,
                 defaultValue : params.endcustomer || ''
+            },
+            {
+                id : 'creater' ,
+                label : '制单人()' , 
+                type : 'select' ,
+                source : 'employee' ,
+                container : 'custpage_filters' ,
+                defaultValue : params.creater || ''
             }
         ]
     }

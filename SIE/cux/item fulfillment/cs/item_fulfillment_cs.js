@@ -19,6 +19,7 @@ define([
         check : 'custpage_check',
         boxnum : 'custpage_boxnum',
         advice : 'custpage_advice',
+        k3order : 'custpage_k3order',
         cacheid : 'custpage_cacheid',
         quantity : 'custpage_quantity',
         isexport : 'custpage_isexport',
@@ -35,6 +36,7 @@ define([
         salesorder : 'custpage_salesorder',
         subsidiary : 'custpage_subsidiary',
         department : 'custpage_department',
+        expensedate : 'custpage_expensedate',
         customerord  : 'custpage_customerord',
         currquantity : 'custpage_currquantity',
         surplusquantity : 'custpage_surplusquantity',
@@ -116,6 +118,10 @@ define([
             maxHeight : '500px',
             overflow : 'auto'
         })
+
+        jQuery(':input[name^=custpage_surplusquantity]')
+        .attr({disabled : true})
+
         window.onbeforeunload = function(){}
     }
 
@@ -582,6 +588,7 @@ define([
     function searchParams(){
         return {
             advice : currentRec.getValue(allFields.advice),
+            k3order : currentRec.getValue(allFields.k3order),
             cacheid : currentRec.getValue(allFields.cacheid),
             pageSize : currentRec.getValue(allFields.pagesize),
             emoloyee : currentRec.getValue(allFields.emoloyee),
@@ -595,15 +602,25 @@ define([
             department : currentRec.getValue(allFields.department),
             invoicenum : currentRec.getValue(allFields.invoicenum),
             isexport : currentRec.getValue(allFields.isexport),
+            expensedate : currentRec.getText(allFields.expensedate),
             customerord : currentRec.getValue(allFields.customerord)
         }
     }
-    
 
+    function viewfullment(){
+        window.open('/app/common/search/searchresults.nl?searchid=1112&whence=')
+    }
+
+    function viewsalesord(){
+        window.open('/app/common/search/searchresults.nl?searchid=1126&whence=')
+    }
+    
     return {
         pageInit : pageInit,
         saveRecord : saveRecord,
         searchLines : searchLines,
+        viewfullment : viewfullment,
+        viewsalesord : viewsalesord,
         fieldChanged : fieldChanged
     }
 });

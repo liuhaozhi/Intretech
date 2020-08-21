@@ -1,0 +1,167 @@
+<?xml version="1.0"?><!DOCTYPE pdf PUBLIC "-//big.faceless.org//report" "report-1.1.dtd">
+<pdf lang="zh_CN">
+    <!--HAH Purchase PDF/HTML Template--><head>
+        <macrolist>
+            <macro id="nlheader1">
+                <table class="header">
+                    <tr>
+                        <td align="center" colspan="8">
+                            <b style="font-size:20px;color:red">付款申请单</b>
+                        </td>
+                    </tr>
+                   <tr>
+						<td align="left" colspan="2">
+                            <span class="nameandaddress">&nbsp;</span>
+                        </td>
+                    </tr>
+					<tr>
+                        <td align="left" colspan="2">
+                            <span class="nameandaddress">申请日期&nbsp;${record.trandate}</span>
+                        </td>
+                          <td align="left" colspan="2">
+                            <span class="nameandaddress">单据号码&nbsp;${record.transactionnumber}</span>
+                        </td>
+                    </tr>
+                </table>
+            </macro>
+		</macrolist>
+
+<style type="text/css">
+table {
+	font-family: stsong, sans-serif;
+	font-size: 8pt;
+	table-layout: fixed;
+	border-spacing: 0;
+	border-collapse: collapse;
+	width: 100%;
+	max-width: 100%;
+}
+
+table th {
+	/*background-color: #000;*/
+	color: #000;
+	white-space: nowrap;
+	font-weight: bold;
+}
+
+table th,table td {
+	vertical-align: top;
+	border-collapse: collapse;
+	/*padding: 10px 6px;*/
+	padding: 0;
+}
+
+table.header {
+	/*margin: 0;*/
+	margin-top: 5pt;
+}
+
+/*table-border*/
+.table-border {
+	border: 0.5px solid #bbb;
+	margin-top: 0pt;
+	font-size: 14px;
+}
+
+.table-border td {
+	border: 0.5px solid #bbb;
+}
+
+.table-border th {
+	border: 0.5px solid #bbb;
+	/*border-buttom:none*/;
+}
+
+.table-border th,.table-border td {
+	padding: 10px 6px;
+}
+
+/*table-border-none*/
+.table-border-none th,.table-border-none td {
+	padding: 10px 6px;
+}
+
+.nameandaddress {
+	white-space: nowrap;
+	font-size: 14px;
+}
+</style>
+    </head>
+    <body
+            header="nlheader1"
+            header-height="60pt"
+            footer="nlfooter"
+            padding="0.3in 0.3in 0.0in 0.3in" width="297mm" height="210mm">
+    <!--报表详情-->
+		<table class="table-border" style="margin-top:0pt; width: 100%">
+					<tr>
+                        <th align="center" width="9%">收款人名称</th>
+						<th align="left" width="91%">${record.entity}</th>
+                    </tr>
+                </table>
+	    <table class="table-border" style="margin-top:0pt; width: 100%">
+					<tr>
+                        <th align="center" width="9%">开户行</th>
+						<th align="center" width="41%">${renderData.openBank}</th>
+						<th align="center" width="12%">银行账户</th>
+						<th align="center" width="38%">${renderData.bankAccount}</th>
+                    </tr>
+                </table>
+				<table class="table-border" style="margin-top: 0pt; width: 100%">
+					<tr>
+                        <th align="center" width="9%">币别</th>
+						<th align="center" width="12%">${record.currency}</th>
+						<th align="center" width="9%">付款条件</th>
+						<th align="center" width="32%">${renderData.terms}</th>
+						<th align="center" width="9%">申请付款总金额</th>
+						<th align="center" width="29%">${renderData.theSum}</th>
+                    </tr>
+                </table>
+				<table class="table-border" style="margin-top: 0pt; width: 100%">
+					<tr>
+                        <th align="center" width="9%">付款备注</th>
+						<th align="center" width="91%">${record.memo}</th>
+                    </tr>
+                </table>
+    <table class="table-border">
+		<tr>
+            <th align="center" width="9%">采购类型</th>
+            <th align="center" width="21%">发票号</th>
+            <th align="center" width="9%">发票日期</th>
+			<th align="center" width="11%">模具请款类型</th>
+            <th align="center" width="12%">模具编码</th>
+			<th align="center" width="9%">模具名称</th>
+            <th align="center" width="9%">模具规格</th>
+			<th align="center" width="11%">申请付款金额</th>
+			<th align="center" width="9%">备注</th>
+        </tr>
+        <#list renderData.items as items>
+        <tr>
+            <td align="center" width="9%">${items.type}</td>
+            <td align="center" width="21%">${items.number}</td>
+            <td align="center" width="9%">${items.date}</td>
+            <td align="center" width="11%">${items.applytype}</td>
+            <td align="center" width="12%">${items.mouldnumber}</td>
+            <td align="center" width="9%">${items.mouldname}</td>
+			<td align="center" width="9%">${items.mouldformat}</td>
+			<td align="center" width="11%">${items.amount}</td>
+			<td align="center" width="9%">${items.memo}</td>
+		</tr>
+        </#list>
+    </table>
+    <!--报销结尾-->
+    <table class="header">
+        <tr>
+            <td align="left" colspan="2">
+				<span class="nameandaddress">部门：${record.department}</span>
+            </td>
+            <td align="left" colspan="2">
+                <span class="nameandaddress">专营业务员：${record.custbody_po_buyer}</span>
+            </td>
+			<td align="left" colspan="2">
+                <span class="nameandaddress">制单人：${record.custbody_wip_documentmaker}</span>
+            </td>
+		</tr>   
+     </table>
+    </body>
+</pdf>

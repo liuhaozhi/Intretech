@@ -7,6 +7,7 @@
 define([], function(
     ) {
         function add(a, b) {
+            a = a || 0, b = b || 0
             var c, d, e;
             try {
                 c = a.toString().split(".")[1].length
@@ -22,6 +23,7 @@ define([], function(
         }
             
         function sub(a, b) {
+            a = a || 0, b = b || 0
             var c, d, e;
             try {
                 c = a.toString().split(".")[1].length
@@ -37,6 +39,7 @@ define([], function(
         }
           
         function mul(a, b) {
+            a = a || 0, b = b || 0
             var c = 0,
             d = a.toString(),
             e = b.toString();
@@ -50,6 +53,7 @@ define([], function(
         }
           
         function div(a, b) {
+            a = a || 0, b = b || 0
             var c, d, e = 0,
                 f = 0
             try {
@@ -60,11 +64,29 @@ define([], function(
             } catch (g) {}
             return c = Number(a.toString().replace(".", "")), d = Number(b.toString().replace(".", "")), c / d * Math.pow(10, f - e)
         }
+
+        function getDateWithTimeZone(params) {
+            var timezoneList = {
+                Asia_Hong_Kong: 'Asia/Hong_Kong'
+            }
+            var localTime = params.date.getTime()
+            var localOffset = params.date.getTimezoneOffset() * 60000
+            var utc = localTime + localOffset
+    
+            if (params.timezone === timezoneList.Asia_Hong_Kong) {
+                var timezoneDate = new Date(utc + 3600000 * 8)
+            } else {
+                var timezoneDate = params.date
+            }
+    
+            return timezoneDate
+        }
     
         return {
             add : add,
             mul : mul,
             div : div,
-            sub : sub
+            sub : sub,
+            getDateWithTimeZone : getDateWithTimeZone
         }
     });

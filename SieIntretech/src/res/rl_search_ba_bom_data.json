@@ -1,0 +1,9 @@
+{
+    "NS_BA_BOM": {
+        "NS_SYSTEM_LOAD_SEARCH_ID": "customsearchrhys_search_material_assembl",
+        "interid": "internalid",
+        "subsidiary": "subsidiary",
+        "bomnumber": "name",
+        "isdeleted": "isinactive"
+    }
+}

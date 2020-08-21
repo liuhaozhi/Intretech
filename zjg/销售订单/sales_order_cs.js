@@ -2,11 +2,12 @@
  *@NApiVersion 2.x
  *@NScriptType ClientScript
  */
-define(['N/search','N/url','N/https',
+define(['N/search','N/url','N/https','N/record'
 ], function(
     search,
     urll,
-    https
+    https,
+    record
 ) {
     function pageInit(context){
         return true
@@ -36,11 +37,11 @@ define(['N/search','N/url','N/https',
         if(sublistId=="item" && fieldId =="quantity"){
             calculatedValue(context)
         }
-
         return true;
 
     }
-
+  
+  
 
     //当选择物料时自动带出对应物料的bom状态和bom
     //custcol_bom_status  bom状态

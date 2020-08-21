@@ -233,6 +233,7 @@ define([
     }
 
     function voidRecord(recordId){
+        debugger
         message.create({
             title : '处理中！' , 
             type : message.Type.WARNING , 

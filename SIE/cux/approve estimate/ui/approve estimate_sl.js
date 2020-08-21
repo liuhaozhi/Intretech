@@ -39,6 +39,7 @@ define([
     }
 
     function searchPage(params,response){
+        var currentUser = runtime.getCurrentUser()
         var form = ui.createForm({
             title :  '销售订单批量审批平台'
         })
@@ -54,6 +55,18 @@ define([
         })
 
         form.clientScriptModulePath = '../cs/approve estimate_cs'
+
+        if(!params.role)
+        params.role = currentUser.role
+
+        if(!params.myself)
+        params.myself = 'T'
+
+        if(!params.subsidiary)
+        params.subsidiary = currentUser.subsidiary
+
+        if(!params.department)
+        params.department = currentUser.department
 
         if(!params.action)
         {
@@ -75,7 +88,7 @@ define([
     function addButtons(form){
         form.addButton({
             id : 'custpage_search',
-            label : 'search',
+            label : 'Search',
             functionName : 'searchLines'
         })
 
@@ -187,7 +200,7 @@ define([
     }
 
     function bindSublists(params,form,sublist){
-        var filters = getSearchFilters(params, runtime.getCurrentUserId() + 'ApprovePriceCache', 'searchFilters')
+        var filters = getSearchFilters(params, runtime.getCurrentUserId() + 'ApproveEstimateCache', 'searchFilters')
         var mySearch = search.load({
             id : 'customsearch_om_sales_order'
         })
@@ -293,29 +306,34 @@ define([
         searchColumn.map(function(item){
             var getType = 'getValue'
             var valueFields = getTextFields()
+
             if(valueFields.indexOf(item.name) > -1)
             getType = 'getText'
 
-            if(res[getType](item))
-            {
-                var value = res[getType](item)
-                if(item.name === 'tranid')
-                value = '<a target="_blank" style="color:blue!important" href="'
-                +'/app/accounting/transactions/estimate.nl?id='+ res.id +'&whence=">'+value+'</a>'
+            var value = res[getType](item)
 
-                sublist.setSublistValue({
-                    id : FIELDPR + (item.join ? (item.join + item.name.slice(-10)).toLowerCase() : item.name.slice(-10).toLowerCase()),
-                    line : index,
-                    value : value
-                })
-            }
+            if(item.name === 'tranid')
+            value = '<a target="_blank" style="color:blue!important" href="'
+            +'/app/accounting/transactions/estimate.nl?id='+ res.id +'&whence=">'+value+'</a>'
+
+            if(item.name === 'custbody_ifexport')
+            value = value === true ? 'Y' : 'N'
+
+            sublist.setSublistValue({
+                id : FIELDPR + (item.join ? (item.join + item.name.slice(-10)).toLowerCase() : item.name.slice(-10).toLowerCase()),
+                line : index,
+                value : value ? value.toString() : ' '
+            })
+            
         })
     }
 
     function getTextFields(){
         return [
+            'custcol_suppl_company',
             'item',
             'department',
+            'custcol_cgoodscode',
             'custbody_cust_ordertype',
             'custbody_wip_documentmaker',
             'custbody_pc_salesman',

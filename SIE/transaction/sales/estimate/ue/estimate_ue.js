@@ -8,14 +8,76 @@ define([
 ], function(record,search) {
     function beforeLoad(context){
         changeTitle(context)
-        addChangeButton(context)
+
+        if(context.type === 'view')
+        {
+            addPrOrdButton(context)
+            addChangeButton(context)
+        }
     }
 
-    function beforeSubmit(context){
-        if(context.type === 'create' || context.type === 'edit')
+    function addPrOrdButton(context){
+        var newRecord = context.newRecord
+ 
+        if(newRecord.getValue('custbody_order_status') === '3' && newRecord.getValue('custbody_cux_mrp_flag') !== true)
         {
-            setLineAndExpenDate(context.newRecord)
+            var application = search.create({
+                type :  'customrecord_purchase_application',
+                filters : [
+                    ['custrecord_create_num_pr' , 'anyof' , [context.newRecord.id]]
+                ]
+            })
+            .run().getRange({
+                start : 0,
+                end   : 1
+            })
+
+            if(!application.length){
+                context.form.clientScriptModulePath = '../cs/estimate_cs'
+
+                context.form.addButton({
+                    id : 'custpage_prord',
+                    label : '下推请购平台',
+                    functionName : 'addprord('+ context.newRecord.id +')'
+                })
+            }
         }
+    }
+
+    function beforeSubmit(context){ 
+        try{
+            upDateInterEmployee(context);
+        } catch(e) {
+            log.debug("设置值错误", e);
+        }
+    }
+
+    function upDateInterEmployee(context) {
+        var currentRecord = context.newRecord;
+        if(!currentRecord.getValue("custbody_whether_ntercompany_transact")) { return; }
+        var subsidiary = currentRecord.getValue("subsidiary");
+        var salesFieldsInfo = search.lookupFields({
+            type: "estimate",
+            id: currentRecord.getSublistValue({ sublistId: "item", fieldId: "custcol_external", line: 0 }),
+            columns: ["subsidiary", "custbody_pc_salesman", "department"]
+        });
+        search.create({
+            type: "customrecord_inter_employee",
+            columns: ["custrecord_inner_dept", "custrecord_inner_employee", "custrecord_inner_creator"],
+            filters: [
+                ["custrecord_out_subs", "anyof", salesFieldsInfo["subsidiary"][0].value],
+                "AND",
+                ["custrecord_out_dept", "anyof", salesFieldsInfo["department"][0].value],
+                "AND",
+                ["custrecord_out_employee", "anyof", salesFieldsInfo["custbody_pc_salesman"][0].value],
+                "AND",
+                ["custrecord_inner_subs", "anyof", subsidiary]
+            ]
+        }).run().each(function(result) {
+            currentRecord.setValue("custbody_pc_salesman", result.getValue(result.columns[1]));
+            currentRecord.setValue("custbody_wip_documentmaker", result.getValue(result.columns[2]));
+            currentRecord.setValue("department", result.getValue(result.columns[0]));
+        });
     }
 
     function addChangeButton(context){
@@ -42,56 +104,14 @@ define([
         }
     }
 
-    function setLineAndExpenDate(newRecord){
-        var itemCount = newRecord.getLineCount({
-            sublistId : 'item'
-        })
-  
-        for(var i = 0 ; i < itemCount ; i ++)
-        {
-            var expectedshipdate = newRecord.getSublistValue({
-                sublistId : 'item',
-                fieldId : 'expectedshipdate',
-                line : i
-            })
-
-            if(expectedshipdate)
-            {
-                var suggestDate = newRecord.getSublistValue({
-                    sublistId : 'item',
-                    fieldId : 'custcol_suggest_date',
-                    line : i
-                })
-
-                if(!suggestDate)
-                newRecord.setSublistValue({
-                    sublistId : 'item',
-                    fieldId : 'custcol_suggest_date',
-                    line : i,
-                    value : expectedshipdate
-                })
-            }
-
-            if(!newRecord.getSublistValue({
-                sublistId : 'item',
-                fieldId : 'custcol_line',
-                line : i
-            }))
-            newRecord.setSublistValue({
-                sublistId : 'item',
-                fieldId : 'custcol_line',
-                line : i,
-                value : (i + 1).toString()
-            })
-        }
-    }
-
     function afterSubmit(context){
-        if(context.type === 'create' || context.type === 'edit')
-        setLineItemSalesId(context.newRecord , context.type)
+        if(context.type === 'create' || (context.type === 'edit' && context.newRecord.getValue('custbody_order_status') === '1'))
+        {
+            setLineItemSalesId(context.newRecord , context.type)
+        }
 
         if(context.type === 'edit'){
-            if(context.newRecord.getValue('custbody_workchange') === true)
+            if(context.newRecord.getValue('custbody_workchange'))
             updatePlan(context.newRecord)
         }
     }
@@ -166,6 +186,58 @@ define([
         })
     }
 
+    function setSuggestDate(newRecord , i){
+        var expectedshipdate = newRecord.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'expectedshipdate',
+            line : i
+        })
+
+        if(expectedshipdate)
+        {
+            var suggestDate = newRecord.getSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_suggest_date',
+                line : i
+            })
+
+            if(!suggestDate)
+            newRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_suggest_date',
+                line : i,
+                value : expectedshipdate
+            })
+        }
+    }
+
+    function setLineNum(newRecord , i , line){
+        newRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_line',
+            line : i,
+            value : line
+        })
+    }
+
+    function setPlanNum(newRecord , i , newRranid , line){
+        newRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_plan_number',
+            line : i,
+            value : newRranid.replace(/[0]{1,}/,'') + line
+        })
+    }
+
+    function setLineSalesId(newRecord , i){
+        newRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_salesorder',
+            line : i,
+            value : newRecord.id
+        })
+    }
+
     function setLineItemSalesId(recordInfo , type){
         var newRecord = record.load({
             type : recordInfo.type,
@@ -183,25 +255,14 @@ define([
 
         for(var i = 0 ; i < itemCount ; i ++)
         {
-            var line = newRecord.getSublistValue({
-                sublistId : 'item',
-                fieldId : 'custcol_line',
-                line : i
-            })
-
-            newRecord.setSublistValue({
-                sublistId : 'item',
-                fieldId : 'custcol_plan_number',
-                line : i,
-                value : newRranid.replace(/[0]{1,}/,'') + line
-            })
-
-            newRecord.setSublistValue({
-                sublistId : 'item',
-                fieldId : 'custcol_salesorder',
-                line : i,
-                value : recordInfo.id
-            })
+            var line = (i + 1).toString()
+            setLineMemo(newRecord , i)
+            setSuggestDate(newRecord , i)
+            setLineNum(newRecord , i , line)
+            setPlanNum(newRecord , i , newRranid , line)
+            setLineSalesId(newRecord , i)
+            setK3OrderNum(newRecord , i)
+            setLineCustomerOrd(newRecord , i)
         }
 
         newRecord.save({
@@ -209,10 +270,42 @@ define([
         })
     }
 
+    function setK3OrderNum(newRecord , i){
+        newRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_k3order_num',
+            line : i,
+            value : newRecord.getValue('custbody_document_old')
+        })
+    }
+
+    function setLineCustomerOrd(newRecord , i){
+        newRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_custorder',
+            line : i,
+            value : newRecord.getValue('custbody_wip_customer_order_number')
+        })
+    }
+
+    function setLineMemo(newRecord , i){
+        newRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'description',
+            line : i,
+            value : newRecord.getSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_linedes',
+                line : i
+            })
+        })
+    }
+
     function updateSalesOrderCode(orderRecord){
         var tranid = orderRecord.getValue({'fieldId': 'tranid'})
         var orderType = orderRecord.getValue({'fieldId' : 'custbody_cust_ordertype'})
-
+        
+        if(orderType)
         search.create({
             type : 'customrecord_sales_order_type_code',
             filters : [

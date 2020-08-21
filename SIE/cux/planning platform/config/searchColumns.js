@@ -45,9 +45,12 @@ define({
                 sort : 'ASC'
             },{
                 name : 'custrecord_p_custcol_sup_total'
-            },
-            {
+            },{
                 name : 'custrecord_p_custbody_ifexport'
+            },{
+                name : 'custrecord_p_quantity'
+            },{
+                name : 'custrecord_quantity_shipped'
             }
         ]
     }

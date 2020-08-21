@@ -1,0 +1,232 @@
+<#assign columnFreezeCount = renderData.columnFreezeCount?number>
+<div id="platformContainer">
+    <style type="text/css">
+        .platformLayout {
+            table-layout: fixed;
+            border-collapse: collapse;
+            width: 100%;
+            padding: 5px 10px;
+            font-size: 12px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .platformLayout th {
+            background-color: #dff0d8;
+            text-align: center;
+            color: black;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            word-break: break-all;
+        }
+
+        .platformLayout td {
+            word-break: break-all;
+        }
+
+        #platformLeftTopContainer {
+            display: none;
+        }
+
+        #platformLeftBottomContainer {
+            display: none;
+        }
+
+        #platformRightTopContainer {
+            display: none;
+        }
+
+        #platformRightBottomContainer, #platformLeftBottomContainer {
+            height: 600px;
+        }
+
+        #platformFreezeHeader, #platformSublist {
+            width: ${renderData.defaultWidth}px;
+        }
+
+        #platformLeftTopContainer th:first-child, #platformLeftBottomContainer td:first-child {
+            width: 50px;
+        }
+
+        /* .platformLayout .freezeColumn {
+            width: ${renderData.singColumnWidth}px;
+        } */
+        /* #platformRightBottomContainer tr:nth-child(odd), #platformLeftBottomContainer tr:nth-child(even) {
+            background-color: rgba(0,0,0,.075);
+        } */
+
+        #custpage_select_all {
+            display: block;
+            margin: 0px auto;
+        }
+
+        .platformSpecContainers {
+            overflow-y: scroll;
+            overflow-x: scroll;
+            background-color: white;
+        }
+
+        .platformContainerCell {
+            vertical-align: top;
+            padding: 0px;
+            margin: 0px;
+        }
+
+        .platformLayout input {
+            width: 100px;
+        }
+
+        .platformLayout input[type="date"] {
+            width: 130px;
+        }
+
+        .platformLayout select {
+            width: 100px;
+        }
+
+        .platformLayout button[data-target-for] {
+            margin-left:5px;
+            cursor: pointer;
+        }
+
+        .platformLayout input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+
+        .platformSelectedLine {
+            background-color: rgba(0,0,0,.075);
+        }
+
+        .platformHideElement {
+            display: none;
+        }
+
+        .platformHideColumn {
+            display: none;
+        }
+
+        .platformLayout th span[data-sort-direction="DESC"] {
+            width: 0;
+            height: 0;
+            border: 5px solid transparent;
+            border-top-color: #607799;
+            vertical-align: middle;
+            display: inline-block;
+            margin-left: 2px;
+        }
+
+        .platformLayout th span[data-sort-direction="ASC"] {
+            width: 0;
+            height: 0;
+            border: 5px solid transparent;
+            border-bottom-color: #607799;
+            vertical-align: middle;
+            display: inline-block;
+            margin-left: 2px;
+        }
+
+        /* body {
+            overflow-y: hidden;
+        } */
+    </style>
+    <table border="0" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="platformContainerCell">
+                <div id="platformLeftTopContainer" class="platformSpecContainers">
+                    <table class="platformLayout" border="1">
+                        <tr>
+                            <th>
+                                全选
+                                <input type="checkbox" id="custpage_select_all" />
+                            </th>
+                            <#list renderData.titles as title>
+                                <#if title_index lt columnFreezeCount>
+                                    <th data-column-name="${title.columnName}">
+                                        ${title.value}
+                                        <#if title.sortOrder != ''><span data-sort-direction="${title.sortOrder}"></span></#if>
+                                    </th>
+                                <#else>
+                                    <#break>
+                                </#if>
+                            </#list>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+            <td class="platformContainerCell">
+                <div id="platformRightTopContainer" class="platformSpecContainers">
+                    <table id="platformFreezeHeader" class="platformLayout" border="1">
+                        <tr>
+                            <#list renderData.titles as title>
+                                <#if title_index gte columnFreezeCount>
+                                    <th data-column-name="${title.columnName}" <#if title.display == 'hidden'>class="platformHideColumn"</#if>>
+                                        ${title.value}
+                                        <#if title.sortOrder != ''><span data-sort-direction="${title.sortOrder}"></span></#if>
+                                    </th>
+                                </#if>
+                            </#list>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class="platformContainerCell">
+                <div id="platformLeftBottomContainer" class="platformSpecContainers">
+                    <table id="platformFreezeSelector" class="platformLayout" border="1">
+                        <#list renderData.lines as line>
+                            <tr <#if line_index gte 50>class="platformHideElement"</#if>>
+                                <td><input type="checkbox" name="${line.lineId}" /></td>
+                                <#list line.values as value>
+                                    <#if value_index lt columnFreezeCount>
+                                        <td>
+                                            ${value.html}
+                                        </td>
+                                    <#else>
+                                        <#break>
+                                    </#if>
+                            </#list>
+                            </tr>
+                        </#list>
+                    </table>
+                </div>
+            </td>
+            <td class="platformContainerCell">
+                <div id="platformRightBottomContainer" class="platformSpecContainers">
+                    <table id="platformSublist" class="platformLayout" border="1">
+                        <tr>
+                            <#list renderData.titles as title>
+                                <#if title_index gte columnFreezeCount>
+                                    <th <#if title.display == 'hidden'>class="platformHideColumn"</#if>>
+                                        ${title.value}
+                                    </th>
+                                </#if>
+                            </#list>
+                        </tr>
+                        <#list renderData.lines as line>
+                            <tr class="${line.lineId} <#if line_index gte 50>platformHideElement</#if>">
+                                <#list line.values as value>
+                                    <#if value_index gte columnFreezeCount>
+                                        <td <#if value.display == 'hidden'>class="platformHideColumn"</#if>>
+                                            ${value.html}
+                                        </td>
+                                    </#if>
+                                </#list>
+                            </tr>
+                        </#list>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function (e) {
+            if(!Array.from){
+                alert('您的浏览器过于老旧，很多功能将无法正常使用。请使用最新版的Chrome，Firefox或者Edge浏览器');
+                return true;
+            }
+        });
+    </script>
+</div>

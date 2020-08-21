@@ -5,18 +5,25 @@
 define([
     'N/url',
     'N/https',
+    'N/record',
     'N/search',
+    'N/ui/message',
     '../../../helper/operation_assistant'
 ], function(
     url,
     https,
+    record,
     search,
+    message,
     operation
 ) {
     var mode = undefined
+    var underway = false
     var oldQuantity = new Object()
+    var currentRecord = undefined
     function pageInit(context){
         console.log('pageinit')
+      currentRecord = context.currentRecord;
         mode = context.mode
 
         if(mode === 'edit')
@@ -24,7 +31,7 @@ define([
             setOldQuantity(context.currentRecord)
         }
 
-        changeTitle(context)
+        changeTitle(context);
     }
 
     function changeTitle(context){
@@ -176,36 +183,41 @@ define([
                         item : item,
                         fieldId : 'item',
                         action : 'getRelated',
+                        customer : currentRec.getValue('entity'),
+                        department : currentRec.getValue('department'),
                         subsidiary : currentRec.getValue('subsidiary')
                     }
                 })
             }
         }
 
-        if(mode === 'edit')
-        {
-            if(context.fieldId === 'quantity')
-            {
-                var lineCount = currentRec.getLineCount({
-                    sublistId : 'item'
-                })
-                var currIndex = currentRec.getCurrentSublistIndex({
-                    sublistId : 'item'
-                })
-    
-                if(lineCount !== currIndex)
-                {
-                    if(validQuantity(currentRec,currIndex))
-                    {
-                        currentRec.setCurrentSublistValue({
-                            sublistId : 'item',
-                            fieldId : 'quantity',
-                            value : oldQuantity[currIndex]
-                        })
-                    }   
-                }
-            }
-        }
+        // if(currentRec.getValue('custbody_order_status') !== '1')
+        // {
+        //     if(mode === 'edit')
+        //     {
+        //         if(context.fieldId === 'quantity')
+        //         {
+        //             var lineCount = currentRec.getLineCount({
+        //                 sublistId : 'item'
+        //             })
+        //             var currIndex = currentRec.getCurrentSublistIndex({
+        //                 sublistId : 'item'
+        //             })
+        
+        //             if(lineCount !== currIndex)
+        //             {
+        //                 if(validQuantity(currentRec,currIndex))
+        //                 {
+        //                     currentRec.setCurrentSublistValue({
+        //                         sublistId : 'item',
+        //                         fieldId : 'quantity',
+        //                         value : oldQuantity[currIndex]
+        //                     })
+        //                 }   
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     function setItemRelated(params){
@@ -327,7 +339,55 @@ define([
         window.open('/app/common/custom/custrecordentry.nl?rectype=677' + '&estimate=' + id)
     }
 
+    function addprord(id){
+        if(underway) return false
+
+        underway = !underway
+
+        var msg = message.create({
+            title : '处理中！' , 
+            type :  message.Type.CONFIRMATION , 
+            message : '请稍后。。。'
+        })
+        
+        msg.show()
+
+        https.post.promise({
+            url : url.resolveScript({
+                scriptId : 'customscript_om_changefield_response',
+                deploymentId : 'customdeploy_om_changefield_response'
+            }),
+            body : {
+                action : 'addPrOrd',
+                estimateId : id
+            }
+        })
+        .then(function(response){
+            var body = JSON.parse(response.body)
+
+            if(body.msg === 'hello world')
+            {
+                msg.hide()
+                message.create({
+                    title : '已完成！' , 
+                    type :  message.Type.CONFIRMATION , 
+                    message : '处理完成！'
+                }).show()
+
+                setTimeout(function(){location.reload()} , 1000)
+
+                return true
+            }
+
+            console.log(body)
+        })
+        .catch(function(e){
+            console.log(e.message)
+        })
+    }
+
     return {
+        addprord : addprord,
         lineInit : lineInit,
         pageInit : pageInit,
         fieldChanged : fieldChanged,

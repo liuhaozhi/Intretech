@@ -7,6 +7,7 @@
 define([], function(
 ) {
     function add(a, b) {
+        a = a || 0, b = b || 0
         var c, d, e;
         try {
             c = a.toString().split(".")[1].length
@@ -22,6 +23,7 @@ define([], function(
     }
         
     function sub(a, b) {
+        a = a || 0, b = b || 0
         var c, d, e;
         try {
             c = a.toString().split(".")[1].length
@@ -37,6 +39,7 @@ define([], function(
     }
       
     function mul(a, b) {
+        a = a || 0, b = b || 0
         var c = 0,
         d = a.toString(),
         e = b.toString();
@@ -50,6 +53,7 @@ define([], function(
     }
       
     function div(a, b) {
+        a = a || 0, b = b || 0
         var c, d, e = 0,
             f = 0
         try {

@@ -85,12 +85,29 @@ define([
                 sublistId : sublistId,
                 fieldId : 'custpage_check',
                 line : --lineCount
-            }).isDisabled = userRole.toString() !== currentRec.getSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custpage_role',
-                line : lineCount
-            })
+            }).isDisabled = 
+                    userRole.toString() !== currentRec.getSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_role',
+                        line : lineCount
+                }) && AP11112(userRole,lineCount)
         }
+    }
+
+    function AP11112(userRole,lineCount){
+        var appEmp = currentRec.getSublistValue({
+            sublistId : sublistId,
+            fieldId : 'custpage_custbody_nextapproval_1firstname',
+            line : lineCount
+        })
+
+        if(userRole.toString() === '1112' &&  appEmp !== ' ')
+        return true
+
+        if(userRole.toString() !== '1112')
+        return true
+
+        return false
     }
 
     function setCurrentRec(){
@@ -258,6 +275,8 @@ define([
 
     function searchParams(){
         return {
+            myself : currentRec.getText('custpage_myself'),
+            creater : currentRec.getValue('custpage_creater'),
             ordtype : currentRec.getValue('custpage_ordtype'),  
             cacheid : currentRec.getValue('custpage_cacheid'),  
             director : currentRec.getValue('custpage_director'),  
@@ -290,9 +309,9 @@ define([
 
         https.get.promise({
             url : url.resolveScript({
-                scriptId : 'customscript_approve_salesord_response',
-                deploymentId : 'customdeploy_approve_salesord_response',
-                params : {
+                scriptId : 'customscript_approve_estimate_response',
+                deploymentId : 'customdeploy_approve_estimate_response',
+                params: {
                     action : 'ratify',
                     cacheid : currentRec.getValue('custpage_cacheid'),  
                     checked : JSON.stringify(getCheckCache())
@@ -335,8 +354,8 @@ define([
 
         https.get.promise({
             url : url.resolveScript({
-                scriptId : 'customscript_approve_salesord_response',
-                deploymentId : 'customdeploy_approve_salesord_response',
+                scriptId : 'customscript_approve_estimate_response',
+                deploymentId : 'customdeploy_approve_estimate_response',
                 params : {
                     action : 'refuse',
                     cacheid : currentRec.getValue('custpage_cacheid'),  

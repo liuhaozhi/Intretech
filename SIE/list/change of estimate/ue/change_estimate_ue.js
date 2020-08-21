@@ -22,7 +22,6 @@ define([
                 sublistId : 'recmachcustrecord_link_changestimate'
             })
 
-            
             while(lineCount > 0)
             {
                 --lineCount

@@ -19,8 +19,233 @@ define([
                 id : context.newRecord.id
             }))
         }
+
+        if(context.type === 'edit')
+        updatePlanAndEstimate(context.oldRecord,context.newRecord)
     }
 
+    function beforeLoad(context){
+        if(context.type === 'edit')
+        setSalesCache(context.newRecord)
+    }
+
+    function setSalesCache(newRecord){
+        var planINums = new Array()
+        var quantitys = Object.create(null)
+        var lineCount = newRecord.getLineCount({
+            sublistId : 'item'
+        })
+        var quantitysFulfilled = Object.create(null)
+
+        while(lineCount > 0)
+        {
+            var planNum = getPlaNum(newRecord , --lineCount)
+
+            planINums.push(planNum)  
+            quantitys[planNum] = getQuantity(newRecord , lineCount)
+            quantitysFulfilled[planNum] = getQuantityFulfilled(newRecord , lineCount)
+        }
+
+        newRecord.setValue({
+            fieldId : 'custbody_sales_cache',
+            value : JSON.stringify({
+                quantitys : quantitys,
+                salesInfo :getSalesInfo(planINums),
+                quantitysFulfilled : quantitysFulfilled
+            })
+        })
+
+        // var salesInfo = getSalesInfo(planINums)
+        log.error('cache', {
+            quantitys : quantitys,
+            salesInfo :getSalesInfo(planINums) 
+        })
+    }
+
+    function getQuantityFulfilled(record,line){
+        return record.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'quantityfulfilled',
+            line : line
+        })
+    }
+
+    function getSalesInfo(planINums){
+        var salesInfo = Object.create(null)
+
+        search.create({
+            type : 'customrecord_shipping_plan',
+            filters : getFilters(planINums),
+            columns : [
+                'custrecord_p_quantity' ,
+                'custrecord_p_custcol_plan_number' , 
+                'custrecord_quantity_shipped' 
+            ]
+        })
+        .run()
+        .each(function(res){
+            var planNum = res.getValue('custrecord_p_custcol_plan_number')
+
+            if(!salesInfo[planNum])
+            {
+                salesInfo[planNum] = operation.sub(
+                    res.getValue('custrecord_p_quantity'),
+                    res.getValue('custrecord_quantity_shipped')
+                )
+            }else{
+                salesInfo[planNum] = operation.add(salesInfo[planNum] , operation.sub(
+                    res.getValue('custrecord_p_quantity'),
+                    res.getValue('custrecord_quantity_shipped')
+                ) ) 
+            }
+
+            return true
+        })
+
+        return salesInfo
+    }
+
+    function updatePlanAndEstimate(oldRecord,newRecord){
+        // var estimateInfo= Object.create(null)
+        log.error('enter')
+        var difference  = getDifference(oldRecord,newRecord)
+
+        if(!Object.keys(difference).length) return false
+
+        search.create({
+            type : 'customrecord_shipping_plan',
+            filters : getFilters(Object.keys(difference)),
+            columns : [
+                'custrecord_p_quantity' ,
+                'custrecord_p_custcol_salesorder' ,
+                'custrecord_p_custcol_plan_number' , 
+                'custrecord_quantity_shipped' 
+            ]
+        })
+        .run()
+        .each(function(res){
+            var currShiped   = undefined
+            var planNumber   = res.getValue('custrecord_p_custcol_plan_number')
+            var itemQuantity = res.getValue('custrecord_p_quantity')
+            var itemShipped  = res.getValue('custrecord_quantity_shipped')
+
+            operation.add(difference[planNumber],itemShipped) <= itemQuantity ? 
+            currShiped = difference[planNumber] :
+            currShiped = operation.sub(itemQuantity,itemShipped)
+           
+            difference[planNumber] = operation.sub(difference[planNumber] , currShiped)
+
+            // var itemShipped  = operation.sub(res.
+            // getValue('custrecord_quantity_shipped'),
+            //     difference[planNumber]
+            // )
+
+            // var estimateOrd  = res.getValue('custrecord_p_custcol_salesorder')
+
+            // if(!estimateInfo[estimateOrd])
+            // estimateInfo[estimateOrd] = Object.create(null)
+
+            // estimateInfo[estimateOrd][planNumber] = itemShipped
+            log.error('currShiped',currShiped)
+            log.error('itemShipped',itemShipped)
+            try{
+                record.submitFields({
+                    type : 'customrecord_shipping_plan',
+                    id : res.id,
+                    values : {
+                        custrecord_quantity_shipped : operation.add(itemShipped , currShiped),
+                        custrecord_salesorder_shipped : itemQuantity == operation.add(currShiped , itemShipped) 
+                    }
+                })
+            }catch(e){
+                throw e.message
+            }
+
+            return true
+        })
+
+        // updateEstimate(estimateInfo)
+    }
+
+    function updateEstimate(estimateInfo){
+        log.error('estimateInfo',estimateInfo)
+        // Object.keys(estimateInfo).map(function(id){
+        //     var estOrd = record.load({
+        //         type : 'estimate',
+        //         id : id
+        //     })
+
+        //     Object.keys(estimateInfo[id]).map(function(plan){
+        //         var  index = estOrd.findIndexWithValue({
+        //             sublistId : 'item',
+        //             fieldId : 'custcol_plan_number',
+        //             value : plan
+        //         })
+
+        //         if(index > -1)
+        //         {
+        //             estOrd.setSublistValue({
+        //                 sublistId : 'item',
+        //                 fieldId : ''
+        //             })
+        //         }
+        //     })
+        // })
+    }
+
+    function getFilters(planINums){
+        var filters = new Array()
+        
+        planINums.map(function(item){
+            filters.length === 0 ? filters.push(['custrecord_p_custcol_plan_number' , 'is' , item]) :
+            filters.push('OR' , ['custrecord_p_custcol_plan_number' , 'is' , item]) 
+        })
+        log.error('filters',filters)
+        return filters
+    }
+
+    function getDifference(oldRecord,newRecord){
+        var difference= Object.create(null)
+        var lineCount = newRecord.getLineCount({
+            sublistId : 'item'
+        })
+
+        while(lineCount > 0)
+        {
+            var newRecPlanNum = getPlaNum(newRecord ,--lineCount)
+            var oldRecPlanNum = getPlaNum(oldRecord , lineCount)
+
+            if(newRecPlanNum === oldRecPlanNum)
+            {
+                var newQuantity = getQuantity(newRecord , lineCount)
+                var oldQuantity = getQuantity(oldRecord , lineCount)
+
+                if(newQuantity !== oldQuantity)
+                {
+                    difference[newRecPlanNum] = operation.sub(newQuantity , oldQuantity) 
+                }
+            }
+        }
+        log.error('difference',difference)
+        return difference
+    }
+
+    function getPlaNum(record,line){
+        return record.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_plan_number',
+            line : line
+        })
+    }
+
+    function getQuantity(record,line){
+        return record.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'quantity',
+            line : line
+        })
+    }
+    
     function getItems(newRecord){
         var items = new Array()
         var lineCount = newRecord.getLineCount({
@@ -40,6 +265,7 @@ define([
     }
 
     function setLineInventory(salesorder){
+        var salesOrds = new Array()
         var inventory = getInventory(getItems(salesorder) , salesorder.getValue('subsidiary'))
         var lineCount = salesorder.getLineCount({
             sublistId : 'item'
@@ -63,6 +289,12 @@ define([
                 line : i
             })
 
+            salesOrds.push(salesorder.getSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_salesorder',
+                line : i
+            }))
+
             if(inventory[item])
             {
                 for(var key in inventory[item])
@@ -85,6 +317,11 @@ define([
                 }
             }
         }
+
+        salesorder.setValue({
+            fieldId : 'custbody_lead',
+            value : salesOrds
+        })
 
         salesorder.save({ignoreMandatoryFields : false})
     }
@@ -221,6 +458,7 @@ define([
     }
 
     return {
-        afterSubmit: afterSubmit
+        beforeLoad : beforeLoad,
+        afterSubmit : afterSubmit
     }
 });

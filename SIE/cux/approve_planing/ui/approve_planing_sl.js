@@ -67,7 +67,7 @@ define([
     function addButtons(form){
         form.addButton({
             id : 'custpage_search',
-            label : 'search',
+            label : 'Search',
             functionName : 'searchLines'
         })
 
@@ -179,7 +179,7 @@ define([
     }
 
     function bindSublists(params,form,sublist){
-        var filters = getSearchFilters(params,runtime.getCurrentUserId() + 'ApproveCache','searchFilters')
+        var filters = getSearchFilters(params,runtime.getCurrentUserId() + 'ApprovePlanCache','searchFilters')
         var pageDate = search.create({
             type : 'customrecord_shipping_plan',
             filters : filters,

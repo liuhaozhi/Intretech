@@ -10,7 +10,9 @@ define({
         filters.push(
             ['mainline' , 'is' , 'F'],
             'AND',
-            ['taxline' , 'is' , 'F']
+            ['taxline' , 'is' , 'F'],
+            'AND',
+            ['custbody_sales_status' , 'noneof' , '14']
         )
 
         if(params.printype === '1') //运输发票

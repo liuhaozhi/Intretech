@@ -91,6 +91,13 @@ define({
                 defaultValue : params.salesorder || ''
             },
             {
+                id : 'k3order',
+                label : 'k3订单号(k3 order)',
+                type : 'text',
+                container : 'custpage_filters' ,
+                defaultValue : params.k3order || ''
+            },
+            {
                 id : 'invoicenum' ,
                 label : '发票号(invoicenum)' , 
                 type : 'text' ,

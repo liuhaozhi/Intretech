@@ -3,8 +3,60 @@
  *@NScriptType UserEventScript
  */
 define([
+    'N/format',
     '../../../helper/operation_assistant'
-], function(operation) {
+], function(format , operation) {
+    function beforeLoad(context){
+        log.error('enter')
+        if(context.type === 'view' || context.type === 'edit')
+        {
+            setDomesticTotal(context)
+        }
+
+        if(context.type === 'create')
+        {
+            setDomesticField(context)
+        }
+    }
+
+    function setDomesticField(context){
+        context.form.addField({
+            type : 'inlinehtml',
+            id : 'custpage_hackscript',
+            label : 'custpage_hackscript'
+        }).defaultValue = getDefaultValue()
+    }
+
+    function getDefaultValue(domesticTotal){
+        if(domesticTotal === undefined)
+        domesticTotal = '0.00'
+
+        return '<script>var parentNode = jQuery("#total_fs_lbl_uir_label").parent().parent(); '+
+        'var defaultValue  =' + 
+        '\'<div class="uir-field-wrapper" data-field-type="currency">' +
+            '<span id="total_domesticTotal" class="smalltextnolink uir-label ">' +
+                '<span id="" class="smalltextnolink" style="">总计(本币)</span>' +
+            '</span>' +
+            '<span class="uir-field inputreadonly" id="domesticTotal">' +
+                domesticTotal +
+            '</span>' +
+        '</div>\'' +
+        ';parentNode.html(parentNode.html()+defaultValue)</script>'
+    }
+
+    function setDomesticTotal(context){
+        var newRecord = context.newRecord
+        var domesticTotal = operation.mul(newRecord.getValue('total') , newRecord.getValue('exchangerate'))
+
+        context.form.addField({
+            type : 'inlinehtml',
+            id : 'custpage_hackscript',
+            label : 'custpage_hackscript'
+        }).defaultValue = getDefaultValue(format.format({
+            type : format.Type.CURRENCY,
+            value :domesticTotal
+          }))
+    }
 
     function beforeSubmit(context) {
         if(context.type === 'create' || context.type === 'edit')
@@ -17,9 +69,9 @@ define([
             while(lineCount > 0)
             {
                 --lineCount
-                var exchangerate = newRecord.getValue('exchangerate')
-                var quantity = getSubValue('quantity',lineCount,newRecord)
-                var price = getSubValue('custcol_unit_notax',lineCount,newRecord)
+                var exchangerate = newRecord.getValue('exchangerate') || 1
+                var quantity = getSubValue('quantity',lineCount,newRecord) || 0
+                var price = getSubValue('custcol_unit_notax',lineCount,newRecord) || 0
                 var textRate = parseFloat(getSubValue('taxrate1',lineCount,newRecord))
                 var fdiscount = parseFloat(getSubValue('custcol_fdiscount',lineCount,newRecord))
                 var rate = operation.mul(price || 0, isNaN(fdiscount) ? 1 :  fdiscount / 100)
@@ -62,6 +114,7 @@ define([
     }
     
     return {
-        beforeSubmit: beforeSubmit
+        beforeLoad : beforeLoad,
+        beforeSubmit : beforeSubmit
     }
 });

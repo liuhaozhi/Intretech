@@ -5,6 +5,7 @@
 define([
     'N/cache',
     'N/search',
+    'N/format',
     'N/record',
     'N/redirect',
     'N/ui/serverWidget',
@@ -15,7 +16,7 @@ define([
     '../../helper/wrapper_runtime',
     '../../helper/operation_assistant'
 ], function(
-    cache , search , record , redirect , ui , searchFilters , searchColumns  , searchFiltersConfig , 
+    cache , search ,  format , record , redirect , ui , searchFilters , searchColumns  , searchFiltersConfig , 
     sublistFieldsConfig , runtime , operation
 ) {
     var FIELDPR = 'custpage_'
@@ -52,6 +53,9 @@ define([
         })
 
         form.clientScriptModulePath = '../cs/item_fulfillment_cs'
+
+        if(!params.subsidiary)
+        params.subsidiary = runtime.getCurrentUser().subsidiary
 
         if(params.subsidiary)
         {
@@ -118,8 +122,20 @@ define([
 
         form.addButton({
             id : 'custpage_search',
-            label : 'search',
+            label : '查询',
             functionName : 'searchLines'
+        })
+
+        form.addButton({
+            id : 'custpage_viewsalesord',
+            label : '查看发货单',
+            functionName : 'viewsalesord'
+        })
+
+        form.addButton({
+            id : 'custpage_viewfullment',
+            label : '查看出库单',
+            functionName : 'viewfullment'
         })
     }
 
@@ -198,6 +214,7 @@ define([
     }
 
     function addPageFields(params){
+        log.error('params',params)
         var currPageField = params.form.addField({
             id : FIELDPR + 'currpage',
             label : '当前页',
@@ -211,6 +228,13 @@ define([
             type : 'select',
             container : params.target
         })
+
+        params.form.addField({
+            id : FIELDPR + 'expensedate',
+            label : '实际交货日期',
+            type : 'date',
+            container : params.target
+        }).defaultValue = params.expensedate || ''
 
         for(var i = 1 ; i <= params.pageCount; i ++){
             currPageField.addSelectOption({
@@ -262,6 +286,7 @@ define([
                     boxnum : params.custpage_boxnum,
                     advice : params.custpage_advice,
                     isexport : params.custpage_isexport,
+                    expensedate : params.custpage_expensedate,
                     customerord : params.custpage_customerord
                 }
             })
@@ -371,6 +396,16 @@ define([
                         sublistId : 'item',
                         fieldId : 'location',
                         value : params.custpage_location
+                    })
+
+                    if(params.expensedate)
+                    fulfillRecord.setCurrentSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'expectedshipdate',
+                        value : format.parse({
+                            type : format.Type.DATE,
+                            value : params.expensedate
+                        }) 
                     })
 
                     var subDetail = fulfillRecord.getCurrentSublistSubrecord({
@@ -671,7 +706,8 @@ define([
                 target : 'custpage_lists',
                 pageCount : pageDate.pageRanges.length,
                 currPage : params.currPage || 1,
-                pageSize : pageDate.pageSize
+                pageSize : pageDate.pageSize,
+                expensedate : params.expensedate
             })
 
             pageDate.fetch({
@@ -758,6 +794,12 @@ define([
             value : line
         })
 
+        sublist.setSublistValue({
+            id : FIELDPR + 'available',
+            line : index,
+            value : '0'
+        })
+
         if(custline)
         sublist.setSublistValue({
             id : FIELDPR + 'custline',
@@ -782,7 +824,8 @@ define([
         sublist.setSublistValue({
             id : FIELDPR + 'tranid',
             line : index,
-            value : res.getValue('tranid')
+            value : '<a target="_blank" style="color:blue!important" href="'
+            +'/app/accounting/transactions/salesord.nl?id='+ res.id +'&whence=">'+res.getValue('tranid')+'</a>'
         }) //单据编号
 
         if(res.getValue('trandate'))

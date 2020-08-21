@@ -105,6 +105,8 @@ define([
                 }
             }
         }  
+
+        return Object.create(null)
     }
 
     function hiddenScriptIdField(form){
@@ -199,7 +201,7 @@ define([
     }
 
     function beforeSubmit(context){
-        if(context.type === context.UserEventType.DELETE)
+    	  if(context.type === context.UserEventType.DELETE)
         throw '请勿尝试删除此项'
 
         if(!context.oldRecord)
@@ -671,6 +673,11 @@ define([
                             fieldId : 'custrecord_p_custcol_boxes_numbers'
                         })))
                     })
+
+                    copyRecord.setValue({
+                        fieldId : 'custrecord_quantity_shipped',
+                        value : ''
+                     })
 
                     copyRecord.setValue({ 
                         fieldId : 'custrecord_p_custcol_total_net_weight',

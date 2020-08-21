@@ -103,7 +103,6 @@ define([
         jQuery('.openChild').on('click',function(e){
             var parent = jQuery(this)
             .parent('td:first')
-            console.log(parent.attr('style'))
             var parentSiblings = jQuery(this)
             .parent('td:first')
             .siblings()
@@ -113,7 +112,6 @@ define([
            
             for(var i = 0 ; i < parentSiblings.length ; i ++)
             {
-                console.log(jQuery(parentSiblings[i]).attr('style'))
                 jQuery(parentSiblings[i])
                 .css("cssText",jQuery(parentSiblings[i]).attr('style') + ";background-color: #95D179 !important;")
             }
@@ -125,8 +123,10 @@ define([
             maxHeight : '500px',
             overflow : 'auto'
         })
-        jQuery('td textarea')
+        
+        jQuery('textarea[name^=custpage_detail]')
         .attr({disabled : true})
+
         window.onbeforeunload = function(){}
     }
 
@@ -261,7 +261,9 @@ define([
     }
 
     function fieldChanged(context) {
-        if(context.fieldId === 'custpage_subsidiary')
+        var fieldId = context.fieldId
+
+        if(fieldId === 'custpage_subsidiary')
         {
             if(currentRec.getValue(context.fieldId))
             {
@@ -273,11 +275,11 @@ define([
                     value : null
                 })
     
-                changeCustomerSelectOption(customerField,currentRec.getValue(context.fieldId))
+                changeCustomerSelectOption(customerField,currentRec.getValue(fieldId))
             }
         }
 
-        if(context.fieldId === 'custpage_isintercompany')
+        if(fieldId === 'custpage_isintercompany')
         {
             var isintercompany = currentRec.getValue({
                 fieldId : 'custpage_isintercompany'
@@ -288,7 +290,7 @@ define([
             }).isMandatory = isintercompany === '2'
         }
 
-        if(context.fieldId === 'custpage_currpage')
+        if(fieldId === 'custpage_currpage')
         {
             turnPage({
                 currPage : currentRec.getValue('custpage_currpage'),
@@ -297,20 +299,114 @@ define([
             })
         }
 
-        if(context.fieldId === 'custpage_pagesize')
+        if(fieldId === 'custpage_pagesize')
         {
             searchLines(currentRec.getValue('custpage_pagesize'))
         }
 
-        if(context.fieldId === 'custpage_check')
+        if(fieldId === 'custpage_check')
         {
-            setCountInfo(context.fieldId)
+            setCountInfo(fieldId)
         }
 
-        if(context.fieldId === 'custpage_customer')
+        if(fieldId === 'custpage_customer')
         {
-            setCustomerCurrency(context.fieldId)
+            setCustomerCurrency(fieldId)
         }
+
+        if(fieldId === 'custpage_quantity')
+        {
+            if(validQuantity())
+            {  
+                currentRec.setCurrentSublistValue({
+                    sublistId : sublistId,
+                    fieldId : fieldId,
+                    value : currentRec.getCurrentSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_opquantity'
+                    })
+                })
+            } 
+        }
+    
+
+        if(fieldId === 'custpage_salesorder')
+        setSalesInfo(fieldId)
+    }
+
+    function setSalesInfo(fieldId){
+        var salesId = currentRec.getValue(fieldId)
+
+        if(salesId)
+        {
+            var salesInfo = search.lookupFields({
+                type : 'estimate',
+                id : salesId , 
+                columns : [
+                    'subsidiary' , 'entity' , 'currency' , 'custbody_cust_ordertype' , 'custbody_final_customer' , 
+                    'custbody_whether_ntercompany_transact' , 'custbody_source_purchase' , 'custbody_source_doc_creator'
+                ]
+            })
+
+            if(salesInfo.subsidiary && salesInfo.subsidiary[0])
+            currentRec.setValue({
+                fieldId : 'custpage_subsidiary',
+                value : salesInfo.subsidiary[0].value
+            })
+
+            if(salesInfo.entity && salesInfo.entity[0])
+            currentRec.setValue({
+                fieldId : 'custpage_customer',
+                value : salesInfo.entity[0].value
+            })
+
+            if(salesInfo.currency && salesInfo.currency[0])
+            currentRec.setValue({
+                fieldId : 'custpage_currency',
+                value : salesInfo.currency[0].value
+            })
+
+            if(salesInfo.custbody_whether_ntercompany_transact)
+            {
+                currentRec.setValue({
+                    fieldId : 'custpage_isintercompany',
+                    value : salesInfo.custbody_source_purchase ? '1' : '2'
+                })
+            }
+
+            if(salesInfo.custbody_final_customer && salesInfo.custbody_final_customer[0])
+            currentRec.setValue({
+                fieldId : 'custpage_endcustomer',
+                value : salesInfo.custbody_final_customer[0].value
+            })
+
+            if(salesInfo.custbody_cust_ordertype && salesInfo.custbody_cust_ordertype[0])
+            currentRec.setValue({
+                fieldId : 'custpage_ordertype',
+                value : salesInfo.custbody_cust_ordertype[0].value
+            })
+
+            if(salesInfo.custbody_source_doc_creator && salesInfo.custbody_source_doc_creator[0])
+            currentRec.setValue({
+                fieldId : 'custpage_sourcemp',
+                value : salesInfo.custbody_source_doc_creator[0].value
+            })
+        }
+    }
+
+    function validQuantity(){
+        debugger
+        var oldValue = currentRec.getCurrentSublistValue({
+            sublistId : sublistId,
+            fieldId : 'custpage_opquantity'
+        })
+
+        var newValue = currentRec.getCurrentSublistValue({
+            sublistId : sublistId,
+            fieldId : 'custpage_quantity'
+        })
+
+        return Number(newValue) > Number(oldValue)
     }
 
     function setCustomerCurrency(customer){
@@ -528,8 +624,9 @@ define([
 
     function searchParams(){
         return {
-            item : currentRec.getValue('custpage_item'),
+            item : JSON.stringify(currentRec.getValue('custpage_item')),
             title : currentRec.getValue('custpage_title'),
+            k3order : currentRec.getValue('custpage_k3order'),
             cacheid : currentRec.getValue('custpage_cacheid'),
             currency : currentRec.getValue('custpage_currency'),
             trandate : currentRec.getText('custpage_trandate'),
@@ -544,11 +641,11 @@ define([
             disposetype : currentRec.getValue('custpage_disposetype'),
             deliverydatend : currentRec.getText('custpage_deliverydatend'),
             deliverydatestar : currentRec.getText('custpage_deliverydatestar'), 
-            isintercompany : currentRec.getValue('custpage_isintercompany')
+            isintercompany : currentRec.getValue('custpage_isintercompany'),
+            expectedshipdate : currentRec.getText('custpage_expectedshipdate')
         }
     }
     
-
     return {
         pageInit : pageInit,
         saveRecord : saveRecord,

@@ -124,7 +124,7 @@ define([
                 {
                     var index = salesorder.findSublistLineWithValue({
                         sublistId : 'item',
-                        fieldId : 'custcol_line',
+                        fieldId : 'custcol_plan_number',
                         value : line
                     })
 
@@ -271,7 +271,7 @@ define([
                         {
                             var lineItem = invoiceRe.getSublistValue({
                                 sublistId : 'item',
-                                fieldId : 'custcol_line',
+                                fieldId : 'custcol_plan_number',
                                 line : i
                             })
     
@@ -284,6 +284,30 @@ define([
                                     value : salesItem[item].quantity
                                 })
                             }
+
+                            var exchangerate = invoiceRe.getValue('exchangerate') || 1
+                            var quantity = getSubValue('quantity',i,invoiceRe) || 0
+                            var price = getSubValue('custcol_unit_notax',i,invoiceRe) || 0
+                            var textRate = parseFloat(getSubValue('taxrate1',i,invoiceRe))
+                            var fdiscount = parseFloat(getSubValue('custcol_fdiscount',i,invoiceRe))
+                            var rate = operation.mul(price || 0, isNaN(fdiscount) ? 1 :  fdiscount / 100)
+                            var hasTaxRate = operation.mul(price || 0, operation.add(1 , isNaN(textRate) ? 0 : textRate / 100 ))
+                            var disHasTaxRate = operation.mul(rate , operation.add(1 , isNaN(textRate) ? 0 : textRate / 100 ))
+                            var discountAmount = operation.mul(operation.sub(hasTaxRate, disHasTaxRate)  , quantity)
+                            var amount = operation.mul(rate,quantity).toFixed(2)
+                            var taxAmt = operation.mul(amount,isNaN(textRate) ? 0 : textRate / 100).toFixed(2)
+                
+                            setSubValue('rate' , rate , i , invoiceRe) //折后单价 不含税
+                            setSubValue('custcol_unit_tax' , hasTaxRate , i , invoiceRe) //折前单价（含税)
+                            setSubValue('custcol_funit' , disHasTaxRate , i , invoiceRe) //折后单价 (含税)
+                            setSubValue('custcol_om_before_discount' , operation.mul(price , quantity) , i , invoiceRe) //折前金额（不含税）
+                            setSubValue('custcol_before_tax' , operation.mul(hasTaxRate , quantity) , i , invoiceRe) //折前金额（含税）
+                            setSubValue('custcol_discount' , discountAmount , i , invoiceRe) //总折扣额
+                            setSubValue('custcol_om_total_discount' , operation.mul(discountAmount , exchangerate) , i , invoiceRe) //总折扣额(本币)
+                            setSubValue('custcol_trueamount' , operation.add(
+                                operation.mul(amount,exchangerate).toFixed(2),
+                                operation.mul(taxAmt,exchangerate).toFixed(2)
+                            ) , i , invoiceRe) //折后含税总金额（本币）
                         }
                     }
 
@@ -302,12 +326,29 @@ define([
        updateInvoiceIds(internalId,invoiceIds)
     }
 
+    function setSubValue(fieldId,value,line,newRecord){
+        newRecord.setSublistValue({ 
+            sublistId : 'item',
+            fieldId : fieldId,
+            value : value,
+            line : line
+        })
+    }
+
+    function getSubValue(fieldId,line,newRecord){
+        return newRecord.getSublistValue({
+            sublistId : 'item',
+            fieldId : fieldId,
+            line : line
+        })
+    }
+
     function deleteOtherLine(invoiceRe,lineCount,lineItems){
         while(lineCount > 0)
         {
             var lineItem = invoiceRe.getSublistValue({
                 sublistId : 'item',
-                fieldId : 'custcol_line',
+                fieldId : 'custcol_plan_number',
                 line : --lineCount
             })
 
@@ -375,7 +416,7 @@ define([
             
             saleOrds[orderId][newRecord.getSublistValue({
                 sublistId : sublistId,
-                fieldId : 'custrecord_ci_hanghao',
+                fieldId : 'custrecord_planum',
                 line : i
             })] = {
                 item : newRecord.getSublistValue({
@@ -415,7 +456,7 @@ define([
                     {
                         var index = saleOrder.findSublistLineWithValue({
                             sublistId : 'item',
-                            fieldId : 'line',
+                            fieldId : 'custcol_plan_number',
                             value : item
                         })
         
@@ -456,6 +497,7 @@ define([
     function updateSalesorder(newRecord){
         var prinType  = newRecord.getValue('custrecord_danjuleixing')
         var sublistLines = getSublistLines(newRecord)
+        log.error('sublistLines',sublistLines)
 
         if(prinType === '2')
         {

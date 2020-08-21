@@ -83,7 +83,14 @@ define([
     }
 
     function saveRecord(context) {
-        if(currentRec.getValue(allFields.outputype) === '2')
+        var invoiceField = currentRec.getField({
+            fieldId : allFields.invoice
+        }).isDisabled
+        var invoicentryField = currentRec.getField({
+            fieldId : allFields.invoicentry
+        }).isDisabled
+
+        if(invoiceField === false || invoicentryField === false)
         {
             if(!currentRec.getValue(allFields.invoice) && !currentRec.getValue(allFields.invoicentry))
             {
@@ -293,6 +300,13 @@ define([
         if(context.fieldId === allFields.customer)
         {
             setCustomerCurrency(context.fieldId)
+        }
+
+        if(context.fieldId === allFields.outputype)
+        {
+            currentRec.getField({
+                fieldId : allFields.invoicentry
+            }).isDisabled = currentRec.getValue(context.fieldId) === '1'
         }
     }
 

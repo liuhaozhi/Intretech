@@ -1,0 +1,6 @@
+{
+    "id" : "internalid",
+    "orderNum" : "tranid",
+    "wuliao" : "item",
+    "orderDate" : "trandate"
+}

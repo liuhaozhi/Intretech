@@ -5,11 +5,75 @@
  */
 define([
     'N/record',
-    'N/search'
+    'N/search',
+    '../../../helper/operation_assistant'
 ], function(
     record,
-    search
+    search,
+    assistant
 ) {
+    function beforeLoad(context){
+        insertHackStyle(context)
+        log.error(context.type)
+        if(context.type === 'create')
+        setLineTotal(context.newRecord)
+    }
+
+    function setLineTotal(newRecord){
+        var lineCount = newRecord.getLineCount({
+            sublistId : 'apply'
+        })
+
+        while(lineCount > 0)
+        {
+            var apply = newRecord.getSublistValue({
+                sublistId : 'apply',
+                fieldId : 'apply',
+                line : --lineCount
+            })
+            log.error(apply)
+            if(apply)
+            {
+                var disc = newRecord.getSublistValue({
+                    sublistId : 'apply',
+                    fieldId : 'disc',
+                    line : lineCount
+                })
+                var amount = newRecord.getSublistValue({
+                    sublistId : 'apply',
+                    fieldId : 'amount',
+                    line : lineCount
+                })
+
+                newRecord.setSublistValue({
+                    sublistId : 'apply',
+                    fieldId : 'amount',
+                    line : line,
+                    value : assistant.add(disc || 0 , amount || 0)
+                })
+            }
+        }
+    }
+
+    function insertHackStyle(context){
+        context.form.addField({
+            type : 'inlinehtml',
+            label : 'hackstyle',
+            id : 'custpage_hackstyle'
+        }).defaultValue = '<script>'+
+        'var timeOut = setTimeout(function(){' +
+            'var content1 = jQuery(".listheader:contains(手续费)");' +
+            'var content2 = jQuery(".listheader:contains(实际收款金额)");' +
+            'if(content1.length === 0 || content2.length === 0){' +
+                'jQuery(".listheader:contains(应得折扣)").text("手续费");' +
+                'jQuery(".listheader:contains(付款)").text("实际收款金额");' +
+            '}else{' +
+                'clearTimeout(timeOut)' +
+            '}' +
+        '}, 50)' +
+        '</script>'
+    }
+
     function afterSubmit(context) {
         if(context.type === 'create')
         {
@@ -143,6 +207,7 @@ define([
     }
 
     return {
-        afterSubmit: afterSubmit
+        beforeLoad : beforeLoad,
+        afterSubmit : afterSubmit
     }
 });

@@ -28,7 +28,7 @@ define({
             },
             {
                 id : 'item' ,
-                label : '物料' , 
+                label : '物料编码' , 
                 type : 'select',
                 source : 'item' ,
                 displayType : 'inline'
@@ -44,14 +44,32 @@ define({
                 type : 'text' 
             },
             {
+                id : 'allquantity',
+                label : '计划数量',
+                type : 'text',
+                displayType : params.disposetype === '2' ? 'INLINE' : 'HIDDEN'
+            },
+            {
+                id : 'quantityshipped',
+                label : '已发货数量',
+                type : 'text',
+                displayType : params.disposetype === '2' ? 'INLINE' : 'HIDDEN'
+            },
+            {
+                id : 'opquantity' ,
+                label : '数量1' , 
+                type : 'text' ,
+                displayType : 'hidden'
+            },
+            {
                 id : 'quantity' ,
-                label : '数量' , 
+                label : '本次发货数量' , 
                 type : 'text' ,
                 displayType : 'ENTRY'
             },
             {
                 id : 'expectedshipdate' ,
-                label : '交期' , 
+                label : '计划交期' , 
                 type : 'text' 
             },
             {

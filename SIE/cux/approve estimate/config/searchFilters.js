@@ -35,6 +35,34 @@ define({
                 break
             }      
         }
+        else
+        {
+            filters.push(
+                'AND',
+                ['custbody_order_status' , 'noneof' , ['14']]
+            )
+        }
+
+        if(params.myself === 'T'){
+            if(params.role != '1112'){
+                filters.push(
+                    'AND',
+                    ['custbody_workflow' , 'anyof' , [params.role]]
+                )
+            }else{
+                filters.push(
+                    'AND',
+                    ['custbody_next_approve' , 'anyof' , ['1']]
+                )
+            }
+        }
+
+        if(params.creater){
+            filters.push(
+                'AND',
+                ['custbody_wip_documentmaker' , 'anyof' , [params.creater]]
+            )
+        }
 
         if(params.director)
         {

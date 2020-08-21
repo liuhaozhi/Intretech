@@ -47,10 +47,12 @@ define([
 
         mySearch.run().each(function(res){
             ++count
+            var orderType  = res.getValue(mySearch.columns[5])
             var newxtAppro = res.getValue(mySearch.columns[4])
             var difference = operation.sub(res.getValue(mySearch.columns[3]) , checkedEle[res.getValue(mySearch.columns[0])])
+            var companies  = res.getValue(mySearch.columns[6])
 
-            if(userRole.toString() !== res.getValue(mySearch.columns[2]))
+            if(userRole.toString() !== res.getValue(mySearch.columns[2]) && userRole.toString() !== '1112')
             {
                 errorArr.push('订单号:' + res.getValue(mySearch.columns[1]) + '，审批角色错误,处理失败')
                 return true
@@ -64,22 +66,59 @@ define([
 
             if(action === 'ratify')
             {
-                workflow.trigger({
-                    recordType : 'estimate',
-                    recordId   : res.getValue(mySearch.columns[0]),
-                    workflowId : 'customworkflow35',
-                    actionId : newxtAppro === '1' ? 'workflowaction2292' : 'workflowaction2771'
-                })
+                if(orderType !== '1' && orderType !== '7')
+                {
+                    log.error('companies',companies)
+                    if(companies === true && newxtAppro === '1' )
+                    {
+                        workflow.trigger({
+                            recordType : 'estimate',
+                            recordId   : res.getValue(mySearch.columns[0]),
+                            workflowId : 'customworkflow35',
+                            actionId : 'workflowaction3258'
+                        })
+                    }
+                    else
+                    {
+                        workflow.trigger({
+                            recordType : 'estimate',
+                            recordId   : res.getValue(mySearch.columns[0]),
+                            workflowId : 'customworkflow35',
+                            actionId : newxtAppro === '1' ? 'workflowaction2292' : 'workflowaction2771'
+                        })
+                    }
+                }
+                else
+                {
+                    workflow.trigger({
+                        recordType : 'estimate',
+                        recordId   : res.getValue(mySearch.columns[0]),
+                        workflowId : 'customworkflow37',
+                        actionId : 'workflowaction2332'
+                    })   
+                }
             }
 
             if(action === 'refuse')
             {
-                workflow.trigger({
-                    recordType : 'estimate',
-                    recordId   : res.getValue(mySearch.columns[0]),
-                    workflowId : 'customworkflow35',
-                    actionId : newxtAppro === '1' ? 'workflowaction2293' : 'workflowaction2296'
-                })
+                if(orderType !== '1' && orderType !== '7')
+                {
+                    workflow.trigger({
+                        recordType : 'estimate',
+                        recordId   : res.getValue(mySearch.columns[0]),
+                        workflowId : 'customworkflow35',
+                        actionId : newxtAppro === '1' ? 'workflowaction2293' : 'workflowaction2296'
+                    })
+                }
+                else
+                {
+                    workflow.trigger({
+                        recordType : 'estimate',
+                        recordId   : res.getValue(mySearch.columns[0]),
+                        workflowId : 'customworkflow37',
+                        actionId : 'workflowaction2333'
+                    })
+                }
             }
 
             return true
