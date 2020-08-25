@@ -197,29 +197,42 @@ define(['N/record', 'N/search', 'N/ui/message', 'N/ui/dialog', 'N/https', 'N/url
             });
         }
 
-        function searchSubmitClickEvent(scriptContext) {
+        function searchSubmitClickEvent() {
             if(hasDealData) { return alert("还有数据正在处理中，请勿重复提交！"); }
             hasDealData = true;
-            var piceIds = [], selectLines = updatGridInstance.getSelectLines();
+            var priceIds = { 0: [] }, selectLines = updatGridInstance.getSelectLines(), pageIndex = 0;
             if(!selectLines.length) { return alert("您没有勾选任何数据！"); }
             for(var index = selectLines.length - 1; index > -1; index--) {
-                piceIds.push(updatGridInstance.getFieldValue("internalid", selectLines[index]));
+                var id = updatGridInstance.getFieldValue("internalid", selectLines[index]);
+                if(priceIds[pageIndex].length % 200 == 0) {
+                    priceIds[++pageIndex] = priceIds[pageIndex] || [];
+                }
+                priceIds[pageIndex].push(id);
             }
             updatGridInstance.clear();
-            ajaxPost({
-                funcName: "excuteBatchUpdateOrAuditralPriceApply",
-                piceIds: piceIds,
-                type: "Update"
-            }, function(result) {
-                var msg = "<span style='font-weight:bold;'>采购价格明细批量提交成功</span><br/>提交的总数量：<span style='color:#FFC107;'>" + piceIds.length +
-                 "</span> 条<br/>成功数量：<span style='color:blue;'>" + result.success.length + "</span> 条;";
-                msg += (result.faile.length == piceIds.length?  "<br/>全部数量提交失败,": "<br/>") + "失败数量：<span style='color:red;'>" + result.faile.length + "</span> 条;"
-                dialog.alert({
-                    title: '提交成功',
-                    message: msg
+            var allResult = { success: [], faile: [] };
+            inernalSubmit(1);
+            function inernalSubmit(index) {
+                ajaxPost({
+                    funcName: "excuteBatchUpdateOrAuditralPriceApply",
+                    priceIds: priceIds[index],
+                    type: "Update"
+                }, function(result) {
+                    allResult.success = allResult.success.concat(result.success);
+                    allResult.faile = allResult.faile.concat(result.faile);
+                    if(allResult.success.length + allResult.faile.length == selectLines.length) {
+                        var msg = "<span style='font-weight:bold;'>采购价格明细批量提交成功</span><br/>提交更新的总数量：<span style='color:#FFC107;'>" + selectLines.length +"</span> 条<br/>成功数量：<span style='color:blue;'>" + allResult.success.length + "</span> 条;" +
+                        "失败数量：<span style='color:red;'>" + allResult.faile.length + "</span> 条;";
+                        dialog.alert({
+                            title: '提交成功',
+                            message: msg
+                        });
+                        hasDealData = false;
+                    } else {
+                        inernalSubmit(++index);
+                    }
                 });
-                hasDealData = false;
-            });
+            }
         }
 
         function initBatchUpdateSublist(scriptContext) {
@@ -285,6 +298,8 @@ define(['N/record', 'N/search', 'N/ui/message', 'N/ui/dialog', 'N/https', 'N/url
                 body: params
             }).then(function (result) {
                 callBack && callBack(JSON.parse(result.body));
+            }).catch(function(e) {
+                alert("由于网络原因导致请求失败！");
             });
         }
 

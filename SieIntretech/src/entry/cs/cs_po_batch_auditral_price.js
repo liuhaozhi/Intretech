@@ -208,26 +208,40 @@ define(['N/record', 'N/search', 'N/ui/message', 'N/ui/dialog', 'N/https', 'N/url
         function searchSubmitClickEvent(type) {
             if(hasDealData) { return alert("还有数据正在处理中，请勿重复提交！"); }
             hasDealData = true;
-            var piceIds = [], selectLines = auditralGridInstance.getSelectLines();
+            var priceIds = { 0: [] }, selectLines = auditralGridInstance.getSelectLines(), pageIndex = 0;
             if(!selectLines.length) { return alert("您没有勾选任何数据！"); }
             for(var index = selectLines.length - 1; index > -1; index--) {
-                piceIds.push(auditralGridInstance.getFieldValue("internalid", selectLines[index]));
+                var id = auditralGridInstance.getFieldValue("internalid", selectLines[index]);
+                if(priceIds[pageIndex].length % 200 == 0) {
+                    priceIds[++pageIndex] = priceIds[pageIndex] || [];
+                }
+                priceIds[pageIndex].push(id);
             }
             auditralGridInstance.clear();
-            ajaxPost({
-                funcName: "excuteBatchUpdateOrAuditralPriceApply",
-                piceIds: piceIds,
-                type: type
-            }, function(result) {
-                var msg = "<span style='font-weight:bold;'>采购价格明细批量审批成功</span><br/>提交类型：<span style='color:" + (type == "Agree"? "blue": "red") + ";'>" + (type == "Agree"? "同意": "拒绝") + 
-                "</span><br/>提交审批的总数量：<span style='color:#FFC107;'>" + piceIds.length +"</span> 条<br/>成功数量：<span style='color:blue;'>" + result.success.length + "</span> 条;";
-                msg += (result.faile.length == piceIds.length?  "<br/>全部数量提交审批失败,": "<br/>") + "失败数量：<span style='color:red;'>" + result.faile.length + "</span> 条;"
-                dialog.alert({
-                    title: '提交成功',
-                    message: msg
+            var allResult = { success: [], faile: [] };
+            inernalSubmit(1);
+            function inernalSubmit(index) {
+                ajaxPost({
+                    funcName: "excuteBatchUpdateOrAuditralPriceApply",
+                    priceIds: priceIds[index],
+                    type: type
+                }, function(result) {
+                    allResult.success = allResult.success.concat(result.success);
+                    allResult.faile = allResult.faile.concat(result.faile);
+                    if(allResult.success.length + allResult.faile.length == selectLines.length) {
+                        var msg = "<span style='font-weight:bold;'>采购价格明细批量审批成功</span><br/>提交类型：<span style='color:" + (type == "Agree"? "blue": "red") + ";'>" + (type == "Agree"? "同意": "拒绝") + 
+                        "</span><br/>提交审批的总数量：<span style='color:#FFC107;'>" + selectLines.length +"</span> 条<br/>成功数量：<span style='color:blue;'>" + allResult.success.length + "</span> 条;" +
+                        "失败数量：<span style='color:red;'>" + allResult.faile.length + "</span> 条;";
+                        dialog.alert({
+                            title: '提交成功',
+                            message: msg
+                        });
+                        hasDealData = false;
+                    } else {
+                        inernalSubmit(++index);
+                    }
                 });
-                hasDealData = false;
-            });
+            }
         }
 
         function initBatchAuditralSublist(scriptContext) {
@@ -293,6 +307,8 @@ define(['N/record', 'N/search', 'N/ui/message', 'N/ui/dialog', 'N/https', 'N/url
                 body: params
             }).then(function (result) {
                 callBack && callBack(JSON.parse(result.body));
+            }).catch(function(e) {
+                alert("由于网络原因导致请求失败！");
             });
         }
 

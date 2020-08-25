@@ -201,7 +201,6 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
                 curItemId,
                 curItemRate,
                 curItemIsLevel,
-                promptMessage = new Array(),
                 curItemLatestPrice,
                 curItemLatestVendor,
                 curItemLatestAppDate,
@@ -273,14 +272,6 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
                             curLineLatestVendor = priceInfo[curItemId].latest.vendorId;
                             curLineLatestAppDate = priceInfo[curItemId].latest.approveDate;
                         }
-                        //新增下一阶梯提醒
-                        if(priceInfo[curItemId].nextPrice){
-                            promptMessage.push({
-                                index : i + 1,
-                                difff : priceInfo[curItemId].nextPrice.difference,
-                                purPrice : priceInfo[curItemId].nextPrice.purPrice
-                            })
-                        }
                     }
 
                     //转换格式
@@ -341,15 +332,6 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
                             sublistId: 'item'
                         });
                     }
-                }
-
-                if(promptMessage.length){
-                    dialog.alert({
-                        title: '提示',
-                        message: promptMessage.map(function(item){
-                            return '第' + item.index + '行物料离下个阶梯还有' + item.difff + '个,' + '下个阶梯价是' + item.purPrice + ',是否多采购进入下个阶梯价</br>'
-                        }).join('')
-                    });
                 }
             } else {
                 dialog.alert({
@@ -699,6 +681,26 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
         currentRecord.setValue("custbody_wip_documentmaker", "");
     }
 
+    function updateLineNumber(sublistId, lineFieldId) {
+        if(!sublistId || !lineFieldId) { return; }
+        var machine = document.querySelector("#" + sublistId + "_splits");
+        if(!machine || !machine.machine) { return; }
+        machine = machine.machine;
+        setTimeout(function() {
+            var lineCount = currentRecord.getLineCount({ sublistId: sublistId });
+            var currLine = currentRecord.getCurrentSublistIndex({ sublistId: sublistId });
+            for(var line = 0; line < lineCount; line++) {
+                if(currLine != line) {
+                    machine.setFieldValue(line + 1, lineFieldId, line + 1);
+                } else {
+                    currentRecord.setCurrentSublistValue({ sublistId: sublistId, fieldId: lineFieldId, value: line + 1 });
+                }
+            }
+            machine.buildtable();
+            ischanged = true;
+        }, 0);
+    }
+
     //entry points
     function pageInit(context) {
         pageMode = context.mode;
@@ -888,7 +890,17 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
                 return false;
             }
         }
+        updateLineNumber(context.sublistId, "custcol_line");
+        return true;
+    }
 
+    function validateDelete(context) {
+        updateLineNumber(context.sublistId, "custcol_line");
+        return true;
+    }
+
+    function validateInsert(context) {
+        updateLineNumber(context.sublistId, "custcol_line");
         return true;
     }
 
@@ -898,5 +910,7 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
         fieldChanged: fieldChanged,
         validateField: validateField,
         validateLine: validateLine,
+        validateDelete: validateDelete,
+        validateInsert: validateInsert
     }
 });

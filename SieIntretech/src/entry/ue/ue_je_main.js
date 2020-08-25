@@ -4,7 +4,7 @@
  *@author YHR
  *@description Journalentry UE主程序
  */
-define(['N/record'], function (record) {
+define(['N/record','N/search'], function (record,search) {
 
     //params
     var vendorPrepayFieldId = 'custbody_nsts_vp_prepay_ref';
@@ -16,6 +16,7 @@ define(['N/record'], function (record) {
             parameters,
             vendorPrepayId,
             prepayApacct,
+            prepayAmount,
             prepayVendor,
             subsidiary,
             currency;
@@ -28,8 +29,7 @@ define(['N/record'], function (record) {
                 vendorPrepayId = parameters.vendorprepayid;
                 subsidiary = parameters.subsidiary;
                 currency = parameters.currency;
-                var prepayAmount = parameters.amount;
-                log.error('贷记' , prepayAmount);
+                prepayAmount = parameters.amount;
 
                 if(prepayApacct && prepayVendor && vendorPrepayId){
                     newRecord.setValue({
@@ -89,16 +89,46 @@ define(['N/record'], function (record) {
                 fieldId : vendorPrepayFieldId
             });
             if(vendorPrepayId){
-                record.submitFields({
+                var UseAmt = getUseAmt(newRecord)
+
+                var vpOrd = record.load({
                     type : vendorPrepayRecType,
-                    id : vendorPrepayId,
+                    id : vendorPrepayId
+                })
+                var vpId = vpOrd.getValue('custrecord_nsts_vp_po')
+
+                vpOrd.setValue({
+                    fieldId : 'custrecord_nsts_vp_prepay_refund',
+                    value : (vpOrd.getValue('custrecord_nsts_vp_prepay_refund') || []).concat(recordId)
+                })
+
+                vpOrd.setValue({
+                    fieldId : 'custrecord_vp_refund_amount',
+                    value : add(vpOrd.getValue('custrecord_vp_refund_amount') || 0 , UseAmt) 
+                })
+
+                vpOrd.setValue({
+                    fieldId : 'custrecord_vp_not_written_off',
+                    value : add(vpOrd.getValue('custrecord_vp_not_written_off') || 0 ,UseAmt) 
+                })
+
+                vpOrd.save({
+                    ignoreMandatoryFields : true
+                })
+
+                var vpPerpay = search.lookupFields({
+                    type : 'purchaseorder',
+                    id : vpId,
+                    columns : ['custbody_ap_vp_total']
+                }).custbody_ap_vp_total
+
+                record.submitFields({
+                    type : 'purchaseorder',
+                    id : vpId,
                     values : {
-                        'custrecord_nsts_vp_prepay_refund' : recordId
-                    },
-                    options : {
-                        ignoreMandatoryFields : true
+                        custbody_ap_vp_total : sub(vpPerpay || 0, UseAmt)
                     }
-                });
+                })
             }
         } catch (ex) {
             log.error({
@@ -113,6 +143,23 @@ define(['N/record'], function (record) {
         }
     }
 
+    function getUseAmt(newRecord){
+        var UseAmt = 0
+        var lineCount = newRecord.getLineCount({
+            sublistId : 'line'
+        })
+
+        while(lineCount > 0){
+            UseAmt = add(UseAmt , Math.abs(newRecord.getSublistValue({
+                sublistId : 'line',
+                fieldId : 'credit',
+                line : --lineCount
+            })) || 0)
+        }
+
+        return UseAmt
+    }
+ 
     //entry points
     function beforeLoad(context) {
         if (context.type === context.UserEventType.CREATE) {
@@ -124,6 +171,65 @@ define(['N/record'], function (record) {
         if (context.type === context.UserEventType.CREATE) {
             writeToVendorPrepay(context);
         }
+    }
+
+    function add(a, b) {
+        a = a || 0, b = b || 0
+        var c, d, e;
+        try {
+            c = a.toString().split(".")[1].length
+        } catch (f) {
+            c = 0;
+        }
+        try {
+            d = b.toString().split(".")[1].length;
+        } catch (f) {
+            d = 0;
+        }
+        return e = Math.pow(10, Math.max(c, d)), (mul(a, e) + mul(b, e)) / e;
+    }
+        
+    function sub(a, b) {
+        a = a || 0, b = b || 0
+        var c, d, e;
+        try {
+            c = a.toString().split(".")[1].length
+        } catch (f) {
+            c = 0
+        }
+        try {
+            d = b.toString().split(".")[1].length
+        } catch (f) {
+            d = 0
+        }
+        return e = Math.pow(10, Math.max(c, d)), (a * e - b * e) / e
+    }
+      
+    function mul(a, b) {
+        a = a || 0, b = b || 0
+        var c = 0,
+        d = a.toString(),
+        e = b.toString();
+        try {
+            c += d.split(".")[1].length
+        } catch (f) {}
+        try {
+            c += e.split(".")[1].length
+        } catch (f) {}
+        return Number(d.replace(".", "")) * Number(e.replace(".", "")) / Math.pow(10, c)
+    }
+      
+    function div(a, b) {
+        a = a || 0, b = b || 0
+        var c, d, e = 0,
+            f = 0
+        try {
+            e = a.toString().split(".")[1].length
+        } catch (g) {}
+        try {
+            f = b.toString().split(".")[1].length
+        } catch (g) {}
+        return c = Number(a.toString().replace(".", "")), d = Number(b.toString().replace(".", "")), c / d * Math.pow(10, f - e)
     }
 
     return {

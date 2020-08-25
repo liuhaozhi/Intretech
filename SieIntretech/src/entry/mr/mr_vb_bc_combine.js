@@ -76,7 +76,7 @@ define([
             });
 
         inputData.forEach(function (lineData) {
-            var orderId = lineData['custpage_paged_internalid'];
+            var orderId = lineData['custpage_paged_internalid']; //入库单id
             combinedData[orderId] = lineData;
             lineData['operationTime'] = submitTime;
         });
@@ -87,7 +87,7 @@ define([
     function map(context) {
         var orderId = String(context.key),
             lineData = JSON.parse(context.value),
-            stateId = +lineData['custpage_paged_compare_order'],
+            stateId = +lineData['custpage_paged_compare_order'], //对账单号
             operationTime = lineData['operationTime'],
             operationTimeObj,
             lineCount,
@@ -101,7 +101,7 @@ define([
             timezone: format.Timezone.ASIA_HONG_KONG
         });
 
-        if (stateId) {
+        if (stateId) { //已有对账单
             stateRec = record.load({
                 type: stateRecType,
                 id: stateId
@@ -213,7 +213,7 @@ define([
                 return true;
             }
 
-            orderIds = linesData.map(function (line) {
+            orderIds = linesData.map(function (line) { //出入库单号
                 return line['custpage_paged_internalid'];
             });
 

@@ -389,13 +389,9 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
     }
 
     function afterSubmit(scriptContext) {
-        //if (scriptContext.type == scriptContext.UserEventType.APPROVE) {
-            try{
-                addReturns(scriptContext);
-            } catch(e) {
-                throw JSON.stringify(e)
-            }
-        //}
+        if (scriptContext.type == scriptContext.UserEventType.APPROVE) {
+            addReturns(scriptContext);
+        }
     }
 
     return {

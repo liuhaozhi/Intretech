@@ -3,7 +3,7 @@
  *@NScriptType ClientScript
  *@author Charles Zhang
  *@description  此程序用于发票工作台页面相关逻辑
- */ 
+ */
 define([
     'N/currentRecord',
     'N/ui/dialog',

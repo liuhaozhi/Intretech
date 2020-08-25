@@ -20,6 +20,7 @@ define(['N/record' ,'N/render' ,'N/url' ,'N/search'], function (record ,render ,
             prepayReturn,
             paymentCredit,
             prepayVendor,
+            noVerificationAmt,
             lineCount,
             curBillId,
             i;
@@ -33,6 +34,8 @@ define(['N/record' ,'N/render' ,'N/url' ,'N/search'], function (record ,render ,
                 vendorPrepayId = parameters.vendorprepayid;
                 prepayReturn = parameters.prepayreturn;
                 paymentCredit = parameters.paymentcredit;
+                noVerificationAmt = parameters.noVerificationAmt
+                
 
                 if(prepayApacct && prepayVendor && vendorPrepayId){
                     //设置关联预付款单
@@ -99,18 +102,31 @@ define(['N/record' ,'N/render' ,'N/url' ,'N/search'], function (record ,render ,
         var newRecord = context.newRecord,
             recordId = newRecord.id,
             vendorPrepayId,
+            cacelAmt,
+            vpCancelInfo,
             vendorPrepayRecType = 'customrecord_nsts_vp_vendorprepayment';
 
         try {
             vendorPrepayId = newRecord.getValue({
                 fieldId : vendorPrepayFieldId
             });
+            
             if(vendorPrepayId){
+                cacelAmt = getCancelAmt(newRecord) 
+
+                vpCancelInfo = search.lookupFields({
+                    type : vendorPrepayRecType,
+                    id : vendorPrepayId,
+                    columns : ['custrecord_vp' , 'custrecord_vp_not_written_off']
+                }) 
+
                 record.submitFields({
                     type : vendorPrepayRecType,
                     id : vendorPrepayId,
                     values : {
-                        'custrecord_nsts_vp_refund_writeoff' : true
+                        'custrecord_nsts_vp_refund_writeoff' : true,
+                        'custrecord_vp' : add(vpCancelInfo.custrecord_vp || 0 , cacelAmt),
+                        'custrecord_vp_not_written_off' : sub(vpCancelInfo.custrecord_vp_not_written_off || 0 , cacelAmt)
                     },
                     options : {
                         ignoreMandatoryFields : true
@@ -124,10 +140,97 @@ define(['N/record' ,'N/render' ,'N/url' ,'N/search'], function (record ,render ,
                     recordId : recordId,
                     prepayId : vendorPrepayId,
                     ex : ex
-                }
+                } 
             });
             throw '此付款单已成功核销，但是将单号回写至对应的供应商预付款时发生错误，请手动处理。错误提示：' + ex.message;
         }
+    }
+
+    function getCancelAmt(newRecord){
+        var cancelAmt = 0
+        var lineCount = newRecord.getLineCount({
+            sublistId : 'apply'
+        })
+
+        while(lineCount > 0){
+            var apply = newRecord.getSublistValue({
+                sublistId : 'apply',
+                fieldId : 'apply',
+                line : --lineCount
+            })
+
+            if(apply || apply === 'T'){
+                var Amt = newRecord.getSublistValue({
+                    sublistId : 'apply',
+                    fieldId : 'amount',
+                    line : lineCount
+                })
+
+                if(Amt < 0)
+                cancelAmt = add(cancelAmt , Math.abs(Amt))
+            }
+        }
+
+        return cancelAmt
+    }
+
+    function add(a, b) {
+        a = a || 0, b = b || 0
+        var c, d, e;
+        try {
+            c = a.toString().split(".")[1].length
+        } catch (f) {
+            c = 0;
+        }
+        try {
+            d = b.toString().split(".")[1].length;
+        } catch (f) {
+            d = 0;
+        }
+        return e = Math.pow(10, Math.max(c, d)), (mul(a, e) + mul(b, e)) / e;
+    }
+
+    function mul(a, b) {
+        a = a || 0, b = b || 0
+        var c = 0,
+        d = a.toString(),
+        e = b.toString();
+        try {
+            c += d.split(".")[1].length
+        } catch (f) {}
+        try {
+            c += e.split(".")[1].length
+        } catch (f) {}
+        return Number(d.replace(".", "")) * Number(e.replace(".", "")) / Math.pow(10, c)
+    }
+
+    function sub(a, b) {
+        a = a || 0, b = b || 0
+        var c, d, e;
+        try {
+            c = a.toString().split(".")[1].length
+        } catch (f) {
+            c = 0
+        }
+        try {
+            d = b.toString().split(".")[1].length
+        } catch (f) {
+            d = 0
+        }
+        return e = Math.pow(10, Math.max(c, d)), (a * e - b * e) / e
+    }
+
+    function div(a, b) {
+        a = a || 0, b = b || 0
+        var c, d, e = 0,
+            f = 0
+        try {
+            e = a.toString().split(".")[1].length
+        } catch (g) {}
+        try {
+            f = b.toString().split(".")[1].length
+        } catch (g) {}
+        return c = Number(a.toString().replace(".", "")), d = Number(b.toString().replace(".", "")), c / d * Math.pow(10, f - e)
     }
     
 //------------------------打印信息获取部分（新增）----------------------------------------------↓↓↓

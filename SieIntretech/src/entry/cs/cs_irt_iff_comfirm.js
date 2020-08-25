@@ -15,7 +15,7 @@ define([
 ) {
     var sublistId = 'custpage_paged_sublist';
     var checkBoxId = 'custpage_paged_checked';
-    var pageIdId = 'custpage_pageid'; 
+    var pageIdId = 'custpage_pageid';
 
     function pageInit(context) {
         debugger
