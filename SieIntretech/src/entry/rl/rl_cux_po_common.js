@@ -25,10 +25,10 @@ define(['N/search', 'N/record', 'N/runtime', 'N/format', 'N/task', 'N/workflow']
 
     function excuteBatchUpdateOrAuditralPriceApply(params) {
         var status = { success: [], faile: [] };
-        if(!params.piceIds.length) { return status; }
+        if(!params.priceIds.length) { return status; }
         var typeMap = { "Update": "workflowaction2122", "Agree": "workflowaction2117", "Refused": "workflowaction2125" };
-        for(var i = 0; i < params.piceIds.length; i++) {
-            var priceId = params.piceIds[i];
+        for(var i = 0; i < params.priceIds.length; i++) {
+            var priceId = params.priceIds[i];
             try{
                 var workflowInstanceId = workflow.trigger({
                     recordType: "customrecord_price_apply",
@@ -36,9 +36,9 @@ define(['N/search', 'N/record', 'N/runtime', 'N/format', 'N/task', 'N/workflow']
                     workflowId: "customworkflow_purchase_price_approval",
                     actionId: typeMap[params.type]
                 });
-                status.success.push(priceId)
+                status.success.push(workflowInstanceId)
             } catch(e) {
-                status.faile.push(priceId);
+                status.faile.push(workflowInstanceId);
             }
         }
         return status;

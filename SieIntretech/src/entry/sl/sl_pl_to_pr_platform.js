@@ -29,6 +29,7 @@ define([
     const selectType = Symbol('select');
     const viewType = Symbol('view');
     const linkType = Symbol('link');
+    var hasFilters = false;
 
     function createForm({ formTitle: title = '批量处理页面', hideNavBar = false, formCSPath, submitLabel, resetLabel, customButtons, fieldGroup, } = {}) {
         //创建Form
@@ -564,8 +565,7 @@ define([
         }
         
         //输出渲染数据
-        renderData.lines = valueList;
-
+        renderData.lines = hasFilters? valueList: valueList.slice(-1);
         //计算样式所需的数据
         const columnCount = searchObj.columns.length;
         renderData.defaultWidth = singColumnWidth * columnCount;
@@ -741,7 +741,7 @@ define([
                 'AND',
                 ['custrecord_splited', 'is', 'F'],//没有被分拆过
                 'AND',
-                ['custrecord_platform_merged', 'is', 'F'],//没有被合并过
+                ['custrecord_platform_merged', 'is', 'F']//没有被合并过
                 // 'AND',
                 // ['custrecord_to_line', 'anyof', ['@NONE@']],//没有关联单据
                 // 'AND',
@@ -761,6 +761,7 @@ define([
         if(parameters.filters.length) {
             if(searchDefine.filters.length) { searchDefine.filters.push("AND"); }
             searchDefine.filters = searchDefine.filters.concat(parameters.filters);
+            hasFilters = true;
         }
         delete parameters.filters;
         try {

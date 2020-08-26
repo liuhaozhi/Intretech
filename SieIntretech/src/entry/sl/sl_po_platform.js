@@ -398,7 +398,7 @@ define([
 
             //设置默认值
             form.updateDefaultValues(refreshParams);
- 
+
             //缓存结果
             uiComponent.cachePageInfo({
                 form: form,

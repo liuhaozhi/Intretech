@@ -30,6 +30,7 @@ define(['N/search', 'N/record', 'N/url', 'N/format', 'N/file'], function (search
     function getBomcodeUnits(context) {
         var result = {};
         if(!context.itemCodeList.length) { return result; }
+        var copAttrObj = getCorporateAttributes(context);
         var sch = {
             type: "bomrevision",
             columns: ["component.units", "component.item", "component.custrecord_version_location_number", 
@@ -57,7 +58,6 @@ define(['N/search', 'N/record', 'N/url', 'N/format', 'N/file'], function (search
         } else if(!context.bomCodeList.length) { return result; }
         var allResults = getAllSearchResults(sch);
         var isBomVersion = sch.columns[8];
-        var copAttrObj = getCorporateAttributes(context);
         for(var i = 0; i < allResults.length; i++) {
             var itemResult = allResults[i];
             var value = itemResult.getValue(itemResult.columns[0]);
@@ -81,7 +81,7 @@ define(['N/search', 'N/record', 'N/url', 'N/format', 'N/file'], function (search
             result[unkeyId]["custrecord_eco_bom_unit"] = { value: value, text: text || value };
             result[unkeyId]["custrecord_eco_line_memo"] = { value: isBomVersion? itemResult.getValue(itemResult.columns[3]): "" };
             result[unkeyId]["custrecord_location_code"] = { value: isBomVersion? itemResult.getValue(itemResult.columns[2]): "" };
-            result[unkeyId]["custrecord_product_attribute"] = copAttrObj[itemid] || "";
+            result[unkeyId]["custrecord_product_attribute"] = copAttrObj[itemid] || { value: "", text: "" };
             result[unkeyId]["custrecord_component_quantity"] = { value: isBomVersion? itemResult.getValue(itemResult.columns[6]): "" };
             result[unkeyId]["custrecord_component_yield"] = { value: itemResult.getValue(itemResult.columns[isBomVersion? 7: 2]) + "%" };
             result[unkeyId]["custrecord_former_revision"] = { value: isBomVersion? itemResult.getValue(itemResult.columns[8]): "" };
@@ -96,15 +96,16 @@ define(['N/search', 'N/record', 'N/url', 'N/format', 'N/file'], function (search
                 columns: ["custrecord_link_field", "custrecord_material_attribute"],
                 filters: [
                     ["custrecord_intercompany_subsidiary", "anyof", context.subsidiary],
+                    "AND",
                     ["custrecord_link_field", "anyof", context.bomCodeList]
                 ]
-            }
+            };
             var result = getAllSearchResults(sch);
             for(var i = 0; i < result.length; i++) {
                 var item = result[i];
                 var bomCode = item.getValue(item.columns[0]);
-                for(var index = context.bomCodeList.length - 1; i > -1 && item.bomCodeList[index] != bomCode; i--);
-                retObj[context.itemCodeList[index]] = { value: item.getValue(item.columns[1]), text: item.getText(item.columns[1]) };
+                for(var index = context.bomCodeList.length - 1; index > -1 && context.bomCodeList[index] != bomCode; index--);
+                retObj[context.itemCodeList[index]] = { value: item.getValue(item.columns[1]) || "", text: item.getText(item.columns[1]) || "" };
             }
             return retObj;
         }

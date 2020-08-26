@@ -63,6 +63,7 @@ define([
             cpoK3LineId = 'custcol_k3_line_number', //采购订单K3行号
             csoK3LineId = 'custcol_k3line_number', //销售订单K3行号
             cosDefultValue = '3',
+            cosUnitNotax = 'custcol_unit_notax',//折前单价（不含税）
             customformDefult = '152'; //Cross-company Trading
 
 
@@ -171,6 +172,7 @@ define([
                         poItemObj[ciiupFieldId] = 0;
                         poItemObj[cildblFieldId] = 0;
                         poItemObj[cpoK3LineId] = 0;
+                        poItemObj[cosUnitNotax] = 0;
 
                         for (var key in poItemObj) {
 

@@ -330,7 +330,7 @@ define(['N/record', 'N/search', 'N/url', 'N/https', 'N/ui/message', '../../../li
                     var emptyFieldIds = ["custrecord_eco_bom_unit", "custrecord_eco_line_memo", "custrecord_location_code"]
                     for(var fieldId in unitObj[unkeyId]) {
                         var valueObj = unitObj[unkeyId][fieldId];
-                        var oldValue = getFieldValue(fieldId, sublistId, line);
+                        var oldValue = getFieldValue(fieldId, sublistId, line) || "";
                         if(emptyFieldIds.indexOf(fieldId) > -1 && (oldValue || (valueObj.bomCode && valueObj.bomCode != bomCode))) {
                             continue;
                         } else if(emptyFieldIds.indexOf(fieldId) == -1 && oldValue) { continue; }

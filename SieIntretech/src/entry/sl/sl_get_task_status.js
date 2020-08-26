@@ -20,6 +20,9 @@ define([
             taskCreateTime = parameters.taskcreatetime || '未知',
             clientScript = '../cs/cs_get_task_status.js',
             percentCompleted;
+            log.debug('parameters',parameters);
+            var   batchid= parameters.batchid||'批次';
+
 
         try {
             //创建列表
@@ -71,6 +74,12 @@ define([
                 label: '创建时间'
             });
 
+            list.addColumn({
+                id: 'custpage_task_batchid',
+                type: serverWidget.FieldType.TEXT,
+                label: '创建批号'
+            });
+
             // list.addEditColumn({
             //     column : 'internalid',
             //     showHrefCol: false,
@@ -94,7 +103,8 @@ define([
                     'custpage_task_stage' : taskStatus.stage,
                     'custpage_task_percent_completed' : percentCompleted,
                     'custpage_task_creator' : taskCreator,
-                    'custpage_task_created_time' : taskCreateTime
+                    'custpage_task_created_time' : taskCreateTime,
+                    'custpage_task_batchid':batchid
                 };
 
                 list.addRow({

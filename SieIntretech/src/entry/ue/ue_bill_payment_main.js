@@ -140,7 +140,7 @@ define(['N/record' ,'N/render' ,'N/url' ,'N/search'], function (record ,render ,
                     recordId : recordId,
                     prepayId : vendorPrepayId,
                     ex : ex
-                } 
+                }
             });
             throw '此付款单已成功核销，但是将单号回写至对应的供应商预付款时发生错误，请手动处理。错误提示：' + ex.message;
         }

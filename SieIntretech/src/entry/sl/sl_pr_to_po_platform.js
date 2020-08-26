@@ -42,6 +42,7 @@ define([
         text: '',
         value: ''
     };
+    var hasFilters = false;
 
     function createForm({ formTitle: title = '批量处理页面', hideNavBar = false, formCSPath, submitLabel, resetLabel, customButtons } = {}) {
         //创建Form
@@ -779,23 +780,24 @@ define([
         }
 
         //输出渲染数据
-        renderData.lines = valueList;
+        renderData.lines = hasFilters? valueList: valueList.slice(-1);
         //计算样式所需的数据
         const columnCount = searchObj.columns.length;
         renderData.defaultWidth = singColumnWidth * columnCount;
         //生成表格
-        const tplPath = '../../templates/tpl_pr_to_po_platform.html';
+        /* const tplPath = '../../templates/tpl_pr_to_po_platform.html';
         const renderer = renderMod.create();
         const fileObj = fileMod.load({
             id: tplPath
         });
-        renderer.templateContent = fileObj.getContents() + pageInitScript;
+        renderer.templateContent = fileObj.getContents() + pageInitScript
         renderer.addCustomDataSource({
             format: renderMod.DataSource.OBJECT,
             alias: 'renderData',
             data: renderData
-        });
-        htmlSublist.defaultValue = renderer.renderAsString();
+        }); */
+        //htmlSublist.defaultValue = renderer.renderAsString();
+        htmlSublist.defaultValue = "<script id='TESSS'>gridDatas=" + JSON.stringify(valueList)  + "</script>";
         return {
             sublistFields,
             singColumnWidth,
@@ -1061,6 +1063,7 @@ define([
         if(parameters.filters.length) {
             if(searchDefine.filters.length) { searchDefine.filters.push("AND"); }
             searchDefine.filters = searchDefine.filters.concat(parameters.filters);
+            hasFilters = true;
         }
         delete parameters.filters;
         try {

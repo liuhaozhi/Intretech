@@ -23,7 +23,7 @@ define([ 'N/search', 'N/record', 'N/format', 'N/runtime'
     function map(context) {
         try{
             var dataObj = JSON.parse(context.value);
-            var rec, ecoRecord;
+            var rec, ecoRecord, copyRec;
             ecoRecord = record.load({
                 type: 'customrecord_engineering_change_notice',
                 id: findEcoId(dataObj),
@@ -58,25 +58,26 @@ define([ 'N/search', 'N/record', 'N/format', 'N/runtime'
                     return true;
                 }
                 var reDate = rec.getValue("effectivestartdate") || "";
-                var today = new Date();
+                var today = getDateByChangeHours(new Date(), 8);
                 var isCreateNewReversion = reDate.getFullYear() + reDate.getMonth() + reDate.getDate() != today.getFullYear() + today.getMonth() + today.getDate();
                 if(isCreateNewReversion) {
-                    var yesterday = new Date();
-                    var copyRec = record.copy({
+                    copyRec = record.copy({
                         type: rec.type,
                         id: rec.id,
                         isDynamic: true
                     });
                     var revisionName = rec.getValue("name").split('.');
                     var revisionNum = (parseInt(revisionName[1] || 0) + 1);
-                    yesterday.setTime(yesterday.getTime() - 24 * 60 * 60 * 1000);
+                    var approveTime = copyRec.getValue("custrecord_approve_time");
                     revisionNum = (revisionNum < 10? "00": revisionNum < 100? "0": "") + revisionNum;
-                    rec.setValue("custrecord_ps_bom_approvestatus2", "1");
-                    rec.setValue("effectiveenddate", yesterday);
-                    rec.save();
                     copyRec.setValue("name", (revisionName.length > 1? revisionName[0] + "." + revisionNum: "V0.001"));
-                    copyRec.setValue("effectivestartdate", today);
+                    copyRec.setValue("effectivestartdate", approveTime);
                     copyRec.setValue("custrecord_ps_bom_approvestatus2", "1");
+                    approveTime = getDateByChangeHours(new Date(), 32);
+                    rec.setValue("custrecord_ps_bom_approvestatus2", "1");
+                    rec.setValue("effectiveenddate", approveTime);
+                    rec.save();
+                    
                 } else {
                     copyRec = rec;
                 }
@@ -119,7 +120,8 @@ define([ 'N/search', 'N/record', 'N/format', 'N/runtime'
             // } else {
             //     ecoRecord.setValue("custrecord_eco_check_message", "创建新版本失败:\n原因: " + e.message);
             // }
-            ecoRecord.setValue("custrecord_eco_check_message", "创建新版本失败:\n第" + (e.line || 1) + "行的数据有误！原因是：" + e.message);
+            ecoRecord.setValue("custrecord_eco_check_message", "创建新版本失败:\n第" + (e.line || 1) + "行的数据有误！原因是：" + e.message + "，审核日期：" +
+            approveTime + ", 系统的当天日期：" + today);
             ecoRecord.setValue("custrecord_eco_process", "100%");
             ecoRecord.setValue("custrecord_eco_status", "6");
             log.error('Create New Reversion Faile', e.message + ", BOM Id:" + bomId);
@@ -171,6 +173,12 @@ define([ 'N/search', 'N/record', 'N/format', 'N/runtime'
         reduce: reduce,
         summarize: summarize
     }
+
+    function getDateByChangeHours(date, hours) {
+        date.setTime(date.getTime() - hours * 60 * 60 * 1000);
+        return date;
+    }
+
     function processComponent(rec, ecoRecord, values, type) {
         if(!values || !type) { return; }
         for(var i = 0; i < values.length; i++) {

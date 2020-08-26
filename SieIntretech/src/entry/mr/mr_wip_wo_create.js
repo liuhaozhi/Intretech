@@ -18,12 +18,18 @@ define([
         record,
         search) {
 
+       
         function getInputData() {
             var currentScript = runtime.getCurrentScript(),
                 parameters = currentScript.getParameter({
                     name: 'custscript_dosomething'
                 });
 
+                parameter_batchid=currentScript.getParameter({
+                    name: 'batchid'
+                });
+
+                
             return JSON.parse(parameters);
         }
 
@@ -36,10 +42,13 @@ define([
         }
 
         function reduce(context) {
+           
+
             var woColumns = [],
                 woFilters = [],
                 woSearchCriteria = {},
                 woTranid;
+                var  parameter_batchid,logRecID;
 
             for (var i = 0; i < context.values.length; i++) {
                 var option = JSON.parse(context.values[i]).option;
@@ -47,7 +56,14 @@ define([
                 if (option.mode == 'CREATE') {
 
                     var mainPayload = JSON.parse(context.values[i]).mainPayload;
+                    var mainPayload = JSON.parse(context.values[i]).mainPayload;
+                    parameter_batchid=mainPayload.batchid;
+                    logRecID=mainPayload.logRecID;
 
+                    try{log.debug('mainPayload add info', {parameter_batchid:parameter_batchid,logRecID:logRecID});}
+                    catch(e){
+                        log.debug('error mainPayload add info  ',e);
+                    }
                     //格式化时间
                     option.dateOption.expectReceiveDate = format.parse({
                         value: option.dateOption.expectReceiveDate,

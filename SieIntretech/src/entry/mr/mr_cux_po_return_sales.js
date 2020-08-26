@@ -27,10 +27,9 @@ define([ 'N/search', 'N/record', 'N/format', 'N/runtime'
                 toType: "vendorreturnauthorization",
                 isDynamic: true,
             });
-            for(var i = tfRecord.getLineCount({ sublistId: "item" }) - 1; i > -1; i--) {
-                tfRecord.removeLine({ sublistId: "item", line: i, ignoreRecalc: true });
-            }
-            setPageDataByStruct(tfRecord, JSON.parse(context.value));
+            var value = JSON.parse(context.value);
+            removeUnuseLines(tfRecord, value["item"]);
+            setPageDataByStruct(tfRecord, value);
             log.debug("Create Author Successfully", "批量退货创建成功！");
         } catch(e) {
             log.debug("Create Author Fail", e.message);
@@ -70,13 +69,15 @@ define([ 'N/search', 'N/record', 'N/format', 'N/runtime'
         } else if(Array.isArray(value)) {
             for(var line in value) {
                 var lineData = value[line];
-                currentRecord.selectNewLine({ sublistId: fieldId });
+                if(lineData.line !== undefined) {
+                    currentRecord.selectLine({ sublistId: fieldId, line: lineData.line });
+                    delete lineData.line;
+                } else{
+                    currentRecord.selectNewLine({ sublistId: fieldId });
+                }
                 for(var lineFieldId in lineData) {
                     var lineFieldValue = lineData[lineFieldId];
                     if(typeof lineFieldValue != "object") {
-                        if(lineFieldId == "line") {
-                            lineFieldValue = currentRecord.getLineCount({ sublistId: fieldId }) - 1;
-                        }
                         currentRecord.setCurrentSublistValue({ sublistId: fieldId, fieldId: lineFieldId, value: lineFieldValue });
                         continue;
                     }
@@ -91,6 +92,15 @@ define([ 'N/search', 'N/record', 'N/format', 'N/runtime'
             }
             currentRecord.save? currentRecord.save(): currentRecord.commit? currentRecord.commit(): true;
         }
+    }
+
+    function removeUnuseLines(rec, items) {
+        for(var existLines = {}, i = 0; i < items.length && (existLines[items[i].line] = true); i++);
+        for(var line = rec.getLineCount({ sublistId: "item" }) - 1; line > -1; line--) {
+            if(existLines[line]) { continue; }
+            rec.removeLine({ sublistId: "item", line: line, ignoreRecalc: true });
+        }
+        return existLines;
     }
 
     return {

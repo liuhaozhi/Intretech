@@ -6,6 +6,7 @@
  */
 define([
     'N/ui/serverWidget',
+    'N/record',
     'N/search',
     'N/redirect',
     'N/format',
@@ -14,6 +15,7 @@ define([
     '../../app/app_ui_wip_component_server.js'
 ], function (
     serverWidget,
+    record,
     search,
     redirect,
     format,
@@ -32,73 +34,73 @@ define([
         var searchObj;
 
         var columns = [{
-                name: 'entity', //客户
-            },
-            {
-                name: 'tranid' //销售订单号
-            },
-            {
-                name: 'custcol_plan_number' //计划号
-            },
-            {
-                name: 'custbody_cust_ordertype' //订单类型
-            },
-            {
-                name: 'custbody_wip_customer_order_number' //客户订单号
-            },
-            {
-                name: 'item' //货品
-            },
-            {
-                name: 'custcol_goodsname' //物料名称 custcol_intretech_goods_code
-            },
-            {
-                name: 'custcol_itemtype' //规格
-            },
-            {
-                name: 'unit' //单位
-            },
-            {
-                name: 'quantity' //数量
-            },
-            {
-                name: 'custcol_no_pushdown' //未下推数量
-            },
-            {
-                name: 'custcol_number_pushed_down' //已下推数量
-            },
-            {
-                name: 'shipdate' //预计交货日期
-            },
-            {
-                name: "custbody_document_old"//原K3销售订单号
-            },
-            {
-                name: "custbody_pc_salesman"//业务员
-            },
-            {
-                name: 'memo' //摘要
-            },
-            {
-                name: 'memomain' //备注（主要）
-            },
-            {
-                name: 'custcol_whether_bonded' //是否保税
-            },
-            {
-                name: 'custcol_whether_bonded' //是否保税
-            },
-            {
-                name: 'internalid', //是否保税
-                sortdir: "ASC"
-            },
-            {
-                name: 'subsidiary'
-            },
-            {
-                name: 'custcol_line',
-                sortdir: "ASC"
-            }
+            name: 'entity', //客户
+        },
+        {
+            name: 'tranid' //销售订单号
+        },
+        {
+            name: 'custcol_plan_number' //计划号
+        },
+        {
+            name: 'custbody_cust_ordertype' //订单类型
+        },
+        {
+            name: 'custbody_wip_customer_order_number' //客户订单号
+        },
+        {
+            name: 'item' //货品
+        },
+        {
+            name: 'custcol_goodsname' //物料名称 custcol_intretech_goods_code
+        },
+        {
+            name: 'custcol_itemtype' //规格
+        },
+        {
+            name: 'unit' //单位
+        },
+        {
+            name: 'quantity' //数量
+        },
+        {
+            name: 'custcol_no_pushdown' //未下推数量
+        },
+        {
+            name: 'custcol_number_pushed_down' //已下推数量
+        },
+        {
+            name: 'shipdate' //预计交货日期
+        },
+        {
+            name: "custbody_document_old"//原K3销售订单号
+        },
+        {
+            name: "custbody_pc_salesman"//业务员
+        },
+        {
+            name: 'memo' //摘要
+        },
+        {
+            name: 'memomain' //备注（主要）
+        },
+        {
+            name: 'custcol_whether_bonded' //是否保税
+        },
+        {
+            name: 'custcol_whether_bonded' //是否保税
+        },
+        {
+            name: 'internalid', //是否保税
+            sortdir: "ASC"
+        },
+        {
+            name: 'subsidiary'
+        },
+        {
+            name: 'custcol_line',
+            sortdir: "ASC"
+        }
         ];
 
         var filters = [
@@ -147,70 +149,70 @@ define([
         var sublistTab = 'custpage_sublist_tab';
         //var otherInfo = {};
         var searchBodyFields = [{
-                id: 'custpage_subsidiary',
-                label: '子公司',
-                type: 'SELECT',
-                source: 'subsidiary',
-                filter: 'subsidiary',
-                operator: 'anyof',
-                layout: 'OUTSIDEABOVE',
-                display: 'DISABLED',
-                defaultValue: subsidiary
-            },
-            {
-                id: 'custpage_customer',
-                label: '客户',
-                type: 'SELECT',
-                source: 'customer',
-                filter: 'mainname',
-                operator: 'anyof',
-                layout: 'OUTSIDEABOVE'
-            },
-            {
-                id: 'custpage_item',
-                label: '货品',
-                type: 'SELECT',
-                source: 'item',
-                filter: 'mainname',
-                operator: 'anyof',
-                layout: 'OUTSIDEABOVE'
-            },
-            {
-                id: 'custpage_estimate',
-                label: '销售订单',
-                type: 'SELECT',
-                source: 'estimate',
-                filter: 'mainname',
-                operator: 'anyof',
-                layout: 'OUTSIDEBELOW'
-            },
-            {
-                id: 'custpage_estimateline',
-                label: '计划号',
-                type: 'TEXT',
-                //source: 'estimate',
-                filter: 'mainname',
-                operator: 'anyof',
-                layout: 'OUTSIDEBELOW'
-            },
-            {
-                id: 'custpage_document_old',
-                label: '原K3销售订单号',
-                type: 'TEXT',
-                //source: 'estimate',
-                filter: 'mainname',
-                operator: 'contains',
-                layout: 'OUTSIDEBELOW'
-            },
-            {
-                id: 'custpage_pc_salesman',
-                label: '业务员',
-                type: 'SELECT',
-                source: 'employee',
-                filter: 'mainname',
-                operator: 'anyof',
-                layout: 'OUTSIDEBELOW'
-            }
+            id: 'custpage_subsidiary',
+            label: '子公司',
+            type: 'SELECT',
+            source: 'subsidiary',
+            filter: 'subsidiary',
+            operator: 'anyof',
+            layout: 'OUTSIDEABOVE',
+            display: 'DISABLED',
+            defaultValue: subsidiary
+        },
+        {
+            id: 'custpage_customer',
+            label: '客户',
+            type: 'SELECT',
+            source: 'customer',
+            filter: 'mainname',
+            operator: 'anyof',
+            layout: 'OUTSIDEABOVE'
+        },
+        {
+            id: 'custpage_item',
+            label: '货品',
+            type: 'SELECT',
+            source: 'item',
+            filter: 'mainname',
+            operator: 'anyof',
+            layout: 'OUTSIDEABOVE'
+        },
+        {
+            id: 'custpage_estimate',
+            label: '销售订单',
+            type: 'SELECT',
+            source: 'estimate',
+            filter: 'mainname',
+            operator: 'anyof',
+            layout: 'OUTSIDEBELOW'
+        },
+        {
+            id: 'custpage_estimateline',
+            label: '计划号',
+            type: 'TEXT',
+            //source: 'estimate',
+            filter: 'mainname',
+            operator: 'anyof',
+            layout: 'OUTSIDEBELOW'
+        },
+        {
+            id: 'custpage_document_old',
+            label: '原K3销售订单号',
+            type: 'TEXT',
+            //source: 'estimate',
+            filter: 'mainname',
+            operator: 'contains',
+            layout: 'OUTSIDEBELOW'
+        },
+        {
+            id: 'custpage_pc_salesman',
+            label: '业务员',
+            type: 'SELECT',
+            source: 'employee',
+            filter: 'mainname',
+            operator: 'anyof',
+            layout: 'OUTSIDEBELOW'
+        }
         ];
         var sublistColumnConfig = {
             'custpage_entity': { //custpage_paged_type
@@ -466,6 +468,8 @@ define([
         var lineCount = request.getLineCount({
             group: sublistId
         });
+        // add by andy
+        var batchid = '20200824001', logRecID = null;
 
         try {
             var selectedEntries = [],
@@ -523,6 +527,43 @@ define([
 
                     log.debug('woOrderTypeValue', woOrderTypeValue);
 
+                    //记录日志表
+
+                    try {
+                        log.debug('开始记录日志......');
+                        var customRecord = record.create({
+                            type: 'customrecord_cux_salesorder_to_wip_list',
+                            isDynamic: true
+                        });
+                        customRecord.setValue({
+                            fieldId: 'custrecord_cux_sales_order', value: request.getSublistValue({
+                                group: sublistId,
+                                name: 'custpage_internalid',
+                                line: i
+                            })
+                        });//    销售订单    
+                        //   customRecord.setValue({ fieldId: 'custrecord_cux_sales_order_line', value:               });//    销售订单行号
+                        customRecord.setValue({
+                            fieldId: 'custrecord_cux_plan_num', value: request.getSublistValue({
+                                group: sublistId,
+                                name: 'custpage_plan_number',
+                                line: i
+                            })
+                        });//    计划号      
+                        customRecord.setValue({ fieldId: 'custrecord_cux_salesorder_data', value: { mainPayload: mainPayload, option: option } });//    数据        
+                        customRecord.setValue({ fieldId: 'custrecord_cux_sales_order_to_wip_status', value: '开始处理' });//    状态        
+                        //customRecord.setValue({ fieldId: 'custrecord_cux_sales_order_to_wip_msg', value:         });//    处理信息    
+                        // customRecord.setValue({ fieldId: 'custrecord_cux_sales_order_to_wip_taskid', value:     });//    taskID      
+                        logRecID = customRecord.save();
+
+                    }
+                    catch (e) {
+                        log.debug('记录日志错误', e);
+                    }
+                    //记录日志表结束
+
+
+
                     var mainPayload = {
                         subsidiary: request.getSublistValue({
                             group: sublistId,
@@ -554,7 +595,10 @@ define([
                             name: 'custpage_plan_number',
                             line: i
                         }),
-                        custbody_wip_manufacturing_type: woOrderTypeValue
+                        custbody_wip_manufacturing_type: woOrderTypeValue,
+                        // add by andy
+                        batchid: batchid,
+                        logRecID: logRecID
                     };
 
                     var pushFlag = request.getSublistValue({
@@ -601,15 +645,20 @@ define([
                         //recId: 77077
                     };
 
+
+
+
                     selectedEntries.push({
                         mainPayload: mainPayload,
-                        option: option
+                        option: option,
+                        logRecID: logRecID //ADD BY ANDY
                     });
                 }
             }
 
             //提交数据给后台处理
             if (selectedEntries.length) {
+                log.debug('line 615', ' 开始提交数据给后台处理.......');
                 var currentUser = runtime.getCurrentUser();
                 var userName = currentUser.name;
 
@@ -618,7 +667,8 @@ define([
                     taskType: task.TaskType.MAP_REDUCE,
                     scriptId: mrScriptId,
                     params: {
-                        custscript_dosomething: JSON.stringify(selectedEntries)
+                        custscript_dosomething: JSON.stringify(selectedEntries),
+                        batchid: batchid // add by andy
                     }
                 });
                 var taskId = mrTask.submit();
@@ -629,6 +679,8 @@ define([
                     timezone: format.Timezone.ASIA_HONG_KONG
                 });
 
+                log.debug(' 开始查看状态,taskId=' + taskId);
+
                 redirect.toSuitelet({
                     scriptId: slStatusScriptId,
                     deploymentId: slStatusDeployId,
@@ -636,7 +688,8 @@ define([
                         mrtaskid: taskId,
                         taskname: '销售订单下推工单',
                         taskcreator: userName,
-                        taskcreatetime: nowChinaTime
+                        taskcreatetime: nowChinaTime,
+                        batchid: batchid //add by andy
                     }
                 });
             } else {

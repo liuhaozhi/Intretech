@@ -42,7 +42,8 @@ define(['N/search', 'N/record', 'N/runtime', 'N/format', 'N/task'], function (se
                 {"name":"createdfrom","label":"创建自","type":"select"},
                 {"name":"purchaseorder","label":"采购订单","type":"select"},
                 {"name":"inventorynumber","join":"inventoryDetail","label":"批次编号","type":"text"},
-                { "name": "custbody_outbound_3", "label":"审批状态"},
+                {"name": "custbody_outbound_3", "label":"审批状态"},
+                {"name":"line"}
             ],
             filters: [
                 ["mainline", "is", "F"],

@@ -369,7 +369,7 @@ define([
                         line: i
                     });
                     currentLine.orderLine = orderRec.getSublistValue({
-                        sublistId: 'item', 
+                        sublistId: 'item',
                         fieldId: 'orderline',
                         line: i
                     });
