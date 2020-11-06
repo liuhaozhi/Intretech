@@ -47,13 +47,16 @@ define([
                     recordType : 'customrecord_cust_price_item_list',
                     recordId   : ele.id,
                     workflowId : 'customworkflow_om_priceapp',
-                    actionId : 'workflowaction2982'
+                    actionId : 'workflowaction2924'
                 })
 
                 var currDay = operation.getDateWithTimeZone({
                     date: new Date(),
                     timezone: runtime.getUserTimezone()
                 })
+
+                log.error('currDay',currDay.toString())
+
                 var effectiveDate = format.parse({
                     type : format.Type.DATE,
                     value : search.lookupFields({
@@ -63,14 +66,19 @@ define([
                     }).custrecord_item_effective_date
                 }) 
 
+                log.error('effectiveDate',effectiveDate.toString())
+
+                log.error(effectiveDate.getTime(), currDay.getTime())
+
                 if(effectiveDate.getTime() <= currDay.getTime())
                 {
                     record.submitFields({
                         type : 'customrecord_cust_price_item_list',
                         id : ele.id,
                         values : {
+                            custrecord_statuss : '2',
                             custrecord_selling_price_effective_stat : '2',
-                            custrecord_item_effective_date : currDay
+                            custrecord_item_effective_date : new Date()
                         }
                     })
                 }
@@ -80,6 +88,7 @@ define([
                         type : 'customrecord_cust_price_item_list',
                         id : ele.id,
                         values : {
+                            custrecord_statuss : '2',
                             custrecord_selling_price_effective_stat : '1'
                         }
                     })
@@ -118,13 +127,14 @@ define([
                     recordType : 'customrecord_cust_price_item_list',
                     recordId   : ele.id,
                     workflowId : 'customworkflow_om_priceapp',
-                    actionId : 'workflowaction2983'
+                    actionId : 'workflowaction2925'
                 })
 
                 record.submitFields({
                     type : 'customrecord_cust_price_item_list',
                     id : ele.id,
                     values : {
+                        custrecord_statuss : '3',
                         custrecord_refusereason : ele.memo
                     }
                 })

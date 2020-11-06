@@ -21,7 +21,7 @@ define([
     format,
     runtime,
     task,
-    uiComponent) {
+    uiComponent) { 
 
     var sublistId = 'custpage_sublist';
     var savedSearch = '';

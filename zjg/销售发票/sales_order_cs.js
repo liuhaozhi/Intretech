@@ -24,12 +24,12 @@ define(['N/search','N/url','N/https',
         console.log("sublistId="+sublistId+",fieldId="+fieldId+",行line="+line);
         
         
-        if(sublistId=="item"  &&  fieldId=="custcol_itemtype"){
-            console.log("bom信息变更开始");
-            obtainBom(context);
-            console.log("bom信息变更结束");
+        // if(sublistId=="item"  &&  fieldId=="custcol_itemtype"){
+        //     console.log("bom信息变更开始");
+        //     obtainBom(context);
+        //     console.log("bom信息变更结束");
 
-        }
+        // }
         if(fieldId =="entity"){
             console.log("entity开始");
             var department = DepartmentalSet(context);

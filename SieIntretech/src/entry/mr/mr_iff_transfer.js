@@ -39,6 +39,10 @@ define([
         lSlSalesBankFieldId = 'custcol_sales_bank',
         gSlItemLineFieldId = 'line',
         gSlItemOrderlineFieldId = 'orderline'; //来源订单行号
+        //ADD AT 2020-09-19
+        gSlcustcol_k3line_number='custcol_k3line_number';//K3行号（销售）
+        gSlItemDetailStatusFiledId='status';
+        gSLIssueinventorynumberIDFieldId='numberedrecordid';
 
     function getInputData() {
 
@@ -46,6 +50,8 @@ define([
             ciilFieldId = 'custrecord_intre_intercompany_location', //公司间交易默认仓库（子公司）
             cassqFieldId = 'inventoryDetail_quantity',
             casslotFieldId = 'inventoryDetail_inventorynumber',
+            casslotIdFieldId = 'inventoryDetail_numberedrecordid', //ADD AT 2020-09-19
+            casslotStatusFieldId = 'inventoryDetail_status',        //ADD AT 2020-09-19
             iffColumns = [],
             iffFilters = [],
             iffSearchCriteria = {},
@@ -126,7 +132,13 @@ define([
                 name: 'formulatext',
                 type: "text",
                 formula: "{inventorydetail.inventorynumber}"
-            }
+            },
+            ///add at 2020-09-19
+            {
+                name: 'status',
+                join: 'inventoryDetail'
+            } 
+
         ];
 
         iffFilters = [
@@ -315,14 +327,17 @@ define([
                     tranid: iffList[i][gTranidFieldId],
                     line: iffList[i][gLinesequencenumberFieldId],
                     poSubsidiary: iffList[i]['poSubsidiary'],
-                    poEntity: iffList[i]['poEntity']
+                    poEntity: iffList[i]['poEntity'],
                     //items: []
+                    //add at 2020-09-19
+                    custcol_k3line_number:iffList[i][gSlcustcol_k3line_number] 
                 };
 
                 fMap[fKey][lSlsalesorderFieldId] = iffList[i][lSlsalesorderFieldId];
                 fMap[fKey][lSlLineFieldId] = iffList[i][lSlLineFieldId];
                 fMap[fKey][lSlExternalFieldId] = iffList[i][lSlExternalFieldId];
                 fMap[fKey][lSlSalesBankFieldId] = iffList[i][lSlSalesBankFieldId];
+                fMap[fKey][gSlcustcol_k3line_number] = iffList[i][gSlcustcol_k3line_number];
 
                 fMap[fKey][gSlInventorydetailFieldId] = [];
 
@@ -330,8 +345,13 @@ define([
 
                 //inventorydetailObj[gSLIssueinventorynumberFieldId] = iffList[i][casslotFieldId];
                 inventorydetailObj[gSLIssueinventorynumberFieldId] = iffList[i]['formulatext_15'];
+                inventorydetailObj[gSLIssueinventorynumberIDFieldId] = iffList[i][casslotIdFieldId];
                 inventorydetailObj[gSlItemQuantityFieldId] = iffList[i][cassqFieldId];
+                inventorydetailObj[gSlItemDetailStatusFiledId] = iffList[i][casslotStatusFieldId];
+
                 inventorydetailObj['formulatext_15'] = iffList[i]['formulatext_15'];
+
+                inventorydetailObj[gSlItemDetailStatusFiledId] = iffList[i][casslotStatusFieldId];
 
                 fMap[fKey][gSlInventorydetailFieldId].push(inventorydetailObj);
 
@@ -340,7 +360,10 @@ define([
 
                 //inventorydetailObj[gSLIssueinventorynumberFieldId] = iffList[i][casslotFieldId];
                 inventorydetailObj[gSLIssueinventorynumberFieldId] = iffList[i]['formulatext_15'];
+               inventorydetailObj[gSLIssueinventorynumberIDFieldId] = iffList[i][casslotIdFieldId];
                 inventorydetailObj[gSlItemQuantityFieldId] = iffList[i][cassqFieldId];
+           inventorydetailObj[gSlItemDetailStatusFiledId] = iffList[i][casslotStatusFieldId];
+
                 inventorydetailObj['formulatext_15'] = iffList[i]['formulatext_15'];
 
                 fMap[fKey][gSlInventorydetailFieldId].push(inventorydetailObj);
@@ -380,6 +403,7 @@ define([
                 inventoryObj[lSlLineFieldId] = fList[i][lSlLineFieldId];
                 inventoryObj[lSlExternalFieldId] = fList[i][lSlExternalFieldId];
                 inventoryObj[lSlSalesBankFieldId] = fList[i][lSlSalesBankFieldId];
+                inventoryObj[gSlcustcol_k3line_number] = fList[i][gSlcustcol_k3line_number];
                 inventoryObj['poSubsidiary'] = fList[i]['poSubsidiary'];
                 inventoryObj['poEntity'] = fList[i]['poEntity'];
 
@@ -395,6 +419,7 @@ define([
                 inventoryObj[lSlLineFieldId] = fList[i][lSlLineFieldId];
                 inventoryObj[lSlExternalFieldId] = fList[i][lSlExternalFieldId];
                 inventoryObj[lSlSalesBankFieldId] = fList[i][lSlSalesBankFieldId];
+                inventoryObj[gSlcustcol_k3line_number] = fList[i][gSlcustcol_k3line_number];
                 inventoryObj['poSubsidiary'] = fList[i]['poSubsidiary'];
                 inventoryObj['poEntity'] = fList[i]['poEntity'];
 
@@ -448,7 +473,9 @@ define([
             for (var k = 0; k < fromInventorydetail.length; k++) {
                 toInventorydetailObj = {};
                 toInventorydetailObj[gSLIssueinventorynumberFieldId] = fromInventorydetail[k][gSLIssueinventorynumberFieldId];
+                toInventorydetailObj[gSLIssueinventorynumberIDFieldId] = fromInventorydetail[k][gSLIssueinventorynumberIDFieldId];
                 toInventorydetailObj[gSlItemQuantityFieldId] = fromInventorydetail[k][gSlItemQuantityFieldId];
+                toInventorydetailObj[gSlItemDetailStatusFiledId] = fromInventorydetail[k][gSlItemDetailStatusFiledId];
                 toInventorydetail.push(toInventorydetailObj);
             }
 
@@ -487,7 +514,9 @@ define([
                         custrecord_iff_item: inventory[i][gSlItemItemFieldId],
                         custrecord_iff_quantity: inventory[i][gSladjustqtybyFieldId],
                         custrecord_iff_lot: toInventorydetail[j][gSLIssueinventorynumberFieldId],
-                        custrecord_iff_lot_quantity: toInventorydetail[j][gSlItemQuantityFieldId]
+                        custrecord_iff_lotID: toInventorydetail[j][gSLIssueinventorynumberIDFieldId],
+                        custrecord_iff_lot_quantity: toInventorydetail[j][gSlItemQuantityFieldId],
+                     custrecord_iff_lot_status: toInventorydetail[j][gSlItemDetailStatusFiledId],
                     }
                 }
 
@@ -501,9 +530,13 @@ define([
             toIffObj = {};
             toIffObj[gSlItemItemFieldId] = inventory[i][gSlItemItemFieldId];
             toIffObj[gSlItemQuantityFieldId] = inventory[i][gSladjustqtybyFieldId];
+            toIffObj[gSlItemDetailStatusFiledId] = inventory[i][gSlItemDetailStatusFiledId];
             toIffObj[gSlItemLineFieldId] = inventory[i][gSlItemLineFieldId];
             toIffObj[gSlItemLocationFieldId] = contextValue[gtransferlocationFieldId];
             toIffObj[gSlInventorydetailFieldId] = toInventorydetail;
+            ///
+            toIffObj[gSlcustcol_k3line_number] = contextValue[gSlcustcol_k3line_number]; // add at 2020-09019
+           log.debug('line 535' ,toIffObj );
             toIffItemList.push(toIffObj);
         }
 
@@ -536,6 +569,9 @@ define([
                 }
             }
 
+           log.debug('568 sourceIffItemObj ',sourceIffItemObj);
+
+
             sourceIffItemList.push(sourceIffItemObj);
         }
 
@@ -557,7 +593,7 @@ define([
             delete toIffItemList[i][gSlItemOrderlineFieldId];
         }
 
-        log.debug('toIffItemList', toIffItemList);
+        log.debug('toIffItemListend', toIffItemList);
 
         //2.删除原出库单
         record.delete({
@@ -582,17 +618,17 @@ define([
                 ignoreMandatoryFields: true
             };
 
-            log.debug('option', option);
+            // log.debug('option', option);
 
             var recId = invCommon.inventorytransferCreationSt(option);
-            log.debug('recId', recId);
+            // log.debug('recId', recId);
             return true;
         });
 
         //创建出库
         toIffMain[gCreatedfromFieldId] = contextValue[gCreatedfromFieldId];
         toIffMain[citFieldId] = true;
-
+        // log.debug('toIffMain', toIffMain);
         toIffOption = {
 
             main: toIffMain,
@@ -603,7 +639,7 @@ define([
 
         toIffRecId = soCommon.itemfulfillmentCreationSt(toIffOption);
 
-        log.debug('toIffRecId', toIffRecId);
+        // log.debug('toIffRecId', toIffRecId);
 
         //关税导入
         for (var i = 0; i < inventory.length; i++) {
@@ -627,6 +663,7 @@ define([
                 poItemObj[gSladjustqtybyFieldId] = inventory[i][gSladjustqtybyFieldId];
                 poItemObj[lSlExternalFieldId] = inventory[i][lSlExternalFieldId];
                 poItemObj[lSlSalesBankFieldId] = inventory[i][lSlSalesBankFieldId];
+                poItemObj[gSlcustcol_k3line_number] = inventory[i][gSlcustcol_k3line_number];
                 poItemObj[gSlInventorydetailFieldId] = inventory[i][gSlInventorydetailFieldId];
                 poMap[poKey]['items'].push(poItemObj);
             } else {
@@ -635,13 +672,16 @@ define([
                 poItemObj[gSladjustqtybyFieldId] = inventory[i][gSladjustqtybyFieldId];
                 poItemObj[lSlExternalFieldId] = inventory[i][lSlExternalFieldId];
                 poItemObj[lSlSalesBankFieldId] = inventory[i][lSlSalesBankFieldId];
+                poItemObj[gSlcustcol_k3line_number] = inventory[i][gSlcustcol_k3line_number];
                 poItemObj[gSlInventorydetailFieldId] = inventory[i][gSlInventorydetailFieldId];
+
+                // log.debug('line 674 poItemObj',poItemObj);
                 poMap[poKey]['items'].push(poItemObj);
             }
 
         }
 
-        log.debug('poMap', poMap);
+        // log.debug('poMap', poMap);
 
         Object.keys(poMap).forEach(function (result, i) {
 
@@ -667,20 +707,25 @@ define([
                         custrecord_ums_line_item_inventory: _items[j][gSlItemItemFieldId],
                         custrecord_ums_line_po_id: _items[j][lSlExternalFieldId],
                         custrecord_ums_line_po_line_num: _items[j][lSlSalesBankFieldId],
+                        custrecord_ums_line_k3line_number: _items[j][gSlcustcol_k3line_number],
                         custrecord_ums_line_lotnum: _inventorydetail[k]['formulatext_15'],
-                        custrecord_ums_line_quantity: _inventorydetail[k][gSlItemQuantityFieldId]
+                        custrecord_ums_line_quantity: _inventorydetail[k][gSlItemQuantityFieldId],
+                        custrecord_ums_line_status: _inventorydetail[k][gSlItemDetailStatusFiledId]
+
                     };
+
+                    // log.debug(' line 713 cduryItemObj',cduryItemObj);
 
                     cdury['items'].push(cduryItemObj);
 
                 }
             }
 
-            log.debug('cdury', cdury);
+            // log.debug('cdury', cdury);
 
             var recId111 = umsCommon.createintercompanyporcv(cdury);
 
-            log.debug('recId', recId111);
+            // log.debug('recId', recId111);
 
             return;
         });

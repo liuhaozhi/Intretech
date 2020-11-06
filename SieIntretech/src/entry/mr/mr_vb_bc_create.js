@@ -5,10 +5,12 @@
  *@description 用于生成真正的Vendor Bill和Bill Credit
  */
 define([
+    'N/email',
     'N/record',
     'N/search',
     'N/runtime'
 ], function (
+    email,
     record,
     search,
     runtime
@@ -110,7 +112,7 @@ define([
     
         return allResults;
     }
-
+ 
     //entry points
     function getInputData(context) {
         var currentScript = runtime.getCurrentScript(),
@@ -134,7 +136,7 @@ define([
             ],
             outputData = [],
             itemIds = [];
-
+            log.debug('inputData', inputData);
         //搜索勾选数据对应的对账单明细
         inputData.forEach(function (lineInfo) {
             var applyDateTime = lineInfo['custpage_paged_formulatext_0'],
@@ -173,11 +175,12 @@ define([
                 'custrecord_check_grossamount',
                 'custrecord_tax_code',
                 'custrecord_id_line',
-                'custrecord_check_parent',
-                'custrecord_real_bill_number'//实际发票号
+                'custrecord_check_parent', //对账单号
+                'custrecord_real_bill_number',//实际发票号
+                'custrecord__ns_poline_number' //行号
             ];
 
-            // log.debug('filters', filters);
+            log.debug('filters', filters);
 
             custSearchObj = search.create({
                 type: searchType,
@@ -219,6 +222,9 @@ define([
                         }),
                         stateParentId = result.getValue({
                             name: 'custrecord_check_parent'
+                        }),
+                        statePoNumber = result.getValue({
+                            name: 'custrecord__ns_poline_number'
                         });
 
                     itemRate = +itemRate;
@@ -238,13 +244,16 @@ define([
                         lineId: lineId,
                         stateId: stateId,
                         parentId: stateParentId,
-                        realBillNum: realBillNum
+                        realBillNum: realBillNum,
+                        statePoNumber : statePoNumber
                     });
 
                     itemIds.push(itemId);
                 });
             });
 
+            log.error('resultMap',resultMap)
+            var itemAccountMap = Object.create(null)
             if (billTypeList.indexOf(orderType) > -1) {//搜索入库单对账信息
                 groupKey = getMapKey([applyDateTime, orderType, vendorId, orderCurrency, subsidiaryId]);
                 //装配件搜索
@@ -255,22 +264,29 @@ define([
                 });
                 itemIds = [];
                 for(var i = 0; i < itemAllSchResults.length; i++) {
+                    var account = itemAllSchResults[i].getValue('assetaccount')
+
+                    itemAccountMap[itemAllSchResults[i].id] = account
+                    
                     itemIds.push(itemAllSchResults[i].getValue(itemAllSchResults[i].columns[0]));
                     itemAssetMap[itemIds[itemIds.length - 1]] = itemAllSchResults[i].id;
                 }
                 //科目搜索
+                var accountCfiMap = Object.create(null)
+
                 itemAllSchResults = getAllSearchResults({
                     type: "account",
                     columns: ["custrecord_n112_cseg_cn_cfi"],//中国现金流
                     filters: [ "internalid", "anyof", itemIds ]
                 });
                 for(var i = 0; i < itemAllSchResults.length; i++) {
+                    accountCfiMap[itemAllSchResults[i].id] = itemAllSchResults[i].getValue(itemAllSchResults[i].columns[0])
                     assetAccounts[itemAssetMap[itemAllSchResults[i].id]] = itemAllSchResults[i].getValue(itemAllSchResults[i].columns[0]);
                 }
                 //写入输出列表
                 util.each(resultMap, function (itemLines, orderId) {
                     for(var i = 0; i < itemLines.length; i++) {
-                        itemLines[i]["assetAccount"] = assetAccounts[itemLines[i].itemId] || "";
+                        itemLines[i]["assetAccount"] = accountCfiMap[itemAccountMap[itemLines[i].itemId]] || "";
                     }
                     outputData.push({
                         type: 'itemreceipt',
@@ -529,13 +545,41 @@ define([
 
             //设置汇率
             billRec.setValue({
-                fieldId: 'exchangerate',
+                fieldId: 'exchangerate', 
                 value: exchangeRate
             });
 
             //添加行信息
             linesData.forEach(function (lineData) {//每个单
                 lineData.lines.forEach(function (line) {//每个单的每行
+                    //设置po行号
+                    billRec.setSublistValue({
+                        sublistId: 'item',
+                        fieldId: 'custcol_line',
+                        line: billLineIndex,
+                        value: line.statePoNumber
+                    });
+                    //设置对账单号
+                    billRec.setSublistValue({
+                        sublistId: 'item',
+                        fieldId: 'custcol_statement_number',
+                        line: billLineIndex,
+                        value: line.parentId
+                    });
+                    //设置入库单号
+                    billRec.setSublistValue({
+                        sublistId: 'item',
+                        fieldId: 'custcol_warehousing_no',
+                        line: billLineIndex,
+                        value: lineData.id
+                    });
+                    //设置采购订单号
+                    billRec.setSublistValue({
+                        sublistId: 'item',
+                        fieldId: 'custcol_ns_po_number',
+                        line: billLineIndex,
+                        value: line.orderDoc
+                    });
                     //设置物料
                     billRec.setSublistValue({
                         sublistId: 'item',
@@ -585,6 +629,7 @@ define([
                         value: line.itemTax
                     });
                     //仓库
+                    log.error('line.location',line.location)
                     billRec.setSublistValue({
                         sublistId: 'item',
                         fieldId: 'location',
@@ -599,38 +644,38 @@ define([
                         value: line.assetAccount
                     });
                     //库存详细信息
-                    var invtDetailRec = billRec.getSublistSubrecord({
-                        sublistId: 'item',
-                        fieldId: 'inventorydetail',
-                        line: billLineIndex
-                    });
-                    if (invtDetailRec && line.inventoryDetail) {
-                        var invtDetailLineCount = invtDetailRec.getLineCount({
-                            sublistId: 'inventoryassignment'
-                        });
-                        //设置库存行信息
-                        if (!invtDetailLineCount) {
-                            line.inventoryDetail.forEach(function (invDtLine, invtLineIndex) {
-                                util.each(invDtLine, function (fieldValue, fieldId) {
-                                    if (fieldId == 'expirationdate') {
-                                        invtDetailRec.setSublistText({
-                                            sublistId: 'inventoryassignment',
-                                            fieldId: fieldId,
-                                            text: fieldValue,
-                                            line: invtLineIndex
-                                        });
-                                    } else {
-                                        invtDetailRec.setSublistValue({
-                                            sublistId: 'inventoryassignment',
-                                            fieldId: fieldId,
-                                            value: fieldValue,
-                                            line: invtLineIndex
-                                        });
-                                    }
-                                });
-                            });
-                        }
-                    }
+                    // var invtDetailRec = billRec.getSublistSubrecord({
+                    //     sublistId: 'item',
+                    //     fieldId: 'inventorydetail',
+                    //     line: billLineIndex
+                    // });
+                    // if (invtDetailRec && line.inventoryDetail) {
+                    //     var invtDetailLineCount = invtDetailRec.getLineCount({
+                    //         sublistId: 'inventoryassignment'
+                    //     });
+                    //     //设置库存行信息
+                    //     if (!invtDetailLineCount) {
+                    //         line.inventoryDetail.forEach(function (invDtLine, invtLineIndex) {
+                    //             util.each(invDtLine, function (fieldValue, fieldId) {
+                    //                 if (fieldId == 'expirationdate') {
+                    //                     invtDetailRec.setSublistText({
+                    //                         sublistId: 'inventoryassignment',
+                    //                         fieldId: fieldId,
+                    //                         text: fieldValue,
+                    //                         line: invtLineIndex
+                    //                     });
+                    //                 } else {
+                    //                     invtDetailRec.setSublistValue({
+                    //                         sublistId: 'inventoryassignment',
+                    //                         fieldId: fieldId,
+                    //                         value: fieldValue,
+                    //                         line: invtLineIndex
+                    //                     });
+                    //                 }
+                    //             });
+                    //         });
+                    //     }
+                    // }
 
                     //递增行号
                     billLineIndex++;
@@ -705,6 +750,30 @@ define([
                             sublistId: 'item',
                             line: i
                         });
+                        //设置po行号
+                        vcRec.setCurrentSublistValue({
+                            sublistId: 'item',
+                            fieldId: 'custcol_line',
+                            value: curStateLine.statePoNumber
+                        });
+                        //设置对账单号
+                        vcRec.setCurrentSublistValue({
+                            sublistId: 'item',
+                            fieldId: 'custcol_statement_number',
+                            value: curStateLine.parentId
+                        });
+                        //设置入库单号
+                        vcRec.setCurrentSublistValue({
+                            sublistId: 'item',
+                            fieldId: 'custcol_warehousing_no',
+                            value : fulfillId
+                        });
+                        //设置采购订单号
+                        vcRec.setCurrentSublistValue({
+                            sublistId: 'item',
+                            fieldId: 'custcol_ns_po_number',
+                            value: curStateLine.orderDoc
+                        });
                         vcRec.setCurrentSublistValue({//单价
                             sublistId: 'item',
                             fieldId: 'rate',
@@ -732,45 +801,45 @@ define([
                         });
 
                         //库存详细信息
-                        if (curStateLine.inventoryDetail) {
-                            var defaultInvtDetail = null;
-                            var defaultInvtLineCount = 0;
-                            defaultInvtDetail = vcRec.getCurrentSublistSubrecord({
-                                sublistId: 'item',
-                                fieldId: 'inventorydetail'
-                            });
-                            if (defaultInvtDetail) {
-                                defaultInvtLineCount = defaultInvtDetail.getLineCount({
-                                    sublistId: 'inventoryassignment'
-                                });
-                                // log.debug('defaultInvtLineCount', defaultInvtLineCount);
-                                if (!defaultInvtLineCount) {
-                                    curStateLine.inventoryDetail.forEach(function (invDtLine) {
-                                        defaultInvtDetail.seletNewLine({
-                                            sublistId: 'inventoryassignment'
-                                        });
-                                        util.each(invDtLine, function (fieldValue, fieldId) {
-                                            if (fieldId === 'expirationdate') {//日期特殊处理
-                                                defaultInvtDetail.setCurrentSublistText({
-                                                    sublistId: 'inventoryassignment',
-                                                    fieldId: fieldId,
-                                                    text: fieldValue
-                                                });
-                                            } else {
-                                                defaultInvtDetail.setCurrentSublistValue({
-                                                    sublistId: 'inventoryassignment',
-                                                    fieldId: fieldId,
-                                                    value: fieldValue
-                                                });
-                                            }
-                                        });
-                                        defaultInvtDetail.commitLine({
-                                            sublistId: 'inventoryassignment'
-                                        });
-                                    });
-                                }
-                            }
-                        }
+                        // if (curStateLine.inventoryDetail) {
+                        //     var defaultInvtDetail = null;
+                        //     var defaultInvtLineCount = 0;
+                        //     defaultInvtDetail = vcRec.getCurrentSublistSubrecord({
+                        //         sublistId: 'item',
+                        //         fieldId: 'inventorydetail'
+                        //     });
+                        //     if (defaultInvtDetail) {
+                        //         defaultInvtLineCount = defaultInvtDetail.getLineCount({
+                        //             sublistId: 'inventoryassignment'
+                        //         });
+                        //         // log.debug('defaultInvtLineCount', defaultInvtLineCount);
+                        //         if (!defaultInvtLineCount) {
+                        //             curStateLine.inventoryDetail.forEach(function (invDtLine) {
+                        //                 defaultInvtDetail.seletNewLine({
+                        //                     sublistId: 'inventoryassignment'
+                        //                 });
+                        //                 util.each(invDtLine, function (fieldValue, fieldId) {
+                        //                     if (fieldId === 'expirationdate') {//日期特殊处理
+                        //                         defaultInvtDetail.setCurrentSublistText({
+                        //                             sublistId: 'inventoryassignment',
+                        //                             fieldId: fieldId,
+                        //                             text: fieldValue
+                        //                         });
+                        //                     } else {
+                        //                         defaultInvtDetail.setCurrentSublistValue({
+                        //                             sublistId: 'inventoryassignment',
+                        //                             fieldId: fieldId,
+                        //                             value: fieldValue
+                        //                         });
+                        //                     }
+                        //                 });
+                        //                 defaultInvtDetail.commitLine({
+                        //                     sublistId: 'inventoryassignment'
+                        //                 });
+                        //             });
+                        //         }
+                        //     }
+                        // }
 
                         vcRec.commitLine({
                             sublistId: 'item'
@@ -826,7 +895,9 @@ define([
 
     function summarize(summary) {
         var processResults = {};
-
+        var errorMasArray  = new Array()
+        var currUser = runtime.getCurrentUser()
+        
         //记录错误
         if (summary.inputSummary.error) {
             log.error({
@@ -842,6 +913,8 @@ define([
             return true;
         });
         summary.reduceSummary.errors.iterator().each(function (key, error, executionNo) {
+            errorMasArray.push(JSON.parse(error).message + '</br>')
+            
             log.error({
                 title: 'Reduce error key: ' + key,
                 details: error
@@ -854,6 +927,18 @@ define([
             processResults[key] = value;
             return true;
         });
+
+        if(errorMasArray.length){
+            errorMasArray.unshift('<html><body><div><h1>您好：此邮件是生成账单发生错误的提示信息</h1>')
+            errorMasArray.push('</div></body></html>')
+    
+            email.send({
+                author: currUser.id,
+                recipients: currUser.id,
+                subject: '批处理确认账单提示信息',
+                body: errorMasArray.join('')
+            })
+        }
 
         log.error({
             title: '成功处理结果摘要',

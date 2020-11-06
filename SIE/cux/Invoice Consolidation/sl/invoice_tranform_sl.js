@@ -3,9 +3,11 @@
  *@NScriptType Suitelet
  */
 define([
-    'N/record'
+    'N/record',
+    'N/search',
+    '../../helper/operation_assistant'
 ], function(
-    record
+    record , search , operation
 ) {
     var sublistId = 'recmachcustrecord185'
 
@@ -31,6 +33,110 @@ define([
                 }))
             }
         }
+
+        if(request.method === 'GET' && params.action === 'voidRecord')
+        {
+            response.write(voidRecord(params.recordId))
+        }
+    }
+
+    function voidRecord(recordId){
+        var saleOrds  = new Object()
+
+        search.create({
+            type : 'customrecord_ci_huopinghang',
+            filters : [
+                ['custrecord185' , 'anyof' , [recordId]]
+            ],
+            columns : [
+                'custrecord_ci_danjubianhao',
+                'custrecord_planum',
+                'custrecord_ci_shuliang'
+            ]
+        }).run().each(function(res){
+            var orderId = res.getValue({
+                name : 'custrecord_ci_danjubianhao'
+            })
+
+            if(!saleOrds[orderId])
+            saleOrds[orderId] = new Object()
+
+            saleOrds[orderId][res.getValue({
+                name : 'custrecord_planum'
+            })] = res.getValue({
+                name : 'custrecord_ci_shuliang'
+            })
+
+            return true
+        })
+
+        dealWithSublist(saleOrds,recordId)
+        
+        return JSON.stringify({status : 'sucess'})
+    }
+
+    function dealWithSublist(sublistLines,recordId){
+        try
+        {
+            for(var key in sublistLines)
+            {
+                var salesItem = sublistLines[key]
+                var saleOrder = record.load({
+                    type : 'salesorder',
+                    id : key
+                })
+    
+                for(var line in salesItem)
+                {
+                    var index = saleOrder.findSublistLineWithValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_plan_number',
+                        value : line
+                    })
+        
+                    if(index > -1)
+                    {
+                        changeSalesOrdLinesQuantity({
+                            index : index,
+                            saleOrder : saleOrder,
+                            quantity : salesItem[line]
+                        })
+                    }
+                }
+    
+                saleOrder.save({
+                    ignoreMandatoryFields : true
+                })
+            }
+
+            record.submitFields({
+                type : 'customrecord_hebingfapiao',
+                id : recordId,
+                values : {
+                    custrecord_void : true
+                }
+            })
+        }
+        catch(e)
+        {
+            throw e.message
+        }
+    }
+
+    
+    function changeSalesOrdLinesQuantity(params){
+        params.saleOrder.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_ci_yunshudaying',
+            line : params.index,
+            value : operation.sub(
+                params.saleOrder.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_ci_yunshudaying',
+                    line : params.index,
+                }),params.quantity
+            )
+        })
     }
 
     function transPrintIvoice(recordId){

@@ -587,6 +587,7 @@ define([
 
     function searchParams(){
         return {
+            boxnum : currentRec.getValue(allFields.boxnum),
             advice : currentRec.getValue(allFields.advice),
             k3order : currentRec.getValue(allFields.k3order),
             cacheid : currentRec.getValue(allFields.cacheid),
@@ -614,11 +615,16 @@ define([
     function viewsalesord(){
         window.open('/app/common/search/searchresults.nl?searchid=1126&whence=')
     }
+
+    function viewInven(){
+        window.open('/app/common/search/searchresults.nl?searchid=1448&whence=')
+    }
     
     return {
         pageInit : pageInit,
         saveRecord : saveRecord,
         searchLines : searchLines,
+        viewInven : viewInven,
         viewfullment : viewfullment,
         viewsalesord : viewsalesord,
         fieldChanged : fieldChanged

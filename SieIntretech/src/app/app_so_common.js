@@ -5,7 +5,7 @@
  */
 define([
     'N/record'
-], function (
+], function ( 
     record
 ) {
     var gestimateRecordTypeId = 'estimate',
@@ -56,21 +56,28 @@ define([
                     });
 
                     for (var key in items[i]) {
-                        if (items[i].hasOwnProperty(key)) {
+                        if(key === 'rate'){
                             soRec.setSublistValue({
                                 sublistId: gItemSublistId,
-                                fieldId: key,
+                                fieldId: 'custcol_unit_notax',
                                 line: i,
                                 value: items[i][key]
-                            });
-                        }
+                            })
+                        } 
+
+                        soRec.setSublistValue({
+                            sublistId: gItemSublistId,
+                            fieldId: key,
+                            line: i,
+                            value: items[i][key]
+                        });
                     }
                 }
             }
 
             return soRec.save({
                 enableSourcing: false,
-                ignoreMandatoryFields: false
+                ignoreMandatoryFields: true
             });
 
         } catch (ex) {
@@ -121,12 +128,16 @@ define([
                         sublistId: gItemSublistId,
                         line: i
                     });
-
+                   
+                    salesorderRec.setSublistValue({
+                        sublistId: gItemSublistId,
+                        fieldId: 'custcol_k3line_number',
+                        line: i,
+                        value: '-None-'
+                    })
+                    
                     for (var key in items[i]) {
-
                         if (items[i].hasOwnProperty(key)) {
-
-                            //非批次字段处理
                             if (key != gInventorydetailSlFieldId) {
 
                                 salesorderRec.setSublistValue({
@@ -136,45 +147,54 @@ define([
                                     value: items[i][key]
                                 });
                             }
-                        }
-                    }
 
-                    if (!items[i][gInventorydetailSlFieldId] && items[i][gItemLocationSlFieldId]) {
-
-                        inventorydetailSubRec = salesorderRec.getSublistSubrecord({
-                            sublistId: gItemSublistId,
-                            fieldId: gInventorydetailSlFieldId,
-                            line: i
-                        });
-
-                        inventorydetailSlFieldValues = items[i][gInventorydetailSlFieldId];
-
-                        for (var j = 0; j < inventorydetailSlFieldValues.length; j++) {
-                            inventorydetailSubRec.insertLine({
-                                sublistId: gInventoryassignmentSrecSlId,
-                                line: j
-                            });
-
-                            for (var skey in inventorydetailSlFieldValues[j]) {
-
-                                if (inventorydetailSlFieldValues[j].hasOwnProperty(skey)) {
-
-                                    inventorydetailSubRec.setSublistValue({
-                                        sublistId: gInventoryassignmentSrecSlId,
-                                        fieldId: skey,
-                                        line: j,
-                                        value: inventorydetailSlFieldValues[j][skey]
-                                    });
-                                }
+                            if(key == 'rate'){
+                                salesorderRec.setSublistValue({
+                                    sublistId: gItemSublistId,
+                                    fieldId: 'custcol_unit_notax',
+                                    line: i,
+                                    value: items[i][key]
+                                });
                             }
                         }
                     }
+                    // if (!items[i][gInventorydetailSlFieldId] && items[i][gItemLocationSlFieldId]) {
+
+                    //     inventorydetailSubRec = salesorderRec.getSublistSubrecord({
+                    //         sublistId: gItemSublistId,
+                    //         fieldId: gInventorydetailSlFieldId,
+                    //         line: i
+                    //     });
+
+                    //     inventorydetailSlFieldValues = items[i][gInventorydetailSlFieldId];
+
+                    //     if(inventorydetailSlFieldValues)
+                    //     for (var j = 0; j < inventorydetailSlFieldValues.length; j++) {
+                    //         inventorydetailSubRec.insertLine({
+                    //             sublistId: gInventoryassignmentSrecSlId,
+                    //             line: j
+                    //         });
+
+                    //         for (var skey in inventorydetailSlFieldValues[j]) {
+
+                    //             if (inventorydetailSlFieldValues[j].hasOwnProperty(skey)) {
+
+                    //                 inventorydetailSubRec.setSublistValue({
+                    //                     sublistId: gInventoryassignmentSrecSlId,
+                    //                     fieldId: skey,
+                    //                     line: j,
+                    //                     value: inventorydetailSlFieldValues[j][skey]
+                    //                 });
+                    //             }
+                    //         }
+                    //     }
+                    // }
                 }
             }
 
             return salesorderRec.save({
                 enableSourcing: enableSourcing,
-                ignoreMandatoryFields: ignoreMandatoryFields
+                ignoreMandatoryFields: true
             });
 
         } catch (ex) {
@@ -212,9 +232,18 @@ define([
             iffRec = record.transform({
                 fromType: gSalesorderRecTypeId,
                 fromId: main[createdfromFieldId],
-                toType: gItemfulfillmentRecTypeId
+                toType: gItemfulfillmentRecTypeId,
+                isDynamic : true
             });
 
+            iffRec.setValue({
+                fieldId : 'customform',
+                value : 215
+            })
+
+            log.debug('iffRec',iffRec)
+            log.debug('main',main)
+            log.debug('items',JSON.stringify(items))
             //主要信息
             for (var key in main) {
                 if (main.hasOwnProperty(key)) {
@@ -234,22 +263,25 @@ define([
                 });
 
                 for (var i = 0; i < lineCount; i++) {
+                    iffRec.selectLine({
+                        sublistId : gItemSublistId,
+                        line : i
+                    })
+                    iffRec.removeCurrentSublistSubrecord({
+                        sublistId: gItemSublistId,
+                        fieldId: gInventorydetailSlFieldId
+                    })
                     orderlineValue = iffRec.getSublistValue({
                         sublistId: gItemSublistId,
                         fieldId: gOrderlineSlFieldId,
                         line: i
-                    });
-
+                    })
                     for (var j = 0; j < items.length; j++) {
-
                         if (orderlineValue == items[j][gLineSlFieldId]) {
                             for (var key in items[j]) {
-
                                 if (items[j].hasOwnProperty(key)) {
-
                                     if (key != gItemSlFieldId && key != gInventorydetailSlFieldId) {
-
-                                        iffRec.setSublistValue({
+                                        iffRec.setCurrentSublistValue({
                                             sublistId: gItemSublistId,
                                             fieldId: key,
                                             line: i,
@@ -261,20 +293,20 @@ define([
 
                             //地点详细信息处理
                             if (items[j][gInventorydetailSlFieldId] && items[j][gItemLocationSlFieldId]) {
-                                inventorydetailSubRec = iffRec.getSublistSubrecord({
+                                inventorydetailSlFieldValues = items[j][gInventorydetailSlFieldId];
+                                inventorydetailSubRec = iffRec.getCurrentSublistSubrecord({
                                     sublistId: gItemSublistId,
                                     fieldId: gInventorydetailSlFieldId,
                                     line: i
-                                });
-
-                                inventorydetailSlFieldValues = items[j][gInventorydetailSlFieldId];
-
+                                })
                                 for (var k = 0; k < inventorydetailSlFieldValues.length; k++) {
-
-                                    inventorydetailSubRec.insertLine({
-                                        sublistId: gInventoryassignmentSrecSlId,
-                                        line: k
-                                    });
+                                    inventorydetailSubRec.selectNewLine({
+                                        sublistId : gInventoryassignmentSrecSlId
+                                    })
+                                    // inventorydetailSubRec.insertLine({
+                                    //     sublistId: gInventoryassignmentSrecSlId,
+                                    //     line: k
+                                    // });
 
                                     for (var skey in inventorydetailSlFieldValues[k]) {
                                         if (inventorydetailSlFieldValues[k].hasOwnProperty(skey)) {
@@ -293,14 +325,14 @@ define([
                                                 //     text: 'value'
                                                 // });
 
-                                                inventorydetailSubRec.setSublistText({
+                                                inventorydetailSubRec.setCurrentSublistText({
                                                     sublistId: gInventoryassignmentSrecSlId,
                                                     fieldId: skey,
                                                     line: k,
                                                     text: inventorydetailSlFieldValues[k][skey]
                                                 });
                                             } else {
-                                                inventorydetailSubRec.setSublistValue({
+                                                inventorydetailSubRec.setCurrentSublistValue({
                                                     sublistId: gInventoryassignmentSrecSlId,
                                                     fieldId: skey,
                                                     line: k,
@@ -309,16 +341,58 @@ define([
                                             }
                                         }
                                     }
+
+                                    inventorydetailSubRec.commitLine({
+                                        sublistId : gInventoryassignmentSrecSlId
+                                    })
                                 }
                             }
                         }
+
+                        iffRec.commitLine({
+                            sublistId : gItemSublistId
+                        })
                     }
                 }
             }
 
+            iffRec.selectLine({
+                sublistId : gItemSublistId,
+                line : 0
+            })
+
+            var subRecord = iffRec.getCurrentSublistSubrecord({
+                sublistId: gItemSublistId,
+                fieldId: gInventorydetailSlFieldId
+            })
+
+            subRecord.selectLine({
+                sublistId : gInventoryassignmentSrecSlId,
+                line : 0
+            })
+
+            log.debug('quantity', subRecord.getCurrentSublistValue({
+                sublistId: gInventoryassignmentSrecSlId,
+                fieldId: 'quantity',
+                line: 0
+            }))
+
+            log.debug('status', subRecord.getCurrentSublistValue({
+                sublistId: gInventoryassignmentSrecSlId,
+                fieldId: 'status',
+                line: 0
+            }))
+
+            log.debug('issueinventorynumber', subRecord.getCurrentSublistValue({
+                sublistId: gInventoryassignmentSrecSlId,
+                fieldId: 'issueinventorynumber',
+                line: 0
+            }))
+
+
             return iffRec.save({
                 enableSourcing: enableSourcing,
-                ignoreMandatoryFields: ignoreMandatoryFields
+                ignoreMandatoryFields: true
             });
         } catch (e) {
             log.error({

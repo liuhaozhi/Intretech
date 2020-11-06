@@ -6,7 +6,7 @@
 define([
     'N/search',
     'N/record',
-    '../dao/dao_collection_utils.js'
+    '../dao/dao_collection_utils.js' 
 ], function (search,
     record,
     dao) {
@@ -1153,7 +1153,7 @@ define([
         log.debug('option1', option);
         //获取工单id
         if (option.recId) {
-            recId = option.recId;
+            recId = option.recId; 
         }
 
         if (mode == 'CREATE') {

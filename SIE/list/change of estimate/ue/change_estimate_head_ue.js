@@ -16,6 +16,11 @@ define([
             const orderId = newRecord.getValue('custrecord_c_salesorder')
             const values = fieldsValue(newRecord , allFields())
 
+            if(values.custbody_changedate){
+                values.custbody_ifexport = values.custbody_changedate === '1' ? true : false
+            }
+
+            log.error('values',values)
             record.submitFields({
                 type : 'estimate',
                 id : orderId,
@@ -37,8 +42,16 @@ define([
             const values = new Object()
 
             fields.map(item => {
-                if(newRecord.getValue(item))
-                values[item.replace('custrecord_c_' , '')] = newRecord.getValue(item)
+                let orderField = item.replace('custrecord_c_' , '')
+
+                if(orderField === 'wip_customer_order'){
+                    orderField = 'custbody_wip_customer_order_number'
+                }else if(orderField === 'custbody_whether_mass'){
+                    orderField = 'custbody_whether_mass_production'
+                }
+                
+                if(newRecord.getValue(item) || newRecord.getValue(item) === false)
+                values[orderField] = newRecord.getValue(item)
             })
 
             return values

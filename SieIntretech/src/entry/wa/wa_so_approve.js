@@ -178,6 +178,7 @@ define([
         fromSoMain[toSoCustOrdNumFieldID] = '';
         fromSoMain[toSoExpOrNotFieldID] = '';
         fromSoMain[toSoIfExportFieldID] = '';
+        fromSoMain['custbody_nextapproval_1'] = ''
 
 
         //赋值
@@ -237,6 +238,8 @@ define([
             fromSoSlItemObj[LsSourceNoFieldId] = '';
             fromSoSlItemObj[lsExternL] = '';
             fromSoSlItemObj[lslnFidld] = '';
+            fromSoSlItemObj['custcol_cgoodscode'] = '';
+            fromSoSlItemObj['custcol_cgoodsname'] = '';
            
 
 
@@ -544,6 +547,7 @@ define([
                         subsidiary: fromSoSlItemList[i][slScFieldId],
                         currency: fromSoMain[gCurrencyFieldId],
                         trandate: fromSoMain[gTrandateFieldId],
+                        custbody_nextapproval_1 : fromSoMain['custbody_nextapproval_1'],
                         items: []
                     };
 
@@ -624,6 +628,8 @@ define([
                     fItemObj[lsKhAmtKhdFieldId] = fromSoSlItemList[i][gSlAmountFieldId];
                     fItemObj[lsKhAmtLcFieldId] = fromSoSlItemList[i][lsTrueamoutFieldId];
                     fItemObj[lsIndiscountFieldId] = fromSoSlItemList[i][toSoSoidFieldId];
+                    fItemObj['custcol_cgoodscode'] = fromSoSlItemList[i]['custcol_cgoodscode'];
+                    fItemObj['custcol_cgoodsname'] = fromSoSlItemList[i]['custcol_cgoodsname'];
 
                     fItemObj[lsDiscountFieldId] = (fromSoSlItemList[i][slUnitNotaxFieldId] - toSoSlRatevalue) *
                         fromSoSlItemList[i][gSlQuantityFieldId] *
@@ -673,6 +679,8 @@ define([
                     fItemObj[lsCtgwFieldId] = fromSoSlItemList[i][lsCtgwFieldId];
                     fItemObj[lsCtcnFieldId] = fromSoSlItemList[i][lsCtcnFieldId];
                     fItemObj[lsCstFieldId] = fromSoSlItemList[i][lsCstFieldId];
+                    fItemObj['custcol_cgoodscode'] = fromSoSlItemList[i]['custcol_cgoodscode'];
+                    fItemObj['custcol_cgoodsname'] = fromSoSlItemList[i]['custcol_cgoodsname'];
 
                     fItemObj[lsCutFieldId] = fromSoSlItemList[i][slUnitNotaxFieldId] *
                         (1 + (fromSoSlItemList[i][taxrateFieldId] / 100));

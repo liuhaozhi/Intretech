@@ -11,9 +11,11 @@ function(search,log,noticeUe,record,url,https,format) {
 
     
 
-    var cuuID="";
+    var cuuID="", currentRecord;
     function pageInit(scriptContext) {
+      debugger;
         var cuuRecord = scriptContext.currentRecord;
+        currentRecord = scriptContext.currentRecord;
         //console.log("获取的cuuRecord="+cuuRecord);
         cuuID = cuuRecord['id'];
         //console.log("获取的tranidCs="+tranidCs);
@@ -21,6 +23,7 @@ function(search,log,noticeUe,record,url,https,format) {
         var test2 = '5';
         var test3 = getNewData(test,test2);
         console.log("时间计算测试="+test3);
+        hiddenPriceFieds("item");
         return true;
         
     }
@@ -33,7 +36,7 @@ function(search,log,noticeUe,record,url,https,format) {
         console.log("获取的sublistId="+sublistId+"，获取的fieldId="+fieldId+"，获取的line="+line);
         if(fieldId=='custbody_merge_id'){
             var mySearch = search.load({
-                id: 'customsearch_om_pay'
+                id: 'customsearch_customer_pay'
             });
     
             var filters= mySearch.filters;
@@ -47,7 +50,7 @@ function(search,log,noticeUe,record,url,https,format) {
                 values: ["92128"]
             })
             mySearch = search.load({
-                id: 'customsearch_om_pay'
+                id: 'customsearch_customer_pay'
             });
             for (var i = 0; i < filters.length; i++) {
                 console.log("22222222222222222获得的"+JSON.stringify(filters[i]));
@@ -137,6 +140,17 @@ function(search,log,noticeUe,record,url,https,format) {
                
     }
 
+      function hiddenPriceFieds(sublistId) {
+        var cstmForm = currentRecord.getValue("customform");
+        if(cstmForm != "169") { return; }
+        var priceFields = ["金额", "总金额", "税码", "税率", "PST", "税额", "税"];
+        for(var i = 0; i < priceFields.length; i++) {
+            var colNode = document.querySelector("#" + sublistId + "_splits #" + sublistId + "_headerrow>td[data-label='" + priceFields[i] + "']");
+            if(colNode) {
+                colNode.style.display = "none";
+            }
+        }
+    }
 
     function getData(){
         var customFilter = [];

@@ -4,8 +4,9 @@
  */
 define([
     'N/record',
-    'N/search'
-], function(record,search) {
+    'N/search',
+    'N/format'
+], function(record,search,format) {
     function beforeLoad(context){
         changeTitle(context)
 
@@ -44,9 +45,219 @@ define([
         }
     }
 
+    function setSublistBomInfo(context){
+        var items = Object.create(null)
+        var newRecord = context.newRecord
+        var subsidiary = newRecord.getValue({fieldId : 'subsidiary'})
+
+        if(context.type === 'create'){
+            var lineCount = newRecord.getLineCount({
+                sublistId : 'item'
+            })
+            
+            while(lineCount > 0){
+                var newItem = newRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'item',
+                    line : --lineCount
+                })
+
+                if(!items[newItem]) items[newItem] = new Array()
+                items[newItem].push(lineCount)
+            }
+        }
+
+        if(context.type === 'edit'){
+            var lineCount = newRecord.getLineCount({
+                sublistId : 'item'
+            })
+            
+            while(lineCount > 0){
+                --lineCount
+                var oldRecord = context.oldRecord
+                var newItem   = newRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'item',
+                    line : lineCount
+                })
+                var oldItem    = oldRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'item',
+                    line : lineCount
+                })
+
+                if(newItem !== oldItem){
+                    if(!items[newItem]) items[newItem] = new Array()
+                    items[newItem].push(lineCount)
+                }
+            }
+        }
+
+        log.error('items',items)
+        setBomInfo(items , subsidiary , newRecord)
+    }
+
+    function searchFilters(values){
+        var filters = new Array()
+
+        values.map(function(itemId){
+            if(filters.length) filters.push('OR')
+            filters.push(['name' , 'is' , itemId])
+        })
+        
+        return filters
+    }
+
+    function ObjectValues(object){
+        return Object.keys(object).map(function(item){
+            return object[item]
+        })
+    }
+
+    function setBomInfo(items , subsidiary , newRecord){
+        var itemIds = Object.create(null)
+
+        search.create({
+            type : 'item',
+            filters : [
+                ['internalid', 'anyof' , Object.keys(items)]
+            ],
+            columns : ['itemid']
+        })
+        .run().each(function(res){
+            itemIds[res.id] = res.getValue({name : 'itemid'})
+
+            return true
+        })
+
+        log.error('itemIds',itemIds)
+
+        if(Object.keys(itemIds).length){
+            var values = ObjectValues(itemIds)
+            var boms = Object.create(null)
+
+            search.create({
+                type : 'bom',
+                filters : [
+                    ['isinactive' , 'is' , 'F'],
+                    'AND',
+                    searchFilters(values)
+                ],
+                columns : ['name']
+            })
+            .run().each(function(res){
+                boms[res.id] = res.getValue({name : 'name'})
+
+                return true
+            })
+
+            log.error('boms',boms)
+
+            if(Object.keys(boms).length){
+                var date = new Date()
+
+                search.create({
+                    type : 'bomrevision',
+                    filters : [
+                        ['billofmaterials' , 'anyof' , Object.keys(boms)],
+                        'AND',
+                        ['isinactive' , 'is' , 'F'],
+                        'AND',
+                        ['effectivestartdate' , 'onorbefore' , format.format({
+                            type : format.Type.DATE,
+                            value : date
+                        })]
+                    ],
+                    columns : ['name' ,'billofmaterials' , 'custrecord_ps_bom_approvestatus2' , 'effectiveenddate']
+                })
+                .run().each(function(res){
+                    const effectiveenddate = res.getValue({name : 'effectiveenddate'})
+                    log.error('effectiveenddate',effectiveenddate)
+                    if(!effectiveenddate || date < effectiveenddate){
+                        var billofmaterials = res.getValue({name : 'billofmaterials'})
+                        var itemName = boms[billofmaterials]
+                        var itemNames = ObjectValues(itemIds)
+                        var index = itemNames.indexOf(itemName)
+                        log.error('billofmaterials',billofmaterials)
+                        log.error('index',index)
+                        if(index > -1){
+                            var item  = Object.keys(itemIds)[index]
+
+                            log.error(res.getValue({name : 'name'}) , res.getText({name : 'custrecord_ps_bom_approvestatus2'}))
+
+                            if(items[item]){
+                                items[item].map(function(index){
+                                    newRecord.setSublistValue({
+                                        sublistId : 'item',
+                                        fieldId : 'custcol_bom_version',
+                                        line : index,
+                                        value : res.getValue({name : 'name'})
+                                    })
+
+                                    newRecord.setSublistValue({
+                                        sublistId : 'item',
+                                        fieldId : 'custcol_bom_status',
+                                        line : index,
+                                        value : res.getText({name : 'custrecord_ps_bom_approvestatus2'})
+                                    })
+                                })
+                            }
+                        }
+                    }
+
+                    return true
+                })
+            }
+        }
+    }
+
+    function bomIsApprove(context){
+        if(context.type !== 'delete'){
+            var status 
+            var newRecord = context.newRecord
+            var lineCount = newRecord.getLineCount({
+                sublistId : 'item'
+            })
+
+            while(lineCount > 0){
+                var item = newRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'item',
+                    line : --lineCount
+                })
+                var itemName = search.lookupFields({
+                    type : 'item',
+                    id : item,
+                    columns : ['itemid']
+                }).itemid
+
+                if(itemName.charAt(0) === '9'){
+                    var bomStatus = newRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_bom_status',
+                        line : lineCount
+                    })
+    
+                    if(!bomStatus || bomStatus === '未审核'){
+                        status = '未审核'
+                        lineCount = 0
+                    }
+                }
+            }
+
+            if(status === '未审核'){
+                newRecord.setValue({fieldId : 'custbody_bomquestion' , value : false})
+            }else{
+                newRecord.setValue({fieldId : 'custbody_bomquestion' , value : true})
+            }
+        }
+    }
+
     function beforeSubmit(context){ 
         try{
+            setSublistBomInfo(context)
             upDateInterEmployee(context);
+            bomIsApprove(context)
         } catch(e) {
             log.debug("设置值错误", e);
         }
@@ -81,13 +292,13 @@ define([
     }
 
     function addChangeButton(context){
-        context.form.clientScriptModulePath = '../cs/estimate_cs'
+        // context.form.clientScriptModulePath = '../cs/estimate_cs'
 
-        context.form.addButton({
-            id : 'custpage_changethis',
-            label : '变更',
-            functionName : 'changethis('+ context.newRecord.id +')'
-        })
+        // context.form.addButton({
+        //     id : 'custpage_changethis',
+        //     label : '变更',
+        //     functionName : 'changethis('+ context.newRecord.id +')'
+        // })
     }
 
     function changeTitle(context){

@@ -7,7 +7,6 @@ define([
     '../../../helper/operation_assistant'
 ], function(format , operation) {
     function beforeLoad(context){
-        log.error('enter')
         if(context.type === 'view' || context.type === 'edit')
         {
             setDomesticTotal(context)
@@ -59,6 +58,7 @@ define([
     }
 
     function beforeSubmit(context) {
+        log.error('enterbeforeSubmit')
         if(context.type === 'create' || context.type === 'edit')
         {
             var newRecord = context.newRecord
@@ -69,6 +69,7 @@ define([
             while(lineCount > 0)
             {
                 --lineCount
+                //金额部分
                 var exchangerate = newRecord.getValue('exchangerate') || 1
                 var quantity = getSubValue('quantity',lineCount,newRecord) || 0
                 var price = getSubValue('custcol_unit_notax',lineCount,newRecord) || 0
@@ -88,12 +89,41 @@ define([
                 setSubValue('custcol_before_tax' , operation.mul(hasTaxRate , quantity) , lineCount , newRecord) //折前金额（含税）
                 setSubValue('custcol_discount' , discountAmount , lineCount , newRecord) //总折扣额
                 setSubValue('custcol_om_total_discount' , operation.mul(discountAmount , exchangerate) , lineCount , newRecord) //总折扣额(本币)
-                setSubValue('custcol_trueamount' , operation.add(
-                    operation.mul(amount,exchangerate).toFixed(2),
-                    operation.mul(taxAmt,exchangerate).toFixed(2)
+                setSubValue('custcol_trueamount' , operation.add(operation.mul(amount,exchangerate).toFixed(2),operation.mul(taxAmt,exchangerate).toFixed(2)
                 ) , lineCount , newRecord) //折后含税总金额（本币）
+
+                //物料相关
+                var carton = getSubValue('custcol_quantity_per_carton',lineCount,newRecord) || 0
+                var sinweight = getSubValue('custcol_sinweight',lineCount,newRecord) || 0
+
+                setSubValue('custcol_boxes_numbers' , Math.ceil(isInfinity(operation.div(quantity , carton))) , lineCount , newRecord)
+                setSubValue('custcol_total_net_weight' , operation.mul(quantity , sinweight) , lineCount , newRecord)
+
+                var materialWeight = getSubValue('custcol_material_weight',lineCount,newRecord) || 0
+                var totalBoxes  = getSubValue('custcol_boxes_numbers',lineCount,newRecord) || 0
+                var totalWeight = getSubValue('custcol_total_net_weight',lineCount,newRecord) || 0
+                var singlePallet = getSubValue('custcol_number_of_single_pallet',lineCount,newRecord) || 0
+                var standardNumber = getSubValue('custcol_standard_single_number',lineCount,newRecord) || 0
+
+                setSubValue('custcol_sup_total' , Math.ceil(isInfinity(operation.div(totalBoxes , standardNumber))) , lineCount , newRecord)
+
+                var supTotal = getSubValue('custcol_sup_total',lineCount,newRecord) || 0
+
+                setSubValue('custcol_total_gross_weight' , operation.add( totalWeight ,operation.add(
+                    operation.mul(materialWeight, totalBoxes) , operation.mul(singlePallet , supTotal))) , lineCount , newRecord)
+
+                var cubicNumber = getSubValue('custcol_cubic_number' , lineCount , newRecord) || 0
+                var cubicSingle = getSubValue('custcol_cubic_number_of_single' , lineCount , newRecord) || 0
+                setSubValue('custcol_total_cubic_number' , operation.add(operation.mul(cubicNumber , totalBoxes) , operation.mul(cubicSingle , supTotal)) ,lineCount , newRecord)
             }
         }
+    }
+
+    function isInfinity(num){
+        if(num === Infinity) return 0
+        if(isNaN(num)) return 0
+
+        return num
     }
 
     function setSubValue(fieldId,value,line,newRecord){

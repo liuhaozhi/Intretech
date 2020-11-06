@@ -28,7 +28,7 @@ define([
 
         return _self.cache[key];
     }
-
+ 
     function refreshPage(params, cacheKey) {
         var refreshURL = getCache(cacheKey || 'refreshURL');
         refreshURL = Object.keys(params).reduce(function (updatedURL, currentParam) {
@@ -87,6 +87,8 @@ define([
         if(window.cstmFilterExpExtendInstance) {
             debugger
             urlParams["filters"] = JSON.stringify(window.cstmFilterExpExtendInstance.filters);
+
+            console.log(JSON.parse(urlParams["filters"]))
         }
         refreshPage(urlParams);
         return true;

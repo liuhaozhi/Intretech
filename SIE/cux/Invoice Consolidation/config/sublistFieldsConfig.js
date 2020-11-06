@@ -46,12 +46,17 @@ define({
             },
             {
                 id : 'shipaddress',
-                label : '收获地址(shipaddress)',
+                label : '收货地址(shipaddress)',
                 type : 'text'
             },
             {
                 id : 'tranid' ,
                 label : 'Delivery notice No./发货通知单号', 
+                type : 'text'
+            },
+            {
+                id : 'custline' ,
+                label : '订单行号', 
                 type : 'text'
             },
             {

@@ -45,6 +45,10 @@ define({
                 name : 'shipaddress'
             },{
                 name : 'billaddress'
+            },{
+                name : 'custbody_invoice_number'
+            },{
+                name : 'custcol_line'
             }
         ]
     }

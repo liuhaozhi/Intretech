@@ -23,7 +23,141 @@ define([
         initMessage()
         formOptimize()
         setCurrentRec()
+        disbledFields()
         bindButtonEvent()
+    }
+
+    function disbledFields(){
+        if(currentRec){
+            var lineCount = currentRec.getLineCount({
+                sublistId : sublistId
+            })
+            var changeType = currentRec.getValue({fieldId : 'custpage_changetype'})
+
+            while(lineCount > 0){
+                var status = currentRec.getSublistValue({
+                    sublistId : sublistId,
+                    fieldId : 'custpage_custbody_order_status',
+                    line : --lineCount
+                })
+
+                if(changeType === '2'){
+                    var closed = currentRec.getSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_custbody_closed',
+                        line : lineCount
+                    })
+
+                    if(closed){
+                        currentRec.getSublistField({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custbody_closed',
+                            line : lineCount
+                        }).isDisabled = true
+                    }
+                }else{
+                    var closed = currentRec.getSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_custcol_close_manually',
+                        line : lineCount
+                    })
+
+                    if(closed){
+                        currentRec.getSublistField({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custcol_close_manually',
+                            line : lineCount
+                        }).isDisabled = true
+                    }
+                }
+
+                if(changeType === '2'){
+                    currentRec.getSublistField({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_custbody_cancelled',
+                        line : lineCount
+                    }).isDisabled = status !== '1'
+                }
+
+                if(status === '2' || status === '1'){
+                    if(changeType === '1'){
+                        currentRec.getSublistField({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custcol_if_frozen',
+                            line : lineCount
+                        }).isDisabled = true
+        
+                        currentRec.getSublistField({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custcol_close_manually',
+                            line : lineCount
+                        }).isDisabled = true
+                    }
+                    
+                    if(changeType === '2'){
+                        currentRec.getSublistField({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custbody_isit_frozen',
+                            line : lineCount
+                        }).isDisabled = true
+        
+                        currentRec.getSublistField({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custbody_closed',
+                            line : lineCount
+                        }).isDisabled = true
+                    }
+                }else{
+                    if(changeType === '1'){
+                        var closed = currentRec.getSublistValue({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custcol_close_manually',
+                            line : lineCount
+                        })
+
+                        currentRec.getSublistField({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custcol_if_frozen',
+                            line : lineCount
+                        }).isDisabled = status !== '3'
+        
+                        if(!closed)
+                        currentRec.getSublistField({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custcol_close_manually',
+                            line : lineCount
+                        }).isDisabled = status !== '3'
+                    }
+                    
+                    if(changeType === '2'){
+                        var closed = currentRec.getSublistValue({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custbody_closed',
+                            line : lineCount
+                        })
+
+                        currentRec.getSublistField({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custbody_cancelled',
+                            line : lineCount
+                        }).isDisabled = status === '3'
+    
+                        currentRec.getSublistField({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custbody_isit_frozen',
+                            line : lineCount
+                        }).isDisabled = status !== '3'
+        
+                        if(!closed)
+                        currentRec.getSublistField({
+                            sublistId : sublistId,
+                            fieldId : 'custpage_custbody_closed',
+                            line : lineCount
+                        }).isDisabled = status !== '3'
+                    }
+                }
+            }
+        }
     }
 
     function bindButtonEvent(){
@@ -38,12 +172,18 @@ define([
                     sublistId : sublistId,
                     fieldId : 'custpage_check',
                     line : --lineCount
-                }).isDisabled === true)
-                currentRec.setCurrentSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custpage_check',
-                    value : false
-                })
+                }).isDisabled === true){
+                    currentRec.selectLine({
+                        sublistId : sublistId,
+                        line : lineCount
+                    })
+
+                    currentRec.setCurrentSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_check',
+                        value : false
+                    })
+                }
             }
         })
     }
@@ -134,14 +274,109 @@ define([
             fieldId : 'custpage_check',
             value : true
         })
+
+        if(fieldId === 'custpage_custcol_if_frozen')
+        {
+            var newVal = currentRec.getCurrentSublistValue({
+                sublistId : sublistId,
+                fieldId : fieldId
+            })
+
+            var frDate = currentRec.getCurrentSublistValue({
+                sublistId : sublistId,
+                fieldId : 'custpage_custcol_freezing_date'
+            })
+
+            if(newVal){
+                if(!frDate){
+                    currentRec.setCurrentSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_custcol_freezing_date',
+                        value : new Date()
+                    })
+                }
+            }
+
+            if(!newVal){
+                if(frDate){
+                    currentRec.setCurrentSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_custcol_unfreezing',
+                        value : new Date()
+                    })
+                }
+            }
+        }
+
+        if(fieldId === 'custpage_custcol_close_manually'){
+            var newVal = currentRec.getCurrentSublistValue({
+                sublistId : sublistId,
+                fieldId : fieldId
+            })
+
+            if(newVal){
+                currentRec.setCurrentSublistValue({
+                    sublistId : sublistId,
+                    fieldId : 'custpage_custcol_close_date',
+                    value : new Date()
+                })
+            }
+        }
+
+        if(fieldId === 'custpage_custbody_isit_frozen'){
+            var newVal = currentRec.getCurrentSublistValue({
+                sublistId : sublistId,
+                fieldId : fieldId
+            })
+
+            var frDate = currentRec.getCurrentSublistValue({
+                sublistId : sublistId,
+                fieldId : 'custpage_custbody_suspense_date'
+            })
+
+            if(newVal){
+                if(!frDate){
+                    currentRec.setCurrentSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_custbody_suspense_date',
+                        value : new Date()
+                    })
+                }
+            }
+
+            if(!newVal){
+                if(frDate){
+                    currentRec.setCurrentSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_custbody_back_suspense_date',
+                        value : new Date()
+                    })
+                }
+            }
+        }
+
+        if(fieldId === 'custpage_custbody_closed'){
+            var newVal = currentRec.getCurrentSublistValue({
+                sublistId : sublistId,
+                fieldId : fieldId
+            })
+
+            if(newVal){
+                currentRec.setCurrentSublistValue({
+                    sublistId : sublistId,
+                    fieldId : 'custpage_custbody_closing_date',
+                    value : new Date()
+                })
+            }
+        }
     }
 
     function turnPage(params){
         setCheckCache()
 
         location.href = url.resolveScript({
-            scriptId : 'customscript_estimate_change_ui',
-            deploymentId : 'customdeploy_estimate_change_ui',
+            scriptId : 'customscript_estimate_change',
+            deploymentId : 'customdeploy_estimate_change',
             params : util.extend(searchParams(),{
                 action : 'search',
                 pagetype : 'turnpage',
@@ -245,8 +480,8 @@ define([
         if (!volidMandatory()) return false
 
         location.href = url.resolveScript({
-            scriptId : 'customscript_estimate_change_ui',
-            deploymentId : 'customdeploy_estimate_change_ui',
+            scriptId : 'customscript_estimate_change',
+            deploymentId : 'customdeploy_estimate_change',
             params : util.extend(searchParams(),{
                 action : 'search',
                 pagetype : 'create',
@@ -283,6 +518,6 @@ define([
         pageInit : pageInit,
         saveRecord : saveRecord,
         searchLines : searchLines,
-        fieldChanged : fieldChanged,
+        fieldChanged : fieldChanged
     }
 });

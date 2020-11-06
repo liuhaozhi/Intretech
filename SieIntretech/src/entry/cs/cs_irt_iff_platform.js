@@ -8,12 +8,14 @@ define([
     'N/currentRecord',
     'N/ui/dialog',
     'N/search',
+    'N/https',
     'N/url',
     '../../app/app_ui_component_client.js'
 ], function (
     currentRecord_N,
     dialog,
     search,
+    https,
     url,
     uiComponent
 ) {
@@ -29,6 +31,8 @@ define([
 
         //entry points
         function pageInit(context) {
+            debugger
+
             currentRecord = context.currentRecord;
             processTotalLine(context);
             processCheckTotalLine(context);
@@ -39,7 +43,6 @@ define([
                 processTotalLine(context);
                 processCheckTotalLine(context);
             };
-            debugger
             var filterStartIndex = location.href.indexOf("&filters=");
             var filters;
             if(filterStartIndex != -1) {
@@ -102,6 +105,62 @@ define([
                 processTotalLine(context);
                 processCheckTotalLine(context);
             }
+
+            if(context.fieldId === 'custpage_vendor'){
+                var pageRec = context.currentRecord;
+                var vd = pageRec.getValue({
+                    fieldId : context.fieldId
+                })
+
+                if(vd.length){
+                    var poField = pageRec.getField({
+                        fieldId : 'custpage_po'
+                    })
+        
+                    ReferPoSelectoptions(vd,poField)
+                }
+            }
+        }
+
+        function removePoSelectOptions(poField){
+            poField.removeSelectOption({
+                value : null
+            })
+
+            poField.insertSelectOption({
+                text : ' ',
+                value : -1
+            })
+        }
+
+        function ReferPoSelectoptions(vd,poField){
+            removePoSelectOptions(poField)
+
+            https.post.promise({
+                url : url.resolveScript({
+                    scriptId : 'customscript_om_changefield_response',
+                    deploymentId : 'customdeploy_om_changefield_response'
+                }),
+                body : {
+                    action : 'getPolists',
+                    vd : JSON.stringify(vd)
+                }
+            })
+            .then(function(res){
+                var body = JSON.parse(res.body)
+
+                if(body.status === 'sucess'){
+                    // for(var key in body.body){
+                    //     poField.insertSelectOption({
+                    //         text : body.body[key],
+                    //         value : key
+                    //     })
+                    // }
+                }
+            })
+            .catch(function(e){
+                console.log(e)
+            })
         }
 
         function processTotalLine(context) {
@@ -303,7 +362,7 @@ define([
                 var schOps = {
                     after: STR3,
                     allof: STR7,
-                    any: STR2 + STR6,
+                    // any: STR2 + STR6,
                     anyof: STR1 + STR5 + STR7,
                     before: STR3,
                     between: STR2,
@@ -315,16 +374,16 @@ define([
                     greaterthanorequalto: STR2,
                     haskeywords: STR6,
                     is: STR4 + STR6,
-                    isempty: STR2 + STR3 + STR6,
+                    // isempty: STR2 + STR3 + STR6,
                     isnot: STR6,
-                    isnotempty: STR2 + STR3 + STR6,
+                    // isnotempty: STR2 + STR3 + STR6,
                     lessthan: STR2,
                     lessthanorequalto: STR2,
                     noneof: STR1 + STR5 + STR7,
                     notafter: STR3,
-                    notallof: STR7,
+                    // notallof: STR7,
                     notbefore: STR3,
-                    notbetween: STR2,
+                    // notbetween: STR2,
                     notequalto: STR2,
                     notgreaterthan: STR2,
                     notgreaterthanorequalto: STR2,
@@ -358,9 +417,9 @@ define([
             function transcationOpertor(opName) {
                 return {
                     after: "值之后",
-                    allof: "所有值相等",
+                    // allof: "所有值相等",
                     any: "包含在某项值",
-                    anyof: "与某项值相等",
+                    anyof: "包含",
                     before: "值之前",
                     between: "在两个值之间",
                     contains: "包含值",
@@ -376,9 +435,9 @@ define([
                     isnotempty: "非空",
                     lessthan: "小于",
                     lessthanorequalto: "小于或等于",
-                    noneof: "不包含所有值",
+                    // noneof: "不包含",
                     notafter: "值之前",
-                    notallof: "不包含所有值",
+                    // notallof: "不包含所有值",
                     notbefore: "值之后",
                     notbetween: "不在两值之间",
                     notequalto: "不等于",
@@ -412,6 +471,7 @@ define([
             }
 
             function cstmDfnSelectFieldChangeEvent(selectNode, opValue, values) {
+                debugger
                 var value = selectNode.value,
                     fieldInfo = fields[value],
                     opNames = fieldInfo && searchOperators(fieldInfo.type),
@@ -438,12 +498,12 @@ define([
                         }
                     }
                 }
-                
+
                 filters[value] = { name: fieldInfo.fieldId, join: fieldInfo.source, values: [] };
                 selGradeParentNode.querySelector("span").innerHTML = fieldInfo.name;
                 tmpDivHtml = "<div><span>操作符</span></div><div><select onchange='cstmDfnSelectOperatorNameEvent(this)'>";
                 for(var opName in opNames) {
-                    tmpDivHtml += "<option value='" + opNames[opName] + "'>" + opNames[opName] + "</option>"
+                    tmpDivHtml += "<option value='" + opNames[opName] + "'>" + transcationOpertor(opNames[opName]) + "</option>"
                 }
                 tmpDivHtml += "</select></div>";
                 tmpDiv.innerHTML = tmpDivHtml;
@@ -626,7 +686,7 @@ define([
                     margin-left: 30px;\
                 }\
                 #ns_filters_expression_wrapper select, #ns_filters_expression_wrapper input{\
-                    width: 327px;\
+                    width: 200px;\
                     font-weight: normal;\
                     font-size: 13px;\
                     background-color: rgb(255, 255, 255);\

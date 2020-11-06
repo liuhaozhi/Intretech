@@ -357,7 +357,7 @@ define([
      * @author yuming Hu 
      * @date 2020-02-27
      */
-    function itemreceiptCreationSt(option) {
+    function itemreceiptCreationSt(option) { 
         var main = option.main,
             items = option.items,
             enableSourcing = option.enableSourcing,
@@ -458,7 +458,7 @@ define([
 
             return irRec.save({
                 enableSourcing: enableSourcing,
-                ignoreMandatoryFields: ignoreMandatoryFields
+                ignoreMandatoryFields: true
             });
         } catch (e) {
             log.error({

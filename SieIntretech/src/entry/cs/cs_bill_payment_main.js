@@ -130,6 +130,7 @@ define(['N/ui/dialog','N/search'], function (dialog,search) {
                 })] = lineCount
             }
 
+            if(Object.keys(sublistS).length)
             search.create({
                 type : 'transaction',
                 filters : [
@@ -153,6 +154,7 @@ define(['N/ui/dialog','N/search'], function (dialog,search) {
 
     //entry points
     function pageInit(context) {
+        debugger
         if (context.mode == 'create') {
             setPrepayInfo(context);
             setPrepayLines(context);

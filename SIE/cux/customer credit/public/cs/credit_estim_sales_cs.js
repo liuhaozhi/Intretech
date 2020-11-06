@@ -55,6 +55,7 @@ define([
     }
 
     function control(currTotal,creditInfo){
+        debugger
         var intercept = listValue(creditInfo.custentity_credit_intercept)
         var creditAmount = +creditInfo.custentity_credit_amount
         var alarmAmount  = +creditInfo.custentity_credit_alarm_limit

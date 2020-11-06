@@ -322,6 +322,7 @@ define([
 
     function getTextFields(){
         return [
+            'custbody_changedate',
             'item',
             'location',
             'department',

@@ -65,9 +65,6 @@ define([
         if(!params.subsidiary)
         params.subsidiary = currentUser.subsidiary
 
-        if(!params.department)
-        params.department = currentUser.department
-
         if(!params.action)
         {
             addButtons(form,params)

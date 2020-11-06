@@ -4,7 +4,7 @@
  */
 define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, serverWidget) {
 
-    //�����˻���
+    //�1�7�1�7�1�7�1�7�1�7�0�1�1�7�1�7�1�7
     function addReturns(context) {
         var thisRecord = context.newRecord,
             lineCount = thisRecord.getLineCount({
@@ -37,8 +37,8 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
                 line: i
             });
             
-            if (isReplenish === true) {//����ǳ���po���У������Ϊ�貹��
-                itemId = thisRecord.getSublistValue({//��ȡ����id
+            if (isReplenish === true) {//�1�7�1�7�1�7�1�7�0�5�1�7�1�7�1�7po�1�7�1�7�1�7���1�7�1�7�1�7�1�7�1�7�1�7�0�2�1�7�K�1�7�1�7
+                itemId = thisRecord.getSublistValue({//�1�7�1�7�0�0�1�7�1�7�1�7�1�7id
                     sublistId: 'item',
                     fieldId: 'item',
                     line: i
@@ -46,12 +46,12 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
 
                 replenishLines.push({
                     itemId: itemId,
-                    itemQty: thisRecord.getSublistValue({//��ȡ��������
+                    itemQty: thisRecord.getSublistValue({//�1�7�1�7�0�0�1�7�1�7�1�7�1�7�1�7�1�7�1�7�1�7
                         sublistId: 'item',
                         fieldId: 'quantity',
                         line: i
                     }) + '',
-                    lineId: thisRecord.getSublistValue({//��ȡ��������
+                    lineId: thisRecord.getSublistValue({//�1�7�1�7�0�0�1�7�1�7�1�7�1�7�1�7�1�7�1�7�1�7
                         sublistId: 'item',
                         fieldId: 'line',
                         line: i
@@ -66,7 +66,7 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
 
         if (replenishLines.length) {
             try {
-                //������Ӧ��po����Ϣ
+                //�1�7�1�7�1�7�1�7�1�7�1�7�0�8�1�7�1�7po�1�7�1�7�1�7�1�7�0�4
                 search.create({
                     type: thisRecord.type,
                     filters: [
@@ -116,7 +116,7 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
 
                 log.debug('replenishLines after search', replenishLines);
                 
-                //��po�Ͻ��в���
+                //�1�7�1�7po�1�7�0�1�1�7�1�7�ӄ1�7�1�7�1�7
                 poRec = record.load({
                     type: 'purchaseorder',
                     id: createdFrom,
@@ -132,7 +132,7 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
                     return columnId.indexOf('custcol') === 0 && excludeCustColumns.indexOf(columnId) === -1;
                 });
 
-                //�������
+                //�1�7�1�7�1�7�1�7�1�7�1�7�1�7
                 replenishLines.forEach(function (eachLine) {
                     var itemRate,
                         itemUnit,
@@ -158,11 +158,11 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
                             line: i
                         }) + '';
                         if (poItem === eachLine.itemId && poLine === eachLine.poLine) {
-                            itemRate = 0;/* poRec.getSublistValue({
+                            itemRate = poRec.getSublistValue({
                                 sublistId: 'item',
                                 fieldId: 'rate',
                                 line: i
-                            }); *///退货补货行单价固定为0，仅仅只是为了能够入库而已。
+                            }); //�˻������е��۹̶�Ϊ0������ֻ��Ϊ���ܹ������ѡ�
                             itemUnit = poRec.getSublistValue({
                                 sublistId: 'item',
                                 fieldId: 'units',
@@ -201,12 +201,12 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
                         }
                     }
 
-                    //����
+                    //�1�7�1�7�1�7�1�7
                     if (isTargetFound) {
                         poRec.selectNewLine({
                             sublistId: 'item'
                         });
-                        //��ǲ�����
+                        //�1�7�1�7�0�4�1�7�1�7�1�7�1�7�1�7
                         poRec.setCurrentSublistValue({
                             sublistId: 'item',
                             fieldId: 'custcol_po_replenish_or_not',
@@ -217,52 +217,59 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
                             fieldId: 'custcol_po_replenish_source',
                             value: eachLine.poLine
                         });
-                        //���ñ�׼�ֶ�
-                        poRec.setCurrentSublistValue({//��Ʒ
+                        //�1�7�1�7�1�7�0�9�1�7�0�6�1�7�0�6�1�7
+                        poRec.setCurrentSublistValue({//�1�7�1�7�0�3
                             sublistId: 'item',
                             fieldId: 'item',
                             value: eachLine.itemId
                         });
-                        poRec.setCurrentSublistValue({//����
+                        poRec.setCurrentSublistValue({//�1�7�1�7�1�7�1�7
                             sublistId: 'item',
                             fieldId: 'quantity',
                             value: eachLine.itemQty
                         });
-                        poRec.setCurrentSublistValue({//��λ
+                        poRec.setCurrentSublistValue({//�1�7�1�7��
                             sublistId: 'item',
                             fieldId: 'units',
                             value: itemUnit
                         });
-                        poRec.setCurrentSublistValue({//����
+                        poRec.setCurrentSublistValue({//�1�7�1�7�1�7�1�7
                             sublistId: 'item',
                             fieldId: 'rate',
                             value: itemRate
                         });
-                        poRec.setCurrentSublistValue({//˰��
+                        poRec.setCurrentSublistValue({//�0�0�1�7�1�7
                             sublistId: 'item',
                             fieldId: 'taxcode',
                             value: itemTax
                         });
-                        // poRec.setCurrentSublistValue({//��ע
+                        // poRec.setCurrentSublistValue({//�1�7�1�7�0�0
                         //     sublistId : 'item',
                         //     fieldId : 'memo',
                         //     value : memo
                         // });
-                        poRec.setCurrentSublistValue({//����
+                        poRec.setCurrentSublistValue({//�1�7�1�7�1�7�1�7
                             sublistId: 'item',
                             fieldId: 'department',
                             value: department
                         });
-                        poRec.setCurrentSublistValue({//�ص�
+                        poRec.setCurrentSublistValue({//�1�7�1�3�1�7
                             sublistId: 'item',
                             fieldId: 'location',
                             value: location
                         });
 
-                        //�����Զ����ֶ�
+                        log.debug(' add po line ',poLine + ".1");
+                        poRec.setCurrentSublistValue({
+                            sublistId: 'item',
+                            fieldId: 'custcol_line',
+                            value: poLine + ".1"
+                        });
+
+                        //�1�7�1�7�1�7�1�7�1�7�0�8�1�7�1�7�1�7�1�7�0�6�1�7
                         util.each(valueMap, function (value, id) {
                             try {
-                                //��ֹ���Զ����ֶ��й��˹�ϵ��ʧ��
+                                //�1�7�1�7�0�9�1�7�1�7�1�7�0�8�1�7�1�7�1�7�1�7�0�6�1�7�1�7�ۄ1�7�1�7�0�9�1�7�0�3�1�7�1�7�0�2�1�7�1�7
                                 poRec.setCurrentSublistValue({
                                     sublistId: 'item',
                                     fieldId: id,
@@ -280,17 +287,16 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
                 poRec.save({
                     ignoreMandatoryFields: true
                 });
-                throw JSON.stringify(replenishLines);
             } catch (ex) {
                 log.error({
-                    title: '��PO����ʧ�ܣ��˻���ȨID��' + thisRecord.id,
+                    title: '�1�7�1�7PO�1�7�1�7�1�7�1�7�0�2�1�7�1�1�1�7�1�7�0�1�1�7�1�7�1�7�0�7ID�1�7�1�7' + thisRecord.id,
                     details: ex
                 });
             }
         }
     }
 
-    //Ĭ�Ϲ�ѡ����
+    //�0�8�1�7�0�7�1�7�0�5�1�7�1�7�1�7�1�7
     function autoSelectBuhuo(context) {
         var newRecord = context.newRecord,
             lineCount = newRecord.getLineCount({
@@ -310,13 +316,13 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
             }
         } catch (ex) {
             log.error({
-                title: '�Զ���ѡ��������',
+                title: '�1�7�0�8�1�7�1�7�1�7�0�5�1�7�1�7�1�7�1�7�1�7�1�7�1�7�1�7',
                 details: ex
             });
         }
     }
 
-    //ɾ�������˻���
+    //�0�1�1�7�1�7�1�7�1�7�1�7�1�7�1�7�0�1�1�7�1�7�1�7
     // function deleteAllLines(context) {
     //     var newRecord = context.newRecord,
     //         lineCount = newRecord.getLineCount({
@@ -389,7 +395,8 @@ define(['N/record', 'N/search', 'N/ui/serverWidget'], function (record, search, 
     }
 
     function afterSubmit(scriptContext) {
-        if (scriptContext.type == scriptContext.UserEventType.APPROVE) {
+        var isAddReturns = scriptContext.newRecord.getValue("custbody_purchase_replenishment");
+        if (scriptContext.type == scriptContext.UserEventType.APPROVE && isAddReturns) {
             addReturns(scriptContext);
         }
     }

@@ -24,7 +24,7 @@ define([],
                         case '4':
                             filters.push(
                                 'AND',
-                                ['custbody_order_status' , 'anyof' , ['9']]
+                                ['custbody_isit_frozen' , 'is' , 'T']
                             )
                         break
                         case '5':

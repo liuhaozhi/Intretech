@@ -21,7 +21,7 @@ define([
 ) {
     var FIELDPR = 'custpage_'
     var defaultPageSize = 200
-    var fieldRegExPrefix = 'custrecord_p_' 
+    var fieldRegExPrefix = 'custrecord_p_'
 
     function onRequest(context) {
         var request = context.request
@@ -791,6 +791,11 @@ define([
                     value : true
                 })
             }
+        }else{
+            salesOrder.setValue({
+                fieldId : 'customform',
+                value : 132  //sb2  154
+            })
         }
 
         if(customerAdress.ship)
@@ -1159,11 +1164,11 @@ define([
             value : res.getValue('custrecord_p_custcol_line')
         })
 
-        if(res.getValue('custrecord_p_custcol_pick_id'))
+        if(res.getValue('custrecord_p_custcol_work_order_number'))
         sublist.setSublistValue({
             id : FIELDPR + 'workorder',
             line : index,
-            value : res.getValue('custrecord_p_custcol_pick_id')
+            value : res.getValue('custrecord_p_custcol_pick_id') ? '1' : '2'
         })
         
         if(res.getValue('custrecord_p_custcol_salesorder'))

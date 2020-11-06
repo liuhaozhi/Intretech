@@ -56,6 +56,7 @@ define([
         var pageSize = parseInt(parameters[pageSizeId]) || defaultPageSize;
         var pageId = parseInt(parameters[pageIdId]) || 1;
         var addFilters = option.addFilters;
+        log.error('addFilters',addFilters)
         var refreshParams = option.refreshParams;
         var pageCount = 0;
         var searchObj;
@@ -75,6 +76,8 @@ define([
         }
         if (addFilters.length) {
             searchObj.filterExpression = searchObj.filterExpression.concat(addFilters);
+        }else{
+            return false
         }
         
         //处理越界
@@ -432,17 +435,29 @@ define([
             return true;
         });
 
+        var searhFilters = [{
+            name: 'custrecord_receipt_nub',
+            join: 'custrecord_check_parent',
+            operator: 'anyof',
+            values: Object.keys(orderInfoMap)
+        }]
+
+        cstmFilters.map(function(filter, index){
+            if(filter.name === 'custpage_paged_compare_order'){
+                cstmFilters.splice(index,1)
+
+                searhFilters.push({
+                    name : 'name',
+                    operator : 'contains',
+                    values : filter.values.join('')
+                }) 
+            }
+        })
         //查询对账数量, 对账金额, 含税对账总额, 对账单号, 对账期间
         search.create({
             type: 'customrecord_reconciliation',
-            filters: [
-                {
-                    name: 'custrecord_receipt_nub',
-                    join: 'custrecord_check_parent',
-                    operator: 'anyof',
-                    values: Object.keys(orderInfoMap)
-                }
-            ],
+            filters: searhFilters
+            ,
             columns: [
                 {
                     name: 'formulanumeric',
@@ -541,7 +556,7 @@ define([
             //合计-对数量、税额、总金额、含税总额、本位币含税总额进行合计
             util.each(sublistLine, function (value, id) {
                 if (id !== 'custpage_paged_exchange_rate') {
-                    if (util.isNumber(value)) {
+                    if (isNumber(value)) {
                         if (!totalLine.hasOwnProperty(id)) {
                             totalLine[id] = 0;
                         }
@@ -550,10 +565,10 @@ define([
                 }
             });
         });
-
+ 
         valueList.push(totalLine);//未过滤的值
         relValueList.push(totalLine);//过滤后的值
-        log.debug('InvalidList', inValidLines);
+
         //填充Sublist
         relValueList.forEach(function (sublistLine, index) {
             util.each(sublistLine, function (value, id) {
@@ -576,6 +591,16 @@ define([
         });
     }
 
+    function isNumber(val) {
+        var regPos = /^\d+(\.\d+)?$/; //非负浮点数
+        var regNeg = /^(-(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*)))$/; //负浮点数
+        if(regPos.test(val) || regNeg.test(val)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     function viewPage(request, response) {
         var parameters = request.parameters;
         var addFilters = [];
@@ -595,21 +620,14 @@ define([
                 layout: 'OUTSIDEBELOW'
             },
             {
-                id: 'custpage_vendor',
-                label: '供应商',
-                type: 'SELECT',
-                source: 'vendor',
-                filter: 'mainname',
-                operator: 'anyof',
-                layout: 'OUTSIDEBELOW'
-            },
-            {
                 id: 'custpage_start_date',
                 label: '自',
                 type: 'DATE',
                 filter: 'trandate',
                 operator: 'onorafter',
-                layout: 'OUTSIDEBELOW'
+                layout: 'OUTSIDEBELOW',
+                width : 60,
+                height : 60
             },
             {
                 id: 'custpage_end_date',
@@ -617,6 +635,26 @@ define([
                 type: 'DATE',
                 filter: 'trandate',
                 operator: 'onorbefore',
+                layout: 'OUTSIDEBELOW',
+                width : 60,
+                height : 60
+            },
+            {
+                id: 'custpage_vendor',
+                label: '供应商',
+                type: 'MULTISELECT',
+                source: 'vendor',
+                filter: 'mainname',
+                operator: 'anyof',
+                layout: 'OUTSIDEBELOW'
+            },
+            {
+                id: 'custpage_po',
+                label: 'po编号',
+                type: 'MULTISELECT',
+                filter: 'createdfrom',
+                source: 'purchaseorder',
+                operator: 'anyof',
                 layout: 'OUTSIDEBELOW'
             }
         ];
@@ -716,7 +754,7 @@ define([
             },
             'compare_order': {
                 type: 'SELECT',
-                label: '对账单号',
+                label: '对账单号', 
                 source: 'customrecord_reconciliation'
             },
             'compare_order_date': {

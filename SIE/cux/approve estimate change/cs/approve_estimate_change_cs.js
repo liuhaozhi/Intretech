@@ -23,7 +23,45 @@ define([
         initMessage()
         formOptimize()
         setCurrentRec()
+        disabledFields()
         bindButtonEvent()
+    }
+
+    function disabledFields(){
+        var userRole  = runtime.getCurrentUser().role
+        var lineCount = currentRec.getLineCount({
+            sublistId : sublistId
+        })
+
+        while(lineCount > 0)
+        {
+            currentRec.getSublistField({
+                sublistId : sublistId,
+                fieldId : 'custpage_check',
+                line : --lineCount
+            }).isDisabled = 
+                    userRole.toString() !== currentRec.getSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_role',
+                        line : lineCount
+            }) && AP11112(userRole,lineCount)
+        }
+    }
+
+    function AP11112(userRole,lineCount){
+        var appEmp = currentRec.getSublistValue({
+            sublistId : sublistId,
+            fieldId : 'custpage_custbody_nextapproval_1firstname',
+            line : lineCount
+        })
+
+        if(userRole.toString() === '1112' &&  appEmp !== ' ')
+        return true
+
+        if(userRole.toString() !== '1112')
+        return true
+
+        return false
     }
 
     function bindButtonEvent(){
@@ -38,12 +76,18 @@ define([
                     sublistId : sublistId,
                     fieldId : 'custpage_check',
                     line : --lineCount
-                }).isDisabled === true)
-                currentRec.setCurrentSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custpage_check',
-                    value : false
-                })
+                }).isDisabled === true){
+                    currentRec.selectLine({
+                        sublistId : sublistId,
+                        line : lineCount
+                    })
+
+                    currentRec.setCurrentSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_check',
+                        value : false
+                    })
+                }
             }
         })
     }
@@ -64,12 +108,12 @@ define([
             }
         }
 
-        if(params.status === 'sucess')
-        message.create({
-            title : '任务已提交处理！' , 
-            type :  message.Type.CONFIRMATION , 
-            message : '您可以去溜达溜达，任务完成后会发送邮件通知您，记得刷新邮箱哦！'
-        }).show({ duration : 6000 })
+        // if(params.status === 'sucess')
+        // message.create({
+        //     title : '任务已提交处理！' , 
+        //     type :  message.Type.CONFIRMATION , 
+        //     message : '您可以去溜达溜达，任务完成后会发送邮件通知您，记得刷新邮箱哦！'
+        // }).show({ duration : 6000 })
     }
 
     function setCurrentRec(){
@@ -156,7 +200,6 @@ define([
         var lineCount = currentRec.getLineCount({
             sublistId : sublistId
         })
-        var changetype= currentRec.getValue('custpage_changetype')
         var cacheId = currentRec.getValue('custpage_cacheid')
 
         if(cacheId)
@@ -182,41 +225,22 @@ define([
 
         for(var i = 0 ; i < lineCount ; i ++)
         {
-            var key = changetype === '1' ? currentRec.getSublistValue({
+            checkInfo[currentRec.getSublistValue({
                 sublistId : sublistId,
-                fieldId : 'custpage_custcol_plan_number',
+                fieldId : 'custpage_internalid',
                 line : i
-            }) : currentRec.getSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custpage_ordid',
-                line : i
-            })
-
-            var itemSublist = getSublistFields(i)
-
-            checkInfo[key] = Object.assign({checked : currentRec.getSublistValue({
+            })] = {check : currentRec.getSublistText({
                 sublistId : sublistId,
                 fieldId : 'custpage_check',
                 line : i
-            })} , itemSublist)
+            }) , nexts : currentRec.getSublistText({
+                sublistId : sublistId,
+                fieldId : 'custpage_nexts',
+                line : i
+            })}
         }
 
         return checkInfo
-    }
-
-    function getSublistFields(line){
-        var lineItems = Object.create(null)
-        var cacheFields = JSON.parse(currentRec.getValue('custpage_cachefields'))
-
-        cacheFields.map(function(item){
-            return lineItems[item] =  currentRec.getSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custpage_' + item,
-                line : line
-            })
-        })
-
-        return lineItems
     }
 
     function setCheckCache(){
@@ -278,9 +302,101 @@ define([
             deliverydatestar : currentRec.getText('custpage_deliverydatestar'),  
         }
     }
+
+    function ratifyPlan(){ //批准
+        if(!saveRecord())
+        return false
+
+        message.create({
+            title : '处理中！' , 
+            type :  message.Type.INFORMATION , 
+            message : '请稍后。。。'
+        }).show()
+
+        https.post.promise({
+            url : url.resolveScript({
+                scriptId : 'customscript_estimatechange_approve',
+                deploymentId : 'customdeploy_estimatechange_approve'
+            }),
+            body : {
+                action : 'ratify',
+                cacheid : currentRec.getValue('custpage_cacheid'),
+                checked : JSON.stringify(getCheckCache())
+            } 
+        })
+        .then(function(res){
+            var body = JSON.parse(res.body)
+
+            if(body.errorMsg.length)
+            {
+                dialog.alert({
+                    title: "error msg",
+                    message: '本次共处理' + body.count + '条，失败' + body.errorMsg.length + '条,明细：</br>' + body.errorMsg.join('</br>')
+                })
+                .then(function(){
+                    location.href = location.href + '&status=sucess'
+                })
+            }
+            else
+            {
+                location.href = location.href + '&status=sucess'
+            }
+        })
+        .catch(function(e){
+            alert(e.message)
+            console.log(e)
+        })
+    }
+
+    function refusePlan(){ //拒绝
+        if(!saveRecord())
+        return false
+        
+        message.create({
+            title : '处理中！' , 
+            type :  message.Type.INFORMATION , 
+            message : '请稍后。。。'
+        }).show()
+
+        https.post.promise({
+            url : url.resolveScript({
+                scriptId : 'customscript_estimatechange_approve',
+                deploymentId : 'customdeploy_estimatechange_approve'
+            }),
+            body : {
+                action : 'refuse',
+                cacheid : currentRec.getValue('custpage_cacheid'),  
+                checked : JSON.stringify(getCheckCache())
+            } 
+        })
+        .then(function(res){
+            var body = JSON.parse(res.body)
+
+            if(body.errorMsg.length)
+            {
+                dialog.alert({
+                    title: "error msg",
+                    message: '本次共处理' + body.count + '条，失败' + body.errorMsg.length + '条,明细：</br>' + body.errorMsg.join('</br>')
+                })
+                .then(function(){
+                    location.href = location.href + '&status=sucess'
+                })
+            }
+            else
+            {
+                location.href = location.href + '&status=sucess'
+            }
+        })
+        .catch(function(e){
+            alert(e.message)
+            console.log(e)
+        })
+    }
     
     return {
         pageInit : pageInit,
+        ratifyPlan : ratifyPlan,
+        refusePlan : refusePlan,
         searchLines : searchLines,
         fieldChanged : fieldChanged,
     }

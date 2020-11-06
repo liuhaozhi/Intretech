@@ -33,7 +33,7 @@ define([], function () {
             rs1 = Number(s1.replace('.', ''));
             rs2 = Number(s2.replace('.', ''));
         }
-        return (rs1 + rs2) / m;
+        return ((rs1 + rs2) / m).toFixed(2);
     }
 
     /**
@@ -64,7 +64,7 @@ define([], function () {
             rs1 = Number(s1.replace('.', ''));
             rs2 = Number(s2.replace('.', ''));
         }
-        return (rs1 - rs2) / m;
+        return ((rs1 - rs2) / m).toFixed(2);
     }
 
     /**
@@ -80,7 +80,7 @@ define([], function () {
         if(d1) m += d1.length;
         d2 = s2.split('.')[1];
         if(d2) m += d2.length;
-        return Number(s1.replace('.', '')) * Number(s2.replace('.', '')) / Math.pow(10, m);
+        return (Number(s1.replace('.', '')) * Number(s2.replace('.', '')) / Math.pow(10, m)).toFixed(2);
     }
 
     /** 
@@ -104,7 +104,7 @@ define([], function () {
             rs2 *= Math.pow(10, t1 - t2);
         }
         
-        return rs1 / rs2;
+        return (rs1 / rs2).toFixed(2);
     }
 
     //服务器时间非中国时间，转换为中国时间

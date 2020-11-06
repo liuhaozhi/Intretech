@@ -16,7 +16,6 @@ define([
 
         if(context.fieldId === 'custcol_unit_notax' || context.fieldId === 'custcol_fdiscount' || context.fieldId === 'quantity' || context.fieldId === 'taxrate1' ||  context.fieldId === 'currency')
         {
-            debugger
             var exchangerate = currentRec.getValue('exchangerate') || 1
             var quantity = getCurrentSubValue('quantity') || 0
             var price = getCurrentSubValue('custcol_unit_notax') || 0

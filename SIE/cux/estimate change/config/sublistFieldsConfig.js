@@ -40,7 +40,7 @@ define([],
                 case 'item':
                     source = 'item'
                     break;
-                case 'unitabbreviation':
+                case 'unit':
                     source = 'unitstype'
                     break;
                 case 'taxcode':
@@ -54,6 +54,12 @@ define([],
                     break;
                 case 'custcol_effective_mode':
                     source = 'customlist_selling_price_eff_mod_list'
+                    break;
+                case 'custbody_changedate':
+                    source = 'customlist_whether_list'
+                    break;
+                case 'custcol_suppl_company' : 
+                    source = 'customrecord_supply_company'
                     break;
                 default:
                     break
@@ -71,6 +77,7 @@ define([],
                 case 'custcol_plan_number':
                     displayType = 'HIDDEN'
                     break;
+                case 'entity':
                 case 'companyname':
                 case 'custbody_cust_ordertype':
                 case 'customlist_cust_ordertype':
@@ -86,7 +93,12 @@ define([],
                 case 'custcol_before_tax':
                 case 'aount':
                 case 'taxcode_display':
+                // case 'department':
+                case 'custcol_effective_mode' :
                     displayType = 'INLINE'
+                    break;
+                case 'department':
+                    if(changeType === '1') displayType = 'INLINE'
                     break;
                 default:
                     break

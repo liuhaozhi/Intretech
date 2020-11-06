@@ -31,16 +31,22 @@ define([
                 Object.keys(values).map(item => {
                     if(item !== 'quantity')
                     {
-                        log.error(item,values[item])
                         if(orderOrd.getSublistValue({
                             sublistId : 'item',
                             fieldId : item,
                             line : index
-                        }).toString() !== values[item].toString())
+                        }) != values[item])
                         orderOrd.setSublistValue({
                             sublistId : 'item',
                             fieldId : item,
-                            value : values[item].toString(),
+                            value : values[item],
+                            line : index
+                        })
+
+                        orderOrd.setSublistValue({
+                            sublistId : 'item',
+                            fieldId : 'amount',
+                            value : 1,
                             line : index
                         })
                     }
@@ -58,7 +64,8 @@ define([
                             id : newRecord.id,
                             values : {
                                 custrecord_amtchange : true,
-                                custrecord_c_quantity : ordQuantity.toString()
+                                custrecord_c_quantity : ordQuantity.toString(),
+                                custrecord_changeamount : values[item].toString()
                             }
                         })
                     }
@@ -91,8 +98,10 @@ define([
             return values
         }
 
-        return {
-            afterSubmit: afterSubmit
+        const beforeSubmit = context => {
+            
         }
+
+        return { beforeSubmit , afterSubmit }
     }
 )

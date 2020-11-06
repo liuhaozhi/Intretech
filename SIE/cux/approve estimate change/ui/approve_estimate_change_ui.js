@@ -41,7 +41,7 @@
         const FIELDPR = 'custpage_'
         const formTitle = '订单变更审批平台'
         const defaultPageSize = 50
-        const changeOrdSearch = () => search.load({id : 'customsearch_changeorder'})
+        const changeOrdSearch = () => search.load({id : 'customsearch_changeline'})
 
         const onRequest = context => {
             const {request,response} = context
@@ -170,9 +170,17 @@
                     label : '选择' , 
                     type : 'checkbox'
                 },{
-                    name : 'ordid',
-                    label : 'ordid',
-                    type : 'text' 
+                    name : 'internalid' ,
+                    label : '标识' , 
+                    type : 'text'
+                },{
+                    name : 'role',
+                    label : 'role',
+                    type : 'text'
+                },{
+                    name : 'nexts',
+                    label : 'nexts',
+                    type : 'text'
                 }],sublistSearch,this.params.changetype))
             }
 
@@ -204,10 +212,11 @@
 
             addSublistLine(that , res , index) {
                 sublistSearch.columns.map(item => {      
-                    let value = res.getValue(item)
+                    let getText = that.TextFieldIds()
+                    let value   = getText.includes(item.name) ? res.getText(item) : res.getValue(item)
 
-                    if(value === true)
-                    value = 'T'
+                    if(value === true) value = '是'
+                    if(value === false) value = '否'
         
                     if(value)
                     that.sublist.setSublistValue({
@@ -217,38 +226,41 @@
                     })
                 })
 
-                that.sublist.setSublistValue({
-                    id : FIELDPR + 'ordid',
-                    line : index,
-                    value : res.id
-                })
-
                 if(that.checkInfo[res.id] === 'T')
                 that.sublist.setSublistValue({
                     id : FIELDPR + 'check',
                     line : index,
                     value : checkInfo[res.id]
                 })
+      
+                that.sublist.setSublistValue({
+                    id : FIELDPR + 'internalid',
+                    line : index,
+                    value : res.id
+                })
+
+                that.sublist.setSublistValue({
+                    id : FIELDPR + 'role',
+                    line : index,
+                    value : res.getValue({name : 'custrecord_gzl'}) || ' '
+                })
+
+                that.sublist.setSublistValue({
+                    id : FIELDPR + 'nexts',
+                    line : index,
+                    value : res.getValue({name : 'custrecord_nexts'}) || ' '
+                })
             }
 
-            ValuesFieldIds() {
+            TextFieldIds() {
                 return [
-                    'item',
-                    'custbody_cust_ordertype',
-                    'entity',
-                    'department',
-                    'custbody_pc_sales_methods',
-                    'custbody_sales_model',
-                    'custbody_pc_salesman',
-                    'custbody_wip_documentmaker',
-                    'custbody_om_export_or_not',
-                    'custcol_salesorder',
-                    'custrecord_item_effective_date',
-                    'custcol_suppl_company',
-                    'units',
-                    'taxcode',
-                    'custcol_whether_bonded',
-                    'custcol_effective_mode'
+                    'custrecord_p_department',
+                    'custrecord_c_custbody_order_status',
+                    'custrecord_c_unit',
+                    'custrecord_c_custcol_whether_bonded',
+                    'custrecord_shenpi',
+                    'custrecord_gzl',
+                    'custrecord_nexts',
                 ]
             }
 
@@ -339,7 +351,7 @@
             }
         }
 
-        const getCheckInfo = (cacheid) => {
+        const getCheckInfo = cacheid => {
             let checkCache
     
             if(cacheid)

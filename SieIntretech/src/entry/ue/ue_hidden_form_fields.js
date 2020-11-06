@@ -19,10 +19,10 @@ define(['N/record', 'N/search', 'N/runtime', 'N/ui/serverWidget'], function (rec
                 "item": ["amount", "grossamt"]
             },
             "salesorder": {//发货通知单 盈趣-客制化-发货通知单表格-仓管专用
-                "item": ["amount", "grossamt", "taxrate1", "taxcode", "tax1amt"]
+                "item": ["amount", "grossamt", "taxrate1", "taxcode", "tax1amt" , "rate" ]
             },
             "estimate": {//销售订单 盈趣-客制化-发货通知单表格-仓管专用
-                "item": ["amount", "grossamt", "taxrate1", "taxcode", "tax1amt"]
+                "item": ["amount", "grossamt", "taxrate1", "taxcode", "tax1amt" , "rate" ]
             },
             "returnauthorization": {//盈趣-客制化-退货通知单表格-仓库专用
                 "item": ["amount", "grossamt", "taxrate1", "taxcode", "tax1amt"]
@@ -36,21 +36,32 @@ define(['N/record', 'N/search', 'N/runtime', 'N/ui/serverWidget'], function (rec
                 "role": ["1153", "1154", "1146", "1147"]
             },
             "salesorder": {
-                "role": ["1040", "1133", "1134", "1038"] 
+                "role": ["1040", "1133", "1134", "1038" , "1051" , "1150" , "1054" , "1055" , "1035" , "1139" , "1075" , "1102" , "1136" , "1101" , "1077"] 
             },
             "estimate": {
-                "role": ["1040", "1133", "1134", "1038"] 
+                "role": ["1040", "1133", "1134", "1038" , "1051" , "1150" , "1054" , "1055" , "1035" , "1139" , "1075" , "1102" , "1136" , "1101" , "1077"] 
             },
             "returnauthorization": {
                 "role": ["1040", "1133", "1134", "1038"] 
             }
         };
         var type = currentRecord.type;
+        if(permission[type]["role"].indexOf(user.role + "") > -1) hideTotalDom(context)
         if(permission[type] && permission[type]["role"].indexOf(user.role + "") == -1) { return; }
         try{
             hiddenFormFields(context, formFieldsMap[type + currentRecord.getValue("customform")] || formFieldsMap[type]);
         } catch(e) {
             throw e;
+        }
+    }
+
+    function hideTotalDom(context){
+        if(context.form){
+            context.form.addField({
+                id : 'custpage_hidetotal',
+                type : serverWidget.FieldType.INLINEHTML,
+                label : 'hideTotal'
+            }).defaultValue = '<script>jQuery(".totallingbg").css({display : "none"})</script>'
         }
     }
 
@@ -62,9 +73,14 @@ define(['N/record', 'N/search', 'N/runtime', 'N/ui/serverWidget'], function (rec
             if(typeof value == "object") {
                 for(var subFieldId in value) {
                     subFieldId = Array.isArray(value)? value[subFieldId]: subFieldId;
-                    contextForm.getSublist({
+                    var sublist = contextForm.getSublist({
                         id: fieldId
-                    }).getField(subFieldId).updateDisplayType({displayType: 'hidden'});
+                    })
+
+                    if(sublist)
+                    var field = sublist.getField(subFieldId)    
+
+                    if(field){field.updateDisplayType({displayType: 'hidden'})} 
                 }
             } else {
                 contextForm.getField(fieldId).updateDisplayType({displayType: 'hidden'});

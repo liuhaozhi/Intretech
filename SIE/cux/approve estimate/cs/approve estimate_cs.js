@@ -288,7 +288,6 @@ define([
             department : currentRec.getValue('custpage_department'),  
             trandatend : currentRec.getText('custpage_trandatend'),  
             subsidiary : currentRec.getValue('custpage_subsidiary'), 
-            endcustomer : currentRec.getValue('custpage_endcustomer'),  
             customerord : currentRec.getValue('custpage_customerord'),  
             customeritem : currentRec.getValue('custpage_customeritem'),  
             trandatestar : currentRec.getText('custpage_trandatestar'),  
@@ -307,16 +306,16 @@ define([
             message : '请稍后。。。'
         }).show()
 
-        https.get.promise({
+        https.post.promise({
             url : url.resolveScript({
                 scriptId : 'customscript_approve_estimate_response',
-                deploymentId : 'customdeploy_approve_estimate_response',
-                params: {
-                    action : 'ratify',
-                    cacheid : currentRec.getValue('custpage_cacheid'),  
-                    checked : JSON.stringify(getCheckCache())
-                } 
-            })
+                deploymentId : 'customdeploy_approve_estimate_response'
+            }),
+            body : {
+                action : 'ratify',
+                cacheid : currentRec.getValue('custpage_cacheid'),  
+                checked : JSON.stringify(getCheckCache())
+            } 
         })
         .then(function(res){
             var body = JSON.parse(res.body)
@@ -352,16 +351,16 @@ define([
             message : '请稍后。。。'
         }).show()
 
-        https.get.promise({
+        https.post.promise({
             url : url.resolveScript({
                 scriptId : 'customscript_approve_estimate_response',
-                deploymentId : 'customdeploy_approve_estimate_response',
-                params : {
-                    action : 'refuse',
-                    cacheid : currentRec.getValue('custpage_cacheid'),  
-                    checked : JSON.stringify(getCheckCache())
-                } 
-            })
+                deploymentId : 'customdeploy_approve_estimate_response'
+            }),
+            body : {
+                action : 'refuse',
+                cacheid : currentRec.getValue('custpage_cacheid'),  
+                checked : JSON.stringify(getCheckCache())
+            } 
         })
         .then(function(res){
             var body = JSON.parse(res.body)

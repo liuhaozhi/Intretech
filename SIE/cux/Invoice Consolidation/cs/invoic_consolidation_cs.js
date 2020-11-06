@@ -83,6 +83,7 @@ define([
     }
 
     function saveRecord(context) {
+        var outType = currentRec.getValue(allFields.outputype)
         var invoiceField = currentRec.getField({
             fieldId : allFields.invoice
         }).isDisabled
@@ -90,19 +91,27 @@ define([
             fieldId : allFields.invoicentry
         }).isDisabled
 
-        if(invoiceField === false || invoicentryField === false)
-        {
-            if(!currentRec.getValue(allFields.invoice) && !currentRec.getValue(allFields.invoicentry))
+        if(outType === '2'){
+            if(invoiceField === false || invoicentryField === false)
             {
-                alert('请输入值：发票号')
-                return false
+                if(!currentRec.getValue(allFields.invoice) && !currentRec.getValue(allFields.invoicentry))
+                {
+                    alert('请输入值：发票号')
+                    return false
+                }
             }
         }
 
-        return volidLineItem()
+        if(!outType)
+        {
+            alert('请输入值：输出类型')
+            return false
+        }
+
+        return volidLineItem(outType)
     }
 
-    function volidLineItem(){  
+    function volidLineItem(outType){  
         var printype  = currentRec.getValue({
             fieldId : 'custpage_printype'
         })
@@ -112,7 +121,9 @@ define([
         var lineCount = currentRec.getLineCount({
             sublistId : allFields.sublistId
         })
-        var checkInfo = filterCheckInfo(getCheckInfo(cacheid,lineCount))
+        var checkInfo = filterCheckInfo(getCheckInfo(cacheid,lineCount,outType))
+
+        if(checkInfo === false) return false
 
         if(checkInfo.length === 0)
         {
@@ -127,11 +138,11 @@ define([
             return item.billaddress !==  billaddresRefer || item.shipaddress !== shipaddresRefer
         })
 
-        if(printype === '1')
+        if(printype === '1' && outType == '2')
         {
             if(different.length > 0)
             {
-                alert('收获地址或收票地址不匹配')
+                alert('收货地址或收票地址不匹配')
                 return false
             }
 
@@ -162,6 +173,8 @@ define([
     }
 
     function filterCheckInfo(checkInfo){
+        if(checkInfo === false) return false
+
         var hasChecked = new Array()
 
         for(var key in checkInfo)
@@ -179,7 +192,7 @@ define([
         return hasChecked
     }
 
-    function getCheckInfo(cacheid,lineCount){
+    function getCheckInfo(cacheid,lineCount,outType){
         var checkInfo = new Object()
 
         if(cacheid)
@@ -198,6 +211,21 @@ define([
                 fieldId : allFields.internalid,
                 line : i
             })
+            var checked = currentRec.getSublistText({
+                sublistId : allFields.sublistId,
+                fieldId : 'custpage_check',
+                line : i
+            })
+            var lineInv = currentRec.getSublistText({
+                sublistId : allFields.sublistId,
+                fieldId : 'custpage_invnumber',
+                line : i
+            })
+
+            if(outType === '1' && checked === 'T' && !lineInv){
+                alert('第' + (lineCount + 1) + '行无发票号' )
+                return false
+            }
 
             if(!checkInfo[internalid]) checkInfo[internalid] = new Object()
 
@@ -206,11 +234,7 @@ define([
                 fieldId : 'custpage_line',
                 line : i
             })] =  {
-                checked : currentRec.getSublistText({
-                    sublistId : allFields.sublistId,
-                    fieldId : 'custpage_check',
-                    line : i
-                }),
+                checked : checked,
                 billaddress : currentRec.getSublistValue({
                     sublistId : allFields.sublistId,
                     fieldId : 'custpage_billaddress',
@@ -307,6 +331,8 @@ define([
             currentRec.getField({
                 fieldId : allFields.invoicentry
             }).isDisabled = currentRec.getValue(context.fieldId) === '1'
+
+            disabledSublistField(currentRec.getValue(context.fieldId) === '2')
         }
     }
 
@@ -523,11 +549,11 @@ define([
             return false
         }
 
-        if(!currentRec.getValue(allFields.outputype))
-        {
-            alert('请输入值：输出类型')
-            return false
-        }
+        // if(!currentRec.getValue(allFields.outputype))
+        // {
+        //     alert('请输入值：输出类型')
+        //     return false
+        // }
 
         return true
     }

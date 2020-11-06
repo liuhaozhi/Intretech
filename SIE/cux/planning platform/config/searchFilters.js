@@ -12,96 +12,97 @@ define({
             'AND',
             ['custrecord_p_custcol_salesorder.taxline' , 'is' , 'F'],
             'AND',
-            ['custrecord_salesorder_shipped' , 'is' , 'F']
+            ['custrecord_salesorder_shipped' , 'is' , 'F'],
+            'AND',
+            ['custrecord_p_custcol_close_manually' , 'is' , 'F'],
+            'AND',
+            ['custrecord_p_custcol_salesorder.custbody_closed' , 'is' , 'F']
         ]
 
-        if(items && items.length && items[0])
-        {
-            filters.push(
-                'AND',
-                ['custrecord_p_item' , 'anyof' , items]
-            )
-        }
+        if(params.disposetype === '2')
+        filters.push(
+            'AND',
+            ['custrecord_p_custcol_if_frozen' , 'is' , 'F'],
+            'AND',
+            ['custrecord_p_custcol_salesorder.custbody_isit_frozen' , 'is' , 'F']
+        )
 
-        if(params.k3order)
-        {
-            filters.push(
-                'AND',
-                ['custrecord_p_custcol_k3order_num' , 'contains' , params.k3order]
-            )
-        }
+        if(items && items.length && items[0])
+        filters.push(
+            'AND',
+            ['custrecord_p_item' , 'anyof' , items]
+        )
+    
+
+        if(params.k3order)   
+        filters.push(
+            'AND',
+            ['custrecord_p_custcol_k3order_num' , 'contains' , params.k3order]
+        )
+        
 
         if(params.subsidiary)
-        {
-            filters.push(
-                'AND',
-                ['custrecord_copysubsidiary' , 'anyof' , [params.subsidiary]]
-            )
-        }
+        filters.push(
+            'AND',
+            ['custrecord_copysubsidiary' , 'anyof' , [params.subsidiary]]
+        )
+        
 
-        if(params.salesorder)
-        {
-            filters.push(
-                'AND',
-                ['custrecord_p_custcol_salesorder' , 'anyof' , [params.salesorder]]
-            )
-        }
+        if(params.salesorder)  
+        filters.push(
+            'AND',
+            ['custrecord_p_custcol_salesorder' , 'anyof' , [params.salesorder]]
+        )
+    
 
         if(params.customer && params.customer !== '-1')
-        {
-            filters.push(
-                'AND',
-                ['custrecord_p_custcol_salesorder.entity' , 'anyof' , [params.customer]]
-            )
-        }
+        filters.push(
+            'AND',
+            ['custrecord_p_custcol_salesorder.entity' , 'anyof' , [params.customer]]
+        )
+        
 
         if(params.deliverydatend)
-        {
-            filters.push(
-                'AND',
-                ['custrecord_p_expectedshipdate' , 'onorbefore' , [params.deliverydatend]]
-            )
-        }
+        filters.push(
+            'AND',
+            ['custrecord_p_expectedshipdate' , 'onorbefore' , [params.deliverydatend]]
+        )
+        
 
         if(params.deliverydatestar)
-        {
-            filters.push(
-                'AND',
-                ['custrecord_p_expectedshipdate' , 'onorafter' , [params.deliverydatestar]]
-            )
-        }
+        filters.push(
+            'AND',
+            ['custrecord_p_expectedshipdate' , 'onorafter' , [params.deliverydatestar]]
+        )
+        
 
-        if(params.currency)
-        {
-            filters.push(
-                'AND',
-                ['custrecord_p_custcol_salesorder.currency' , 'anyof' , [params.currency]]
-            )
-        }
+        if(params.currency)    
+        filters.push(
+            'AND',
+            ['custrecord_p_custcol_salesorder.currency' , 'anyof' , [params.currency]]
+        )
+    
 
         if(params.trandate)
-        {
-            filters.push(
-                'AND',
-                ['custrecord_p_custcol_salesorder.trandate' , 'onorafter' , [params.trandate]]
-            )
-        }
+        filters.push(
+            'AND',
+            ['custrecord_p_custcol_salesorder.trandate' , 'onorafter' , [params.trandate]]
+        )
         
-        if(params.dateclose)
-        {
-            filters.push(
-                'AND',
-                ['custrecord_p_custcol_salesorder.trandate' , 'onorbefore' , [params.dateclose]]
-            )
-        }
+        
+        if(params.dateclose)   
+        filters.push(
+            'AND',
+            ['custrecord_p_custcol_salesorder.trandate' , 'onorbefore' , [params.dateclose]]
+        )
+        
     
         if(params.emoloyee)
-        {
-            filters.push(
-                'AND',
-                ['custrecord_p_custcol_salesorder.custbody_pc_salesman' , 'anyof' , [params.emoloyee]]
-            )
-        }
+        filters.push(
+            'AND',
+            ['custrecord_p_custcol_salesorder.custbody_pc_salesman' , 'anyof' , [params.emoloyee]]
+        )
+    
 
         if(params.ordertype)
         {
@@ -159,12 +160,11 @@ define({
         }
 
         if(params.sourcemp)
-        {
-            filters.push(
-                'AND',
-                ['custrecord_p_custcol_salesorder.custbody_source_doc_creator' , 'anyof' , [params.sourcemp]]
-            )
-        }
+        filters.push(
+            'AND',
+            ['custrecord_p_custcol_salesorder.custbody_source_doc_creator' , 'anyof' , [params.sourcemp]]
+        )
+        
 
         return filters
     }

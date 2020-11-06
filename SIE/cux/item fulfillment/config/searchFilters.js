@@ -12,6 +12,8 @@ define({
             'AND',
             ['mainline' , 'is' , 'F'],
             'AND',
+            ['custcol_plan_number' , 'isnotempty',''],
+            'AND',
             ['custbody_sales_status' , 'noneof' , '14'],
             'AND',
             ['custcol_salesorder.taxline' , 'is' , 'F'],

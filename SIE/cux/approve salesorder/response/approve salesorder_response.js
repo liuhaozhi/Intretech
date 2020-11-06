@@ -49,9 +49,16 @@ define([
             ++count
             var difference = operation.sub(res.getValue(mySearch.columns[3]) , checkedEle[res.getValue(mySearch.columns[0])])
 
+            log.error(res.getValue(mySearch.columns[7]) , res.getValue(mySearch.columns[7]) === '- None -')
+
             if(userRole.toString() !== res.getValue(mySearch.columns[2]))
             {
                 errorArr.push('单号:' + res.getValue(mySearch.columns[1]) + '，审批角色错误,处理失败')
+                return true
+            }
+
+            if(res.getValue(mySearch.columns[7]) === '- None -' && res.getValue(mySearch.columns[8]) === '- None -'){
+                errorArr.push('单号:' + res.getValue(mySearch.columns[1]) + '，装箱号，发票号都未维护')
                 return true
             }
 

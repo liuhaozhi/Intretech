@@ -4,8 +4,9 @@
  */
 define([
     'N/record',
+    'N/workflow',
     '../../helper/operation_assistant'
-], function(record , operation) {
+], function(record , workflow , operation) {
     var sublistId = 'recmachcustrecord185'
 
     function beforeLoad(context) {
@@ -13,7 +14,7 @@ define([
             insertHackStyle(context)
             if(context.newRecord.getValue('custrecord_yituishoukuanfapiao') === false)
             {
-                if(context.newRecord.getValue('custrecord_danjuleixing') === '1')
+                if(context.newRecord.getValue('custrecord_danjuleixing') === '1' && context.newRecord.getValue('custrecord_void') === false)
                 {
                     if(transPrintToInvoice(
                         record.load({
@@ -182,7 +183,7 @@ define([
         {
             var planum = newRecord.getSublistValue({
                 sublistId : sublistId,
-                fieldId : 'custrecord_ci_hanghao',
+                fieldId : 'custrecord_planum',
                 line : i
             })
 
@@ -195,7 +196,7 @@ define([
                 {
                     var salesPlanum = rec.getSublistValue({
                         sublistId : 'item',
-                        fieldId : 'custcol_line',
+                        fieldId : 'custcol_plan_number',
                         line : j
                     })
 
@@ -315,6 +316,13 @@ define([
 
                     invoiceIds[key] = invoiceRe.save({
                         ignoreMandatoryFields : true
+                    })
+
+                    if(invoiceIds[key])
+                    workflow.initiate({
+                        recordType: 'invoice',
+                        recordId : invoiceIds[key],
+                        workflowId: 'customworkflow_om_invoice_approval'
                     })
                 }
                 catch(e){

@@ -39,12 +39,18 @@ define([
                     sublistId : sublistId,
                     fieldId : 'custpage_check',
                     line : --lineCount
-                }).isDisabled === true)
-                currentRec.setCurrentSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custpage_check',
-                    value : false
-                })
+                }).isDisabled === true){
+                    currentRec.selectLine({
+                        sublistId : sublistId,
+                        line : lineCount
+                    })
+
+                    currentRec.setCurrentSublistValue({
+                        sublistId : sublistId,
+                        fieldId : 'custpage_check',
+                        value : false
+                    })
+                }
             }
         })
     }
@@ -208,7 +214,7 @@ define([
 
             checkEle[currentRec.getSublistText({
                 sublistId : sublistId,
-                fieldId : 'custpage_stcol_line',
+                fieldId : 'custpage_lan_number',
                 line : i
             })] = currentRec.getSublistText({
                 sublistId : sublistId,

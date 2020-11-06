@@ -12,7 +12,7 @@ define({
                 type : 'select' ,
                 source : 'customlist_output_type',
                 container : 'custpage_entry' ,
-                isMandatory : true,
+                // isMandatory : true,
                 defaultValue : params.outputype || ''
             },
             {

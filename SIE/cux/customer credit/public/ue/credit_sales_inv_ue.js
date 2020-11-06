@@ -251,7 +251,7 @@ define([
             {
                 var ordertype = getSalesType(newRecord,oldRecord)
 
-                if(ordertype.custbody_cust_ordertype[0])
+                if(ordertype && ordertype.custbody_cust_ordertype[0])
                 {
                     if(ordertype.custbody_cust_ordertype[0].value === '1')  //nre
                     {                       
@@ -355,7 +355,7 @@ define([
         {
             var ordertype = getSalesType(newRecord,oldRecord)
 
-            if(ordertype.custbody_cust_ordertype[0].value !== '1')
+            if(ordertype && ordertype.custbody_cust_ordertype[0].value !== '1')
             {
                 saveChanged({
                     type : type,
@@ -375,6 +375,7 @@ define([
             line : 0
         })
 
+        if(estimateId)
         return search.lookupFields({
             type : 'estimate',
             id : estimateId,

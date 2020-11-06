@@ -13,7 +13,7 @@ define([
     ],
     function (
         runtime,
-        wipCommon,
+        wipCommon, 
         format,
         record,
         search) {

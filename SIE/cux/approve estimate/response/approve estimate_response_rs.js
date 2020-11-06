@@ -10,6 +10,8 @@ define([
     '../../helper/operation_assistant'
 ], 
     ( search, workflow, runtime, operation) => {
+        const currentScript = () => runtime.getCurrentScript()
+
         const getCheckEle = checked => {
             const items = Object.create(null)
             const parseChecked = getParseChecked(checked)
@@ -24,7 +26,7 @@ define([
 
         const getParseChecked = checked => JSON.parse(checked)
 
-        const get = context => {
+        const post = context => {
             const {action , checked} = context
 
             if(action)
@@ -32,11 +34,13 @@ define([
         }
 
         const approveRecord = (action , checked) => {
+            let msg
             let count = 0
             let errorArr   = new Array()
             let checkedEle = getCheckEle(checked)
             let userRole   = runtime.getCurrentUser().role
             let mySearch   = search.load({id : 'customsearch_transaction_linecount'})
+            let currScript = currentScript()
 
             mySearch.filters = mySearch.filters.concat({
                 name : 'internalid',
@@ -45,7 +49,21 @@ define([
             })
     
             mySearch.run().each(function(res){
+                let unit = currScript.getRemainingUsage()
+
+                if(unit < 30){
+                    msg = {
+                        out : true,
+                        count : count,
+                        status : 'sucess',
+                        errorMsg : errorArr
+                    }
+
+                    return false
+                }
+
                 ++count
+                log.error('count',count)
                 let orderType  = res.getValue(mySearch.columns[5])
                 let newxtAppro = res.getValue(mySearch.columns[4])
                 let difference = operation.sub(res.getValue(mySearch.columns[3]) , checkedEle[res.getValue(mySearch.columns[0])])
@@ -62,6 +80,12 @@ define([
                     errorArr.push('订单号:' + res.getValue(mySearch.columns[1]) + '，未选行数' + difference + ',处理失败')
                     return true
                 }
+
+                // if(res.getValue(mySearch.columns[9]) === false)
+                // {
+                //     errorArr.push('订单号:' + res.getValue(mySearch.columns[1]) + '，Bom状态存在未审核,处理失败')
+                //     return true
+                // }
     
                 if(action === 'ratify')
                 {
@@ -122,6 +146,8 @@ define([
                 return true
             })
 
+            if(msg) return JSON.stringify(msg)
+            
             return JSON.stringify({
                 count : count,
                 status : 'sucess',
@@ -129,10 +155,10 @@ define([
             })
         }
 
-        const post = context => {
+        // const post = context => {
             
-        }
+        // }
 
-        return {get , post}
+        return { post }
     }
 )

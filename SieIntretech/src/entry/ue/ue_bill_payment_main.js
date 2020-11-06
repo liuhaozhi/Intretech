@@ -140,7 +140,7 @@ define(['N/record' ,'N/render' ,'N/url' ,'N/search'], function (record ,render ,
                     recordId : recordId,
                     prepayId : vendorPrepayId,
                     ex : ex
-                }
+                } 
             });
             throw '此付款单已成功核销，但是将单号回写至对应的供应商预付款时发生错误，请手动处理。错误提示：' + ex.message;
         }
@@ -280,6 +280,45 @@ define(['N/record' ,'N/render' ,'N/url' ,'N/search'], function (record ,render ,
         if (context.type === context.UserEventType.CREATE) {
             writeToVendorPrepay(context);
         }
+
+        if(context.type === 'paybills' || context.type === context.UserEventType.CREATE){
+            writeVendorBankInfo(context.newRecord)
+        }
+    }
+
+    function writeVendorBankInfo(newRecord){
+        var vendor = newRecord.getValue({fieldId : 'entity'})
+        var subsidiary = newRecord.getValue({fieldId : 'subsidiary'})
+
+        if(vendor && subsidiary && newRecord.id)
+        search.create({
+            type : 'vendorsubsidiaryrelationship',
+            filters : [
+                ['entity' , 'anyof' , [vendor]],
+                'AND',
+                ['subsidiary' , 'anyof' , [subsidiary]]
+            ],
+            columns : ['custrecord_bank_swift_code','custrecord_deposit_bank_vendor','custrecord_bank_num']
+        })
+        .run()
+        .each(function(res){
+            var values = new Object()
+
+            if(!newRecord.getValue({fieldId : 'custbody_bank_ap'}) && res.getValue({name : 'custrecord_bank_num'}))
+            values.custbody_bank_ap = res.getValue({name : 'custrecord_bank_num'})
+
+            if(!newRecord.getValue({fieldId : 'custbody_ap_bank_swift_code'}) && res.getValue({name : 'custrecord_bank_swift_code'}))
+            values.custbody_ap_bank_swift_code = res.getValue({name : 'custrecord_bank_swift_code'})
+
+            if(!newRecord.getValue({fieldId : 'custbody_ap_deposit_bank_pay'}) && res.getValue({name : 'custrecord_deposit_bank_vendor'}))
+            values.custbody_ap_deposit_bank_pay = res.getValue({name : 'custrecord_deposit_bank_vendor'})
+
+            record.submitFields({
+                type : newRecord.type,
+                id : newRecord.id,
+                values : values
+            })
+        })
     }
 
     return {

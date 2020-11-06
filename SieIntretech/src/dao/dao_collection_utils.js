@@ -209,17 +209,18 @@ define(['N/search'], function (search) {
         var columns = [{
                 name: 'billofmaterials'
             },
-            // {
-            //     name: 'location'
-            // },
+            //lhz 此处因却分订单类型，导致除了指定类型，别的类型都没有查询location，此处将location放开，若需要别的location，查询完成在resultList 中返回
+            {
+                name: 'location'
+            },
             {
                 name: 'workcalendar',
                 join: 'manufacturingWorkCenter'
+            },
+            {
+                name: 'custrecord_bonded_under_bond',
+                join: 'location'
             }
-            // {
-            //     name: 'custrecord_bonded_under_bond',
-            //     join: 'location'
-            // }
         ];
 
         var filters = [

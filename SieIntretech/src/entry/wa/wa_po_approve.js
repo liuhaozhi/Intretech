@@ -6,9 +6,11 @@
  */
 define([
     'N/search',
+  'N/format',
     '../../app/app_so_common.js'
 ], function (
     search,
+     format, 
     soCommon
 ) {
     var gItemSublistId = 'item',
@@ -55,6 +57,8 @@ define([
             ccoFieldId = 'custbody_cust_ordertype', //销售订单类型
             cosFieldId = 'custbody_order_status', //销售订单总订单状态
             ciprFieldId = 'custcol_inter_pur_rate', //公司间交易单价
+            cipeFieldId = 'expectedshipdate', //销售交货日期
+            cipoFieldId = 'expectedreceiptdate',//采购单预计交货日期
             cipcFieldId = 'custcol_inter_pur_currency', //公司间交易货币
             civFieldId = 'custcol_inter_vendor', //公司间交易供应商
             ciiupFieldId = 'custcol_inter_is_update_price', //采购流程是否需要更新价格
@@ -64,6 +68,7 @@ define([
             csoK3LineId = 'custcol_k3line_number', //销售订单K3行号
             cosDefultValue = '3',
             cosUnitNotax = 'custcol_unit_notax',//折前单价（不含税）
+            documentOld = 'custbody_document_old',
             customformDefult = '152'; //Cross-company Trading
 
 
@@ -160,7 +165,6 @@ define([
                     });
 
                     for (var i = 0; i < poLineCount; i++) {
-
                         poItemObj = {};
                         poItemObj[gSlItemFieldId] = 0;
                         poItemObj[gSlRateFieldId] = 0;
@@ -172,10 +176,13 @@ define([
                         poItemObj[ciiupFieldId] = 0;
                         poItemObj[cildblFieldId] = 0;
                         poItemObj[cpoK3LineId] = 0;
-                        poItemObj[cosUnitNotax] = 0;
+                        // poItemObj[cosUnitNotax] = 0;
+                        poItemObj[documentOld] = 0;
+                        poItemObj[csoK3LineId] = 0;
+                        // poItemObj[cosUnitNotax] = 0;
+                        poItemObj[cipoFieldId]  = undefined;
 
                         for (var key in poItemObj) {
-
                             if (poItemObj.hasOwnProperty(key)) {
                                 poItemObj[key] = poRecord.getSublistValue({
                                     sublistId: gItemSublistId,
@@ -200,28 +207,62 @@ define([
                     //     delete poItems[i].line;
                     // }
 
-                    for (var i = 0; i < poItems.length; i++) {
-                        //poItems[i][lyddhFieldId] = poItems[i].id;
-                        //poItems[i][lyddlFieldId] = poItems[i].line;
-                        //delete poItems[i].id;
-                        //delete poItems[i].line;
-                        soItemObj = {};
+                    
+                    soItems = poItems.map(function(item){
+                        var soItem = Object.create(null)
 
-                        Object.keys(poItems[i]).forEach(function (result, index) {
+                        Object.keys(item).forEach(function (result, index) {
                             if (result == gSlLineFieldId) {
-                                soItemObj[lyddlFieldId] = poItems[i][result];
+                                soItem[lyddlFieldId] = item[result];
                             } else if (result == gIdFieldId) {
-                                soItemObj[lyddhFieldId] = poItems[i][result]; //lyddhFieldId
+                                soItem[lyddhFieldId] = item[result]; //lyddhFieldId
                             } else if(result == cpoK3LineId){
-                                soItemObj[csoK3LineId] = poItems[i][result];
-                            } else {
-                                soItemObj[result] = poItems[i][result];
+                                soItem[csoK3LineId] = item[result];
+                            } else if(result == cipoFieldId){
+                                log.debug(typeof item[result],item[result])
+                                
+                                soItem[cipeFieldId] = item[result] instanceof Date ? item[result] : format.parse({
+                                    type : format.Type.DATE,
+                                    value : item[result]
+                                })
+                            }else{
+                                soItem[result] = item[result];
                             }
                             return true;
-                        });
+                        })
 
-                        soItems.push(soItemObj);
-                    }
+                        return soItem
+                    })
+
+                    // for (var i = 0; i < poItems.length; i++) {
+                    //     //poItems[i][lyddhFieldId] = poItems[i].id;
+                    //     //poItems[i][lyddlFieldId] = poItems[i].line;
+                    //     //delete poItems[i].id;
+                    //     //delete poItems[i].line;
+                    //     // soItemObj = {expectedshipdate : new Date()};
+
+                    //     Object.keys(poItems[i]).forEach(function (result, index) {
+                    //         if (result == gSlLineFieldId) {
+                    //             soItemObj[lyddlFieldId] = poItems[i][result];
+                    //         } else if (result == gIdFieldId) {
+                    //             soItemObj[lyddhFieldId] = poItems[i][result]; //lyddhFieldId
+                    //         } else if(result == cpoK3LineId){
+                    //             soItemObj[csoK3LineId] = poItems[i][result];
+                    //         } else if(result == cipoFieldId){
+                    //             log.debug(typeof poItems[i][result],poItems[i][result])
+                                
+                    //             soItemObj[cipeFieldId] = poItems[i][result] instanceof Date ? poItems[i][result] : format.parse({
+                    //                 type : format.Type.DATE,
+                    //                 value : poItems[i][result]
+                    //             })
+                    //         }else{
+                    //             soItemObj[result] = poItems[i][result];
+                    //         }
+                    //         return true;
+                    //     });
+
+                    //     soItems.push(soItemObj);
+                    // }
 
                     log.debug('soItems', soItems);
 
@@ -230,6 +271,7 @@ define([
                     mainPayload[gEntityFieldId] = customerObj[gInternalidFieldId];
                     mainPayload[gCurrencyFieldId] = poMain[gCurrencyFieldId];
                     mainPayload[gTrandateFieldId] = poMain[gTrandateFieldId];
+                    // mainPayload[cipeFieldId] = format.parse({ type: format.Type.DATE, value: mainPayload[cipeFieldId] });//poMain[cipoFieldId]
                     mainPayload[cosFieldId] = cosDefultValue;
                     mainPayload[cspFieldId] = true;
                     mainPayload[isCctFieldId] = true;
@@ -238,7 +280,6 @@ define([
 
 
                     var option = {
-
                         mainPayload: mainPayload,
                         items: soItems
                     };

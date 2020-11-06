@@ -51,6 +51,8 @@ define({
                 name : 'custrecord_p_quantity'
             },{
                 name : 'custrecord_quantity_shipped'
+            },{
+                name : 'custrecord_p_custcol_work_order_number'
             }
         ]
     }

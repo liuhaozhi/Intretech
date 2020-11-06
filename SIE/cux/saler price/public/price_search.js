@@ -32,13 +32,14 @@ define([
         var item = params.item
         var record = params.record
         var quantitys = params.quantitys
+        // console.log(record.id)
 
         for(var i = 1; i < 16; i ++)
         {
             var SQSTAR = +record.getValue(STARPREFIX + i) 
             var SQEND  = +record.getValue(ENDPREFIX + i) 
             
-            if(quantitys[item] >= SQSTAR && quantitys[item] < SQEND)
+            if(quantitys[item] >= SQSTAR && quantitys[item] <= SQEND)
             {
                 return {
                     price : record.getValue(PRICEPREFIX + i),

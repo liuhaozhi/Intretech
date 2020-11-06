@@ -150,14 +150,6 @@ define({
                 defaultValue : params.ordtype || ''
             },
             {
-                id : 'endcustomer' ,
-                label : '最终客户()' , 
-                type : 'select' ,
-                source : 'customer' ,
-                container : 'custpage_filters' ,
-                defaultValue : params.endcustomer || ''
-            },
-            {
                 id : 'creater' ,
                 label : '制单人()' , 
                 type : 'select' ,

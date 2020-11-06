@@ -39,6 +39,7 @@ define([
     }
 
     function searchPage(params,response){
+        var currentUser = runtime.getCurrentUser()
         var form = ui.createForm({
             title :  '销售价格批量审批平台'
         })
@@ -54,6 +55,9 @@ define([
         })
 
         form.clientScriptModulePath = '../cs/approve_sales_price_cs'
+
+        if(!params.subsidiary)
+        params.subsidiary = currentUser.subsidiary
 
         if(!params.action)
         {
@@ -292,7 +296,7 @@ define([
                 var value = res[getType](item)
                 if(item.name === 'custrecord_cust_price_list_link')
                 value = '<a target="_blank" style="color:blue!important" href="'
-                +'/app/common/custom/custrecordentry.nl?rectype=243&id='+value+'">'+res.getText(item)+'</a>'
+                +'/app/common/custom/custrecordentry.nl?rectype=516&id='+value+'">'+res.getText(item)+'</a>'
 
                 sublist.setSublistValue({
                     id : FIELDPR + item.name.slice(-10),
@@ -307,7 +311,6 @@ define([
         return [
             'custrecord_cust_item_list_name',
             'custrecord_cust_item_item_type',
-            'custrecord_cust_item_customer_number',
             'custrecord_cust_item_customer_name',
             'custrecord_nonof_ladder_price',
             'custrecord_item_sales_volume_start_1',

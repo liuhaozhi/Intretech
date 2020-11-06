@@ -152,6 +152,16 @@ define([
 
                 orderRecord.setSublistValue({
                     sublistId : 'item',
+                    fieldId : 'custcol_dedate',
+                    line : line,
+                    value : format.parse({
+                        type : format.Type.DATE,
+                        value : item.custrecord_p_expectedshipdate
+                    })
+                })
+
+                orderRecord.setSublistValue({
+                    sublistId : 'item',
                     fieldId : 'custcol_before_date',
                     line : line,
                     value : format.parse({
@@ -255,7 +265,115 @@ define([
                 line : index,
                 value : item.custrecord_p_item
             })
- 
+            //
+            if(item.custrecord_p_custcol_sales_bank)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_sales_bank',
+                line : index,
+                value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_sales_bank'})
+            })
+            if(item.custrecord_p_custcol_external)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_external',
+                line : index,
+                value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_external'})
+            })
+            if(item.custrecord_p_custcol_trueamount)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_trueamount',
+                line : index,
+                value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_trueamount'})
+            })
+            if(item.custrecord_p_custcol_om_total_discount)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_om_total_discount',
+                line : index,
+                value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_om_total_discount'})
+            })
+
+            if(item.custrecord_p_custcol_discount)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_discount',
+                line : index,
+                value : item.custrecord_p_custcol_discount
+            })
+            if(item.custrecord_p_custcol_before_tax)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_before_tax',
+                line : index,
+                value : item.custrecord_p_custcol_before_tax
+            })
+            if(item.custrecord_p_custcol_om_before_discount)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_om_before_discount',
+                line : index,
+                value : item.custrecord_p_custcol_om_before_discount
+            })
+
+            if(item.custrecord_p_custcol_k3line_number)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_k3line_number',
+                line : index,
+                value : item.custrecord_p_custcol_k3line_number
+            })
+
+            if(item.custrecord_p_custcol_k3order_num)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_k3order_num',
+                line : index,
+                value : item.custrecord_p_custcol_k3order_num
+            })
+
+            if(item.custrecord_p_custcol_wip_material_proper)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_wip_material_properties',
+                line : index,
+                value : item.custrecord_p_custcol_wip_material_proper
+            })
+
+            if(item.custrecord_p_custcol_linedes)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_linedes',
+                line : index,
+                value : item.custrecord_p_custcol_linedes
+            })
+    
+            if(item.custrecord_p_custcol_big_category)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_big_category',
+                line : index,
+                value : item.custrecord_p_custcol_big_category
+            })
+    
+            if(item.custrecord_p_custcol_mid_category)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_mid_category',
+                line : index,
+                value : item.custrecord_p_custcol_mid_category
+            })
+    
+            if(item.custrecord_p_custcol_small_category)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_small_category',
+                line : index,
+                value : item.custrecord_p_custcol_small_category
+            })
+            //
+
             if(item.custrecord_p_custcol_bom_version)
             orderRecord.setSublistValue({
                 sublistId : 'item',
@@ -358,7 +476,7 @@ define([
             if(item.custrecord_p_custcol_supply_company)
             orderRecord.setSublistValue({
                 sublistId : 'item',
-                fieldId : 'custcol_supply_company',
+                fieldId : 'custcol_suppl_company',
                 line : index,
                 value :item.custrecord_p_custcol_supply_company
             })
@@ -378,6 +496,14 @@ define([
                 line : index,
                 value : item.custrecord_p_custcol_cgoodsname
             })
+
+            if(item.custrecord_p_custcol_whether_bonded)
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_whether_bonded',
+                line : index,
+                value : item.custrecord_p_custcol_whether_bonded
+            })
     
             if(item.custrecord_p_description)
             orderRecord.setSublistValue({
@@ -387,15 +513,13 @@ define([
                 value : item.custrecord_p_description
             })
     
-            if(item.custrecord_p_custcol_unit_notax)
             orderRecord.setSublistValue({
                 sublistId : 'item',
                 fieldId : 'custcol_unit_notax',
                 line : index,
-                value : item.custrecord_p_custcol_unit_notax
+                value : item.custrecord_p_custcol_unit_notax || 0
             })
     
-            if(item.custrecord_p_rate)
             orderRecord.setSublistValue({
                 sublistId : 'item',
                 fieldId : 'rate',
@@ -470,7 +594,6 @@ define([
                 value : parseFloat(item.custrecord_p_custcol_indiscount)
             })
     
-            if(item.custrecord_p_custcol_inrate)
             orderRecord.setSublistValue({
                 sublistId : 'item',
                 fieldId : 'custcol_inrate',
@@ -645,7 +768,22 @@ define([
                 'custrecord_p_custcol_customsname',
                 'custrecord_p_custcol_supply_company',
                 'custrecord_p_custcol_compdiscount',
-                'custrecord_p_custcol_cn_cfi'
+                'custrecord_p_custcol_cn_cfi',
+                'custrecord_p_custcol_k3order_num',
+                'custrecord_p_custcol_k3line_number',
+                'custrecord_p_custcol_wip_material_proper',
+                'custrecord_p_custcol_linedes',
+                'custrecord_p_custcol_big_category',
+                'custrecord_p_custcol_mid_category',
+                'custrecord_p_custcol_small_category',
+                'custrecord_p_custcol_discount',
+                'custrecord_p_custcol_before_tax',
+                'custrecord_p_custcol_om_before_discount',
+                'custrecord_p_custcol_trueamount',
+                'custrecord_p_custcol_om_total_discount',
+                'custrecord_p_custcol_external',
+                'custrecord_p_custcol_sales_bank',
+                'custrecord_p_custcol_whether_bonded'
             ]
         }).run()
     }
@@ -684,6 +822,7 @@ define([
                 id : cacheId,
                 columns : ['custrecord_salesorder_cache']
             }).custrecord_salesorder_cache
+
         }
 
         return checkCache ? JSON.parse(checkCache) : new Object()

@@ -5,25 +5,19 @@
 define([
     'N/url',
     'N/https',
-    'N/record',
-    'N/search',
     'N/ui/message',
     '../../../helper/operation_assistant'
 ], function(
     url,
     https,
-    record,
-    search,
     message,
     operation
 ) {
     var mode = undefined
     var underway = false
     var oldQuantity = new Object()
-    var currentRecord = undefined
     function pageInit(context){
         console.log('pageinit')
-      currentRecord = context.currentRecord;
         mode = context.mode
 
         if(mode === 'edit')
@@ -31,7 +25,7 @@ define([
             setOldQuantity(context.currentRecord)
         }
 
-        changeTitle(context);
+        changeTitle(context)
     }
 
     function changeTitle(context){
@@ -89,62 +83,7 @@ define([
             }
         }
 
-        // doSomeThing(currentRec)
         return true
-    }
-
-    function doSomeThing(currentRec){
-        var quantity = currentRec.getCurrentSublistValue({
-            sublistId : 'item',
-            fieldId : 'quantity'
-        })
-        var amount = currentRec.getCurrentSublistValue({
-            sublistId : 'item',
-            fieldId : 'amount'
-        })
-        var taxAmt = currentRec.getCurrentSublistValue({
-            sublistId : 'item',
-            fieldId : 'tax1amt'
-        })
-        var exchangerate =  currentRec.getValue({
-            fieldId : 'exchangerate'
-        })
-
-        currentRec.setCurrentSublistValue({ //折后含税总金额（本币）
-            sublistId : 'item',
-            fieldId : 'custcol_trueamount',
-            value : operation.add(
-                operation.mul(amount,exchangerate).toFixed(2),
-                operation.mul(taxAmt,exchangerate).toFixed(2)
-            )
-        })
-
-        currentRec.setCurrentSublistValue({ //折扣额
-            sublistId : 'item',
-            fieldId : 'custcol_discount',
-            value : operation.mul(
-                operation.sub( currentRec.getCurrentSublistValue({
-                    sublistId : 'item',
-                    fieldId : 'custcol_unit_tax'
-                }) || 0 ,  
-                currentRec.getCurrentSublistValue({
-                    sublistId : 'item',
-                    fieldId : 'custcol_funit'
-                }) || 0) || 0 ,
-                quantity
-            ) 
-        })
-
-        currentRec.setCurrentSublistValue({
-            sublistId : 'item',
-            fieldId : 'custcol_before_tax',
-            value : operation.mul(
-                currentRec.getCurrentSublistValue({
-                    sublistId : 'item',
-                    fieldId : 'custcol_unit_tax'
-                }) || 0, quantity
-            )
-        })
     }
 
     function fieldChanged(context){

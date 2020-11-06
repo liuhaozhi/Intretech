@@ -67,7 +67,7 @@ define([
                         fieldId : savePlanFields[j],
                         value : estimate.getSublistValue({
                             sublistId : 'item',
-                            fieldId : fieldId === 'custcol_cn_cfi' ? 'custcol_cseg_cn_cfi' : fieldId,
+                            fieldId :EtimteField(fieldId),
                             line : i
                         })
                     })
@@ -87,6 +87,14 @@ define([
                 })
             }
         }
+    }
+
+    function EtimteField(fieldId){
+        if(fieldId ==='custcol_cn_cfi') return 'custcol_cseg_cn_cfi'
+        if(fieldId === 'custcol_supply_company' )  return 'custcol_suppl_company'
+        if(fieldId === 'custcol_wip_material_proper') return 'custcol_wip_material_properties'
+
+        return fieldId
     }
 
     return {

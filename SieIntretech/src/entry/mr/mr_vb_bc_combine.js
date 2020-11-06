@@ -259,6 +259,11 @@ define([
                 });
                 stateRec.setCurrentSublistValue({
                     sublistId: sublistId,
+                    fieldId: 'custrecord__ns_poline_number',
+                    value: result.getValue(columns[10])
+                });
+                stateRec.setCurrentSublistValue({
+                    sublistId: sublistId,
                     fieldId: 'custrecord_po_no',
                     value: result.getValue(columns[1])
                 });

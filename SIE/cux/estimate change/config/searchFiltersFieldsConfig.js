@@ -108,7 +108,7 @@ define([],
                         id : 'isapprove' ,
                         label : '总订单状态()' , 
                         type : 'select' ,
-                        source : 'customlist_ordersta' ,
+                        source : 'customlist_orderlistto' ,
                         container : 'custpage_filters' ,
                         defaultValue : params.isapprove || ''
                     },

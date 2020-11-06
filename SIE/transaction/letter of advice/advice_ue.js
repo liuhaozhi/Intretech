@@ -3,10 +3,12 @@
  *@NScriptType UserEventScript
  */
 define([
+    'N/runtime',
     'N/record',
     'N/search',
     '../helper/operation_assistant'
 ], function(
+    runtime,
     record,
     search,
     operation
@@ -14,10 +16,14 @@ define([
     function afterSubmit(context) {
         if(context.type === context.UserEventType.CREATE)
         {
-            setLineInventory(record.load({
-                type : 'salesorder',
-                id : context.newRecord.id
-            }))
+            try{
+                setLineInventory(record.load({
+                    type : 'salesorder',
+                    id : context.newRecord.id
+                }))
+            }catch(e){
+                log.error('error', e.message)
+            }
         }
 
         if(context.type === 'edit')
@@ -26,7 +32,24 @@ define([
 
     function beforeLoad(context){
         if(context.type === 'edit')
-        setSalesCache(context.newRecord)
+        setSalesCache(context.newRecord)    
+   
+        // if(context.type === 'view'){
+        //     var currUser = runtime.getCurrentUser().role
+    
+        //     if(currUser === 3){
+        //         try{
+        //             Object.keys(context).map(function(res){log.error(res)})
+        //             log.error('context.newRecord',context.newRecord)
+        //             context.newRecord.setValue({
+        //                 fieldId : 'memo',
+        //                 value : '169'
+        //             })
+        //         }catch(e){
+        //             throw '错误' + e.message
+        //         }
+        //     }
+        // }
     }
 
     function setSalesCache(newRecord){
@@ -54,12 +77,6 @@ define([
                 quantitysFulfilled : quantitysFulfilled
             })
         })
-
-        // var salesInfo = getSalesInfo(planINums)
-        log.error('cache', {
-            quantitys : quantitys,
-            salesInfo :getSalesInfo(planINums) 
-        })
     }
 
     function getQuantityFulfilled(record,line){
@@ -73,6 +90,7 @@ define([
     function getSalesInfo(planINums){
         var salesInfo = Object.create(null)
 
+        if(planINums.length && planINums[0])
         search.create({
             type : 'customrecord_shipping_plan',
             filters : getFilters(planINums),
@@ -106,8 +124,6 @@ define([
     }
 
     function updatePlanAndEstimate(oldRecord,newRecord){
-        // var estimateInfo= Object.create(null)
-        log.error('enter')
         var difference  = getDifference(oldRecord,newRecord)
 
         if(!Object.keys(difference).length) return false
@@ -200,7 +216,7 @@ define([
             filters.length === 0 ? filters.push(['custrecord_p_custcol_plan_number' , 'is' , item]) :
             filters.push('OR' , ['custrecord_p_custcol_plan_number' , 'is' , item]) 
         })
-        log.error('filters',filters)
+
         return filters
     }
 
@@ -226,7 +242,7 @@ define([
                 }
             }
         }
-        log.error('difference',difference)
+
         return difference
     }
 
@@ -273,6 +289,17 @@ define([
 
         for(var i = 0 ; i < lineCount ; i ++)
         {
+            if(!salesorder.hasSublistSubrecord({
+                sublistId : 'item',
+                fieldId : 'inventorydetail',
+                line : i
+            }))
+            var subDetail = salesorder.getSublistSubrecord({
+                sublistId : 'item',
+                fieldId : 'inventorydetail',
+                line : i
+            })
+            
             var item = salesorder.getSublistValue({
                 sublistId : 'item',
                 fieldId : 'item',
@@ -283,12 +310,8 @@ define([
                 fieldId : 'quantity',
                 line : i
             })
-            var subDetail = salesorder.getSublistSubrecord({
-                sublistId : 'item',
-                fieldId : 'inventorydetail',
-                line : i
-            })
-
+            
+            log.error('subDetail',subDetail)
             salesOrds.push(salesorder.getSublistValue({
                 sublistId : 'item',
                 fieldId : 'custcol_salesorder',
@@ -299,16 +322,37 @@ define([
             {
                 for(var key in inventory[item])
                 {
-                    log.error(inventory,quantity)
                     if(+inventory[item][key].count >= quantity)
                     {
-                        log.error('enter')
+                        // salesorder.setSublistValue({
+                        //     sublistId : 'item',
+                        //     fieldId : 'inventorylocation',
+                        //     value : key,
+                        //     line : i
+                        // })
+
                         salesorder.setSublistValue({
                             sublistId : 'item',
                             fieldId : 'location',
                             value : key,
                             line : i
                         })
+
+                        log.error(salesorder.getSublistValue({
+                            sublistId : 'item',
+                            fieldId : 'inventorylocation',
+                            line : i
+                        }),salesorder.getSublistValue({
+                            sublistId : 'item',
+                            fieldId : 'location',
+                            line : i
+                        }))
+
+                        // var subDetail = salesorder.getSublistSubrecord({
+                        //     sublistId : 'item',
+                        //     fieldId : 'inventorydetail',
+                        //     line : i
+                        // })
 
                         setInventorySublist(subDetail, quantity , inventory[item][key].details)
 
@@ -442,8 +486,6 @@ define([
                     type : 'location',
                     id : location
                 })
-
-                log.error(locationRec.getValue('subsidiary'),subsidiary)
 
                 if(locationRec.getValue('subsidiary')  !== subsidiary)
                 {

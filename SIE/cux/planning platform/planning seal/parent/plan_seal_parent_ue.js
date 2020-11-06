@@ -201,7 +201,7 @@ define([
     }
 
     function beforeSubmit(context){
-    	  if(context.type === context.UserEventType.DELETE)
+    	if(context.type === context.UserEventType.DELETE)
         throw '请勿尝试删除此项'
 
         if(!context.oldRecord)
@@ -310,6 +310,7 @@ define([
 
         history.add = history.add.concat(newLines)
 
+        log.error('history',history)
         changeHistory(context,history)
     }
 
@@ -319,6 +320,7 @@ define([
             type : 'customrecord_shipping_plan',
             id : params.source,
             values : {
+                custrecord_p_custcol_dedate : params.newExpectedshipdate,
                 custrecord_p_expectedshipdate : params.newExpectedshipdate
             }
         })
@@ -384,7 +386,7 @@ define([
         {
             if(history.add.length) addPlanRecord(orderRecord,context,history.add,false)
             if(history.edit.length) editPlanRecord(orderRecord,history.edit,newRecord,oldRecord)
-            if(history.delete.length) deletePlanRecord(orderRecord,history.delete)
+            if(history.delete.length) deletePlanRecord(orderRecord,history.delete,oldRecord)
     
             orderRecord.save()
             updateParentRecordQuantity(newRecord)
@@ -397,14 +399,48 @@ define([
 
     function updateParentRecordQuantity(newRecord){
         var fromrecord = newRecord.getValue('custrecord_inv_source')
-        if(fromrecord)
-        record.submitFields({
-            type : 'customrecord_shipping_plan',
-            id : fromrecord,
-            values : {
-                custrecord_p_quantity : newRecord.getValue('custrecord_s_quantity')
-            }
-        })
+
+        if(fromrecord){
+            var parentInfo = search.lookupFields({
+                type : 'customrecord_shipping_plan',
+                id : fromrecord,
+                columns : [
+                    'custrecord_p_quantity',
+                    'custrecord_p_custcol_total_net_weight',
+                    'custrecord_p_custcol_boxes_numbers',
+                    'custrecord_p_custcol_total_gross_weight',
+                    'custrecord_p_custcol_total_cubic_number',
+                    'custrecord_p_custcol_sup_total',
+                    'custrecord_p_custcol_trueamount',
+                    'custrecord_p_custcol_om_total_discount',
+                    'custrecord_p_custcol_discount',
+                    'custrecord_p_grossamt',
+                    'custrecord_p_custcol_before_tax',
+                    'custrecord_p_custcol_om_before_discount'
+                ]
+            })
+
+            var scle = newRecord.getValue('custrecord_s_quantity') / parentInfo.custrecord_p_quantity
+
+            if(scle)
+            record.submitFields({
+                type : 'customrecord_shipping_plan',
+                id : fromrecord,
+                values : {
+                    custrecord_p_quantity : newRecord.getValue('custrecord_s_quantity'),
+                    custrecord_p_custcol_total_net_weight : (parentInfo.custrecord_p_custcol_total_net_weight || 0) * scle,
+                    custrecord_p_custcol_boxes_numbers : (parentInfo.custrecord_p_custcol_boxes_numbers || 0) * scle,
+                    custrecord_p_custcol_total_gross_weight : (parentInfo.custrecord_p_custcol_total_gross_weight || 0) * scle,
+                    custrecord_p_custcol_total_cubic_number : (parentInfo.custrecord_p_custcol_total_cubic_number || 0) * scle,
+                    custrecord_p_custcol_sup_total : (parentInfo.custrecord_p_custcol_sup_total || 0) * scle,
+                    custrecord_p_custcol_om_total_discount : (parentInfo.custrecord_p_custcol_om_total_discount || 0) * scle,
+                    custrecord_p_custcol_discount : (parentInfo.custrecord_p_custcol_discount || 0) * scle,
+                    custrecord_p_grossamt : (parentInfo.custrecord_p_grossamt || 0) * scle,
+                    custrecord_p_custcol_before_tax : (parentInfo.custrecord_p_custcol_before_tax || 0) * scle,
+                    custrecord_p_custcol_om_before_discount : (parentInfo.custrecord_p_custcol_om_before_discount || 0) * scle
+                }
+            })
+        }
     }
 
     function modifyHistory(){
@@ -452,17 +488,34 @@ define([
         return items
     }
 
-    function getRecordids(currenRecord){
-        return currenRecord.map(function(item){
-            return item.recordId
+    function getRecordids(currenRecord,newRecord){
+        var filters = new Array()
+        var lineFilters = new Array()
+        var salesId = newRecord.getValue({fieldId : 'custrecord_s_custcol_salesorder'})
+
+        filters.push(['custrecord_p_custcol_salesorder' , 'anyof' , salesId] , 'AND')
+
+        currenRecord.map(function(item , index){
+            if(index > 0) lineFilters.push('OR') 
+            lineFilters.push(['custrecord_p_custcol_line' , 'is' , item.line])
+
+            return true
         })
+
+        filters.push(lineFilters)
+
+        return filters
     }
 
-    function deletePlanRecord(orderRecord,deleteRecords){
-        deleteRecords.map(function(item){
+    function deletePlanRecord(orderRecord,deleteRecords,oldRecord){
+        search.create({
+            type : 'customrecord_shipping_plan',
+            filters : getRecordids(deleteRecords , oldRecord)
+        })
+        .run().each(function(res){
             var planRecord = record.load({
                 type : 'customrecord_shipping_plan',
-                id : item.recordId
+                id : res.id
             })
 
             var completionDate = planRecord.getValue({
@@ -507,19 +560,70 @@ define([
                     deleteOrderSublistLine(orderRecord,item)
                 }
             }
-        }) 
+
+            return true
+        })
+
+
+        // deleteRecords.map(function(item){
+        //     var planRecord = record.load({
+        //         type : 'customrecord_shipping_plan',
+        //         id : item.recordId
+        //     })
+
+        //     var completionDate = planRecord.getValue({
+        //         fieldId : 'custrecord_p_custcol_completion_date'
+        //     })
+
+        //     if(planRecord.getValue('custrecord_p_custcol_pick_id') !== '1')
+        //     {
+        //         if(completionDate)
+        //         {
+        //             if(item.expectedshipdate.valueOf() > completionDate.valueOf())
+        //             {
+        //                 record.delete({
+        //                     type : 'customrecord_shipping_plan',
+        //                     id : item.recordId
+        //                 })
+
+        //                 deleteOrderSublistLine(orderRecord,item)
+        //             }
+        //             else
+        //             {
+        //                 planRecord.setValue({ //设置待审批
+        //                     fieldId : 'custrecord_p_custcol_approval_status',
+        //                     value : '1'
+        //                 })
+
+        //                 planRecord.setValue({ //
+        //                     fieldId : 'custrecord_approval_type',
+        //                     value : '3'
+        //                 })
+
+        //                 planRecord.save()
+        //             }
+        //         }
+        //         else
+        //         {
+        //             record.delete({
+        //                 type : 'customrecord_shipping_plan',
+        //                 id : item.recordId
+        //             })
+
+        //             deleteOrderSublistLine(orderRecord,item)
+        //         }
+        //     }
+        // }) 
     }
 
     function editPlanRecord(orderRecord,editRecords,newRecord,oldRecord){
         search.create({
             type : 'customrecord_shipping_plan',
-            filters : [
-                ['internalid' , 'anyof' , getRecordids(editRecords)]
-            ],
-            columns : ['internalid']
+            filters : getRecordids(editRecords,newRecord),
+            columns : ['custrecord_p_custcol_line' , 'internalid']
         }).run().each(function(res){
             editRecords.filter(function(item,index){
-                if(item.recordId == res.id)
+                if(item.line == res.getValue({name : 'custrecord_p_custcol_line'}))
                 {
                     var planRecord = record.load({
                         type : res.recordType,
@@ -542,6 +646,11 @@ define([
                     planRecord.setValue({
                         fieldId : 'custrecord_p_custcol_line',
                         value : item.line,
+                    })
+
+                    planRecord.setValue({
+                        fieldId : 'custrecord_p_custcol_dedate',
+                        value : item.expectedshipdate,
                     })
 
                     planRecord.setValue({
@@ -631,6 +740,8 @@ define([
                     return true
                 }
             })
+
+            return true
         })
     }
 
@@ -652,8 +763,21 @@ define([
                         type : 'customrecord_shipping_plan',
                         id : fromrecord
                     })
+                    var parentRec = record.load({
+                        type : 'customrecord_shipping_plan',
+                        id : fromrecord
+                    })
+                    var rate = copyRecord.getValue({
+                        fieldId : 'custrecord_p_rate'
+                    })
+                    var priceNotax = copyRecord.getValue({
+                        fieldId : 'custrecord_p_custcol_unit_notax'
+                    })
+                    var priceHasTax = copyRecord.getValue({
+                        fieldId : 'custrecord_p_custcol_unit_tax'
+                    })
                     var completionDate = copyRecord.getValue({
-                        fieldId : 'custrecord_p_custcol_completion_date' 
+                        fieldId : 'custrecord_p_custcol_completion_date'
                     })
                     var beforExpectedshipdate = copyRecord.getText({
                         fieldId : 'custrecord_p_expectedshipdate' 
@@ -661,11 +785,37 @@ define([
                     var parentQuantity = copyRecord.getValue({
                         fieldId : 'custrecord_p_quantity' 
                     })
-                    var scale = operation.div(
-                        item.quantity || 0,
-                        parentQuantity
-                    ).toFixed(2)
+                    var scale = (item.quantity || 0) / parentQuantity
                     var planNumber = getPlanNumber(orderRecord,item)
+
+                    var copyId = copyRecord.save()
+
+                    copyRecord = record.load({
+                        type : 'customrecord_shipping_plan',
+                        id : copyId
+                    })
+
+                    log.error('custrecord_p_custcol_trueamount',parentRec.getValue({
+                        fieldId : 'custrecord_p_custcol_trueamount'
+                    }))
+
+                    log.error('custrecord_p_custcol_om_total_discount',parentRec.getValue({
+                        fieldId : 'custrecord_p_custcol_om_total_discount'
+                    }))
+
+                    log.error('custrecord_p_custcol_discount',parentRec.getValue({
+                        fieldId : 'custrecord_p_custcol_discount'
+                    }))
+
+                    copyRecord.setValue({
+                        fieldId : 'custrecord_p_custcol_om_before_discount',
+                        value : operation.mul(priceNotax || 0 , item.quantity)
+                    })
+
+                    copyRecord.setValue({
+                        fieldId : 'custrecord_p_custcol_before_tax',
+                        value : operation.mul(priceHasTax || 0 , item.quantity)
+                    })
 
                     copyRecord.setValue({
                         fieldId : 'custrecord_p_custcol_boxes_numbers',
@@ -678,6 +828,28 @@ define([
                         fieldId : 'custrecord_quantity_shipped',
                         value : ''
                      })
+
+                    copyRecord.setValue({ 
+                        fieldId : 'custrecord_p_custcol_trueamount',
+                        value : operation.mul(scale,copyRecord.getValue({
+                            fieldId : 'custrecord_p_custcol_trueamount'
+                        }))
+                    })
+
+                    log.error('scale',scale)
+                    copyRecord.setValue({ 
+                        fieldId : 'custrecord_p_custcol_om_total_discount',
+                        value : operation.mul(scale,copyRecord.getValue({
+                            fieldId : 'custrecord_p_custcol_om_total_discount'
+                        }))
+                    })
+
+                    copyRecord.setValue({ 
+                        fieldId : 'custrecord_p_custcol_discount',
+                        value : operation.mul(scale,copyRecord.getValue({
+                            fieldId : 'custrecord_p_custcol_discount'
+                        }))
+                    })
 
                     copyRecord.setValue({ 
                         fieldId : 'custrecord_p_custcol_total_net_weight',
@@ -721,7 +893,14 @@ define([
                         fieldId : 'custrecord_p_custcol_line',
                         value : item.line
                     })
+
+                    log.error('item.expectedshipdate',item.expectedshipdate)
     
+                    copyRecord.setValue({
+                        fieldId : 'custrecord_p_custcol_dedate',
+                        value : item.expectedshipdate
+                    })
+
                     copyRecord.setValue({
                         fieldId : 'custrecord_p_expectedshipdate',
                         value : item.expectedshipdate
@@ -738,7 +917,7 @@ define([
                         {
                             if(item.expectedshipdate.valueOf() > completionDate.valueOf())
                             {
-                                inseterOrderSublistLine(orderRecord,copyRecord,item)
+                                inseterOrderSublistLine(orderRecord,copyRecord,item,scale,fromrecord)
                             }
                             else
                             {
@@ -763,7 +942,7 @@ define([
                         }
                         else
                         {
-                            inseterOrderSublistLine(orderRecord,copyRecord,item)
+                            inseterOrderSublistLine(orderRecord,copyRecord,item,scale,fromrecord)
                         }
                     }
 
@@ -804,6 +983,13 @@ define([
             value : item.expectedshipdate
         })
 
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_dedate',
+            line : line,
+            value : item.expectedshipdate
+        })
+
         if(item.changeExpected)
         {
             orderRecord.setSublistValue({
@@ -822,26 +1008,195 @@ define([
 
         if(oldQuantity !== item.quantity)
         {
+            var fromrecord  = newRecord.getValue('custrecord_inv_source')
             var parentIndex = orderRecord.findSublistLineWithValue({
                 sublistId : 'item',
                 fieldId : 'custcol_line',
                 value : item.line.slice(0,item.line.indexOf('.'))
             })
+            var childScale = operation.div(item.quantity , oldQuantity)
 
-            if(parentIndex > -1)
+            log.error('childScale',childScale)
+
             orderRecord.setSublistValue({
                 sublistId : 'item',
-                fieldId : 'quantity',
-                line : parentIndex,
-                value : operation.add(
+                fieldId : 'custcol_trueamount',
+                line : line,
+                value : operation.mul(
                     orderRecord.getSublistValue({
                         sublistId : 'item',
-                        fieldId : 'quantity',
-                        line : parentIndex
-                    }) ,
-                    operation.sub(oldQuantity , item.quantity )
+                        fieldId : 'custcol_trueamount',
+                        line : line
+                    }),
+                    childScale
                 )
             })
+
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_om_total_discount',
+                line : line,
+                value : operation.mul(
+                    orderRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_om_total_discount',
+                        line : line
+                    }),
+                    childScale
+                )
+            })
+
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_discount',
+                line : line,
+                value : operation.mul(
+                    orderRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_discount',
+                        line : line
+                    }),
+                    childScale
+                )
+            })
+
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_before_tax',
+                line : line,
+                value : operation.mul(
+                    orderRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_before_tax',
+                        line : line
+                    }),
+                    childScale
+                )
+            })
+
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_om_before_discount',
+                line : line,
+                value : operation.mul(
+                    orderRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_om_before_discount',
+                        line : line
+                    }),
+                    childScale
+                )
+            })
+
+            if(parentIndex > -1){
+                var parentOldQty = orderRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'quantity',
+                    line : parentIndex
+                }) 
+                var parentNewQty = operation.add(
+                    parentOldQty ,
+                    operation.sub(oldQuantity , item.quantity)
+                )
+                var scale = operation.div(parentNewQty , parentOldQty)
+
+                log.error('scale',scale)
+                var trueamount = operation.mul(
+                    orderRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_trueamount',
+                        line : parentIndex
+                    }),
+                    scale
+                )
+                var om_total_discount = operation.mul(
+                    orderRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_om_total_discount',
+                        line : parentIndex
+                    }),
+                    scale
+                )
+
+                var discount = operation.mul(
+                    orderRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_discount',
+                        line : parentIndex
+                    }),
+                    scale
+                )
+                var before_tax = operation.mul(
+                    orderRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_before_tax',
+                        line : parentIndex
+                    }),
+                    scale
+                )
+                var before_discount = operation.mul(
+                    orderRecord.getSublistValue({
+                        sublistId : 'item',
+                        fieldId : 'custcol_om_before_discount',
+                        line : parentIndex
+                    }),
+                    scale
+                )
+
+                orderRecord.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_trueamount',
+                    line : parentIndex,
+                    value : trueamount
+                })
+    
+                orderRecord.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_om_total_discount',
+                    line : parentIndex,
+                    value : om_total_discount
+                })
+    
+                orderRecord.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_discount',
+                    line : parentIndex,
+                    value : discount
+                })
+    
+                orderRecord.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_before_tax',
+                    line : parentIndex,
+                    value : before_tax
+                })
+    
+                orderRecord.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_om_before_discount',
+                    line : parentIndex,
+                    value : before_discount
+                })
+
+                orderRecord.setSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'quantity',
+                    line : parentIndex,
+                    value : parentNewQty
+                })
+
+                record.submitFields({
+                    type : 'customrecord_shipping_plan',
+                    id : fromrecord,
+                    values : {
+                        custrecord_p_custcol_trueamount : trueamount,
+                        custrecord_p_custcol_om_total_discount : om_total_discount,
+                        custrecord_p_custcol_discount : discount,
+                        custrecord_p_custcol_before_tax : before_tax,
+                        custrecord_p_custcol_om_before_discount : before_discount
+                    }
+                })
+            }
         }
     }
 
@@ -851,7 +1206,7 @@ define([
         return prix.replace(/[0]{1,}/,'') + item.line.replace('.','-')
     }
 
-    function inseterOrderSublistLine(orderRecord,copyRecord,item){
+    function inseterOrderSublistLine(orderRecord,copyRecord,item,scale,fromrecord){
         var index = getInsetIndex(item.line,orderRecord)
         var planNumber = getPlanNumber(orderRecord,item)
  
@@ -902,6 +1257,13 @@ define([
 
         orderRecord.setSublistValue({
             sublistId : 'item',
+            fieldId : 'custcol_dedate',
+            line : index,
+            value : item.expectedshipdate
+        }) 
+
+        orderRecord.setSublistValue({
+            sublistId : 'item',
             fieldId : 'custcol_suggest_date',
             line : index,
             value : item.expectedshipdate
@@ -913,6 +1275,106 @@ define([
             line : index,
             value : copyRecord.getValue({fieldId : 'custrecord_p_item'})
         })
+
+        //
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_linedes'}))
+        {
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_linedes',
+                line : index,
+                value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_linedes'})
+            })
+
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'description',
+                line : index,
+                value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_linedes'})
+            })
+        }
+        //
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_external'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_external',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_external'})
+        })
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_whether_bonded'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_whether_bonded',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_whether_bonded'})
+        })
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_sales_bank'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_sales_bank',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_sales_bank'})
+        })
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_trueamount'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_trueamount',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_trueamount'})
+        })
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_om_total_discount'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_om_total_discount',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_om_total_discount'})
+        })
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_discount'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_discount',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_discount'})
+        })
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_before_tax'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_before_tax',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_before_tax'})
+        })
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_om_before_discount'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_om_before_discount',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_om_before_discount'})
+        })
+        //
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_big_category'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_big_category',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_big_category'})
+        })
+
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_mid_category'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_mid_category',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_mid_category'})
+        })
+
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_small_category'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_small_category',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_small_category'})
+        })
+        //
 
         if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_bom_version'}))
         orderRecord.setSublistValue({
@@ -961,7 +1423,6 @@ define([
             line : index,
             value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_cgoodscode'})
         })
-
         
         if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_completion_date'}))
         orderRecord.setSublistValue({
@@ -1011,6 +1472,30 @@ define([
             value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_total_gross_weight'})
         })
 
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_k3order_num'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_k3order_num',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_k3order_num'})
+        })
+
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_k3line_number'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_k3line_number',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_k3line_number'})
+        })
+
+        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_wip_material_proper'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_wip_material_properties',
+            line : index,
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_wip_material_proper'})
+        })
+
         if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_sup_total'}))
         orderRecord.setSublistValue({
             sublistId : 'item',
@@ -1030,7 +1515,7 @@ define([
         if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_supply_company'}))
         orderRecord.setSublistValue({
             sublistId : 'item',
-            fieldId : 'custcol_supply_company',
+            fieldId : 'custcol_suppl_company',
             line : index,
             value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_supply_company'})
         })
@@ -1051,20 +1536,18 @@ define([
             value : copyRecord.getValue({fieldId : 'custrecord_p_description'})
         })
 
-        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_unit_notax'}))
         orderRecord.setSublistValue({
             sublistId : 'item',
             fieldId : 'custcol_unit_notax',
             line : index,
-            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_unit_notax'})
+            value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_unit_notax'}) || 0
         })
 
-        if(copyRecord.getValue({fieldId : 'custrecord_p_rate'}))
         orderRecord.setSublistValue({
             sublistId : 'item',
             fieldId : 'rate',
             line : index,
-            value : copyRecord.getValue({fieldId : 'custrecord_p_rate'})
+            value : copyRecord.getValue({fieldId : 'custrecord_p_rate'}) || 0
         })
 
         if(copyRecord.getValue({fieldId : 'custrecord_p_taxcode'}))
@@ -1091,7 +1574,6 @@ define([
             value : copyRecord.getValue({fieldId : 'custrecord_p_custcol_fdiscount'})
         })
 
-        if(copyRecord.getValue({fieldId : 'custrecord_p_custcol_unit_tax'}))
         orderRecord.setSublistValue({
             sublistId : 'item',
             fieldId : 'custcol_unit_tax',
@@ -1161,12 +1643,8 @@ define([
             value : item.line.slice(0,item.line.indexOf('.'))
         })
 
-        if(parentIndex > -1)
-        orderRecord.setSublistValue({
-            sublistId : 'item',
-            fieldId : 'quantity',
-            line : parentIndex,
-            value : operation.sub(
+        if(parentIndex > -1){
+            var parentQty = operation.sub(
                 orderRecord.getSublistValue({
                     sublistId : 'item',
                     fieldId : 'quantity',
@@ -1174,7 +1652,105 @@ define([
                 }),
                 item.quantity
             )
-        })
+
+            var parentScale = operation.sub(1 , scale)
+            log.error('parentScale',parentScale)
+            var trueamount = operation.mul(
+                orderRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_trueamount',
+                    line : parentIndex
+                }),
+                parentScale
+            )
+            var om_total_discount = operation.mul(
+                orderRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_om_total_discount',
+                    line : parentIndex
+                }),
+                parentScale
+            )
+            var discount = operation.mul(
+                orderRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_discount',
+                    line : parentIndex
+                }),
+                parentScale
+            )
+            var before_tax = operation.mul(
+                orderRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_before_tax',
+                    line : parentIndex
+                }),
+                parentScale
+            )
+            var before_discount = operation.mul(
+                orderRecord.getSublistValue({
+                    sublistId : 'item',
+                    fieldId : 'custcol_om_before_discount',
+                    line : parentIndex
+                }),
+                parentScale
+            )
+
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_trueamount',
+                line : parentIndex,
+                value : trueamount
+            })
+
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_om_total_discount',
+                line : parentIndex,
+                value : om_total_discount
+            })
+
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_discount',
+                line : parentIndex,
+                value : discount
+            })
+
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_before_tax',
+                line : parentIndex,
+                value : before_tax
+            })
+
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'custcol_om_before_discount',
+                line : parentIndex,
+                value : before_discount
+            })
+
+            orderRecord.setSublistValue({
+                sublistId : 'item',
+                fieldId : 'quantity',
+                line : parentIndex,
+                value : parentQty
+            })
+
+            record.submitFields({
+                type : 'customrecord_shipping_plan',
+                id : fromrecord,
+                values : {
+                    custrecord_p_quantity : parentQty,
+                    custrecord_p_custcol_trueamount : trueamount,
+                    custrecord_p_custcol_om_total_discount : om_total_discount,
+                    custrecord_p_custcol_discount : discount,
+                    custrecord_p_custcol_before_tax : before_tax,
+                    custrecord_p_custcol_om_before_discount : before_discount
+                }
+            })
+        }
     }
 
     function getInsetIndex(lineNum,orderRecord){

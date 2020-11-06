@@ -10,9 +10,11 @@ define([
 ){
     function searchFilters(params){
         var filters = [
-            ['custrecord_nextapproval' , 'anyof' , [runtime.getCurrentUserId()]],
+            ['custrecord_selling_price_subsidiary' , 'anyof' , [params.subsidiary]],
             'AND',
-            ['custrecord_selling_price_subsidiary' , 'anyof' , [params.subsidiary]]
+            ['custrecord_statuss' , 'anyof' , ['1']],
+            'AND',
+            ['custrecord_cust_price_list_link' , 'noneof' , '@NONE@']
         ]
 
         if(params.department)

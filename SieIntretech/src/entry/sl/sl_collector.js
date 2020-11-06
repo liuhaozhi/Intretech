@@ -64,7 +64,9 @@ define(['N/log',
                         billofmaterialsrevision: '',
                         class: '',
                         custbody_wip_up_wo_id: '',
-                        custbody_wip_so_line_if_under_bond: '' //销售订单行是否保税
+                        custbody_wip_so_line_if_under_bond: '', //销售订单行是否保税
+						custbody_wip_manufacturing_shop: '',
+						custbody_wip_up_wo_id: ''
                     },
                     item: [],
                     operation: []
@@ -116,6 +118,87 @@ define(['N/log',
                     });
                 }
             };
+
+			// get vendorbin  200912 yq
+            main.vendorbin = '';
+			var binloaction=main.location,binmanshop= main.custbody_wip_manufacturing_shop;
+					log.debug('vendorbin ',binloaction+'-'+binmanshop); 
+          if ( binloaction !=''  &&  binmanshop !='') 
+		 	{ 
+		
+            binFilters = [
+                ["location", "anyof", binloaction] ,
+                "AND",
+                ["custrecord_work_center", "anyof",binmanshop]  
+            ];
+            binColumns = [{
+                    name: 'internalid'  
+                },
+                {
+                    name: 'custrecord_os_vendor' 
+                } 
+            ];
+            var binSearchCriteria = {
+                type: 'bin',
+                filters: binFilters,
+                columns: binColumns
+            };
+
+            search.create(binSearchCriteria).run().each(function (result, i) {
+		
+                main['vendorbin'] = result.getValue({
+                    name: binColumns[0]
+                });
+				log.debug('vendorbin id',main.vendorbin); 
+					 });					
+				 
+			}   
+			// get father vendorbin  200912 yq			
+           main.favendorbin = '';
+		   var fawo=main.custbody_wip_up_wo_id;
+　			if(fawo !='' )
+　　　　　　{
+	
+			  var fawoRec = record.load({
+					type: gWorkorderRecordTypeId,
+					id: fawo
+					
+				});
+                 
+			  var fabinloaction= fawoRec.getValue({fieldId: 'location'}) ,fabinmanshop= fawoRec.getValue({fieldId: 'custbody_wip_manufacturing_shop'}) ;
+						log.debug('favendorbin ',fabinloaction+'-'+fabinmanshop); 
+			  if ( fabinloaction !=''  &&  fabinmanshop !='') 
+				{ 
+			
+				fabinFilters = [
+					["location", "anyof", fabinloaction] ,
+					"AND",
+					["custrecord_work_center", "anyof",fabinmanshop]  
+				];
+				fabinColumns = [{
+						name: 'internalid'  
+					},
+					{
+						name: 'custrecord_os_vendor' 
+					} 
+				];
+				var fabinSearchCriteria = {
+					type: 'bin',
+					filters: fabinFilters,
+					columns: fabinColumns
+				};
+
+				search.create(fabinSearchCriteria).run().each(function (result, i) {
+			
+					main['favendorbin'] = result.getValue({
+						name: fabinColumns[0]
+					});
+					log.debug('favendorbin id',main.favendorbin); 
+						 });					
+					 
+				}
+　　　　    }
+
 
             //默认仓库
             main.defaultwarehouse = '';
@@ -471,6 +554,8 @@ define(['N/log',
                     });
                 }
             };
+
+
 
             //默认仓库
             main.defaultwarehouse = '';
@@ -2025,6 +2110,25 @@ define(['N/log',
         return resultMsg;
     }
 
+    function getFirmLevel(items){
+        var firmLevel = Object.create(null)
+
+        search.create({
+            type : 'customrecord_ic_pricing_subsidiary_level',
+            filters : [
+                ['custrecord_ic_price_item_code' , 'anyof' , JSON.parse(items)]
+            ],
+            columns : ['custrecord_pricing_ratio' , 'custrecord_ic_price_item_code']
+        })
+        .run().each(function(res){
+            firmLevel[res.getValue({name : 'custrecord_ic_price_item_code'})] = res.getValue({name : 'custrecord_pricing_ratio'})
+
+            return true
+        })
+
+        return firmLevel
+    }
+
     function onRequest(context) {
 
         //var rtn = getWorkorder(option);
@@ -2094,6 +2198,8 @@ define(['N/log',
                 log.debug('option', option);
                 var rtn = getSoPushQtyInfo(option);
                 response.write(JSON.stringify(rtn));
+            } else if (request.parameters.action == 'getFirmLevel') {
+                response.write(JSON.stringify(getFirmLevel(request.parameters.items)));
             }
         }
         // else {

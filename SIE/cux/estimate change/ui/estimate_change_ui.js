@@ -84,8 +84,8 @@
                 }
                 
                 redirect.toSuitelet({
-                    scriptId : 'customscript_estimate_change_ui',
-                    deploymentId : 'customdeploy_estimate_change_ui',
+                    scriptId : 'customscript_estimate_change',
+                    deploymentId : 'customdeploy_estimate_change',
                     parameters : {
                         action : 'search',
                         status : 'sucess',
@@ -467,7 +467,7 @@
 
         const getSublistFields = (request , line , cacheFields) =>{
             const group = FIELDPR + 'lines'
-            let lineItems = Object.create(null)
+            const lineItems = Object.create(null)
     
             cacheFields.map(function(item){
                 return lineItems[item] = request.getSublistValue({

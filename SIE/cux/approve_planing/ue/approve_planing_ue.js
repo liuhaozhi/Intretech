@@ -87,6 +87,13 @@ define([
 
         orderRecord.setSublistValue({
             sublistId : 'item',
+            fieldId : 'custcol_dedate',
+            line : index,
+            value : newRecord.getValue({fieldId : 'custrecord_p_expectedshipdate'}) 
+        })
+
+        orderRecord.setSublistValue({
+            sublistId : 'item',
             fieldId : 'custrecord_p_custcol_before_date',
             line : index,
             value : newRecord.getValue({fieldId : 'custrecord_p_expectedshipdate'}) 
@@ -123,7 +130,6 @@ define([
             value : newRecord.getValue({fieldId : 'custrecord_p_custcol_unit_notax'})
         })
 
-        if(newRecord.getValue({fieldId : 'custrecord_p_rate'}))
         orderRecord.setSublistValue({
             sublistId : 'item',
             fieldId : 'rate',
@@ -155,7 +161,6 @@ define([
             value : newRecord.getValue({fieldId : 'custrecord_p_custcol_fdiscount'})
         })
 
-        if(newRecord.getValue({fieldId : 'custrecord_p_custcol_unit_tax'}))
         orderRecord.setSublistValue({
             sublistId : 'item',
             fieldId : 'custcol_unit_tax',
@@ -177,6 +182,22 @@ define([
             fieldId : 'custcol_suggest_date',
             line : index,
             value : newRecord.getValue({fieldId : 'custrecord_p_custcol_suggest_date'})
+        })
+//
+        if(newRecord.getValue({fieldId : 'custrecord_p_custcol_external'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_external',
+            line : index,
+            value : newRecord.getValue({fieldId : 'custrecord_p_custcol_external'})
+        })
+
+        if(newRecord.getValue({fieldId : 'custrecord_p_custcol_sales_bank'}))
+        orderRecord.setSublistValue({
+            sublistId : 'item',
+            fieldId : 'custcol_sales_bank',
+            line : index,
+            value : newRecord.getValue({fieldId : 'custrecord_p_custcol_sales_bank'})
         })
 
         if(newRecord.getValue({fieldId : 'custrecord_p_custcol_indiscount'}))
@@ -224,7 +245,6 @@ define([
             )
         })
     }
-
     
     function getInsetIndex(lineNum,orderRecord){
         var currIndex = -1

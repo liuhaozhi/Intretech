@@ -2,18 +2,15 @@
  *@NApiVersion 2.x
  *@NScriptType ClientScript
  */
-define(['N/search','N/url','N/https','N/record'
-], function(
+define(
+    ['N/search','N/url','N/https'], function(
     search,
     urll,
-    https,
-    record
+    https
 ) {
+    var currentRecord;
     function pageInit(context){
-        return true
-    }
-
-    function validateLine(context){
+        currentRecord = context.currentRecord;
         return true
     }
 
@@ -21,10 +18,7 @@ define(['N/search','N/url','N/https','N/record'
         var sublistId = context.sublistId;
         var fieldId = context.fieldId;
         var line = context.line;
-          
-        if(sublistId=="item"  &&  fieldId=="custcol_itemtype"){
-            obtainBom(context);
-        }
+
         if(fieldId =="entity"){
             var department = DepartmentalSet(context);
             var cuRecord =context.currentRecord;
@@ -37,217 +31,11 @@ define(['N/search','N/url','N/https','N/record'
         if(sublistId=="item" && fieldId =="quantity"){
             calculatedValue(context)
         }
+
         return true;
 
     }
-  
-  
 
-    //当选择物料时自动带出对应物料的bom状态和bom
-    //custcol_bom_status  bom状态
-    function obtainBom(scriptContext){
-        var bomRecord =scriptContext.currentRecord;
-        var sublistId = scriptContext.sublistId;
-        var fieldId = scriptContext.fieldId;
-        if(sublistId =="item"){
-            var item = bomRecord.getCurrentSublistValue({
-                sublistId:"item",
-                fieldId:"item"
-            });
-
-            var slUrl = urll.resolveScript({
-                scriptId : 'customscript_sales_invoice_sl',
-                deploymentId : 'customdeploy_sales_invoice_sl'
-            });
-            https.post.promise({
-                'url' : slUrl,
-                'body': {
-                    'item': item
-                }
-            }).then(function(res){
-                var resDate = JSON.parse(res.body);
-                bomRecord.setCurrentSublistValue({
-                    sublistId: "item",
-                    fieldId  : "custcol_bom_version",
-                    value    : resDate.banbNmae
-                });
-
-                bomRecord.setCurrentSublistValue({
-                    sublistId: "item",
-                    fieldId  : "custcol_bom_status",
-                    value    : resDate.bom_approvestatus2
-                });
-            })
-
-
-        }
-
-        
-    }
-
-       function calculatedDiscount(context,customer_discount2){
-        var cuRecord = context.currentRecord;
-        var customerDiscount = customer_discount2;
-        var interDiscount = cuRecord.getCurrentSublistValue({
-            sublistId: 'item',
-            fieldId: 'custcol_row_inter_transaction_dis'
-        });
-
-        var interDiscountSp = interDiscount.toString().split("%");
-        if(interDiscount == "" && customerDiscount==""){
-            cuRecord.setCurrentSublistValue({
-                sublistId: 'item',
-                fieldId: 'custcol_row_final_discount',
-                value: "",
-                ignoreFieldChange: true
-            });
-            return;
-        }
-        if(customerDiscount ==""){
-            cuRecord.setCurrentSublistValue({
-                sublistId: 'item',
-                fieldId: 'custcol_row_final_discount',
-                value: interDiscount,
-                ignoreFieldChange: true
-            });
-            return;
-        }
-
-        if(interDiscount == ""){
-            cuRecord.setCurrentSublistValue({
-                sublistId: 'item',
-                fieldId: 'custcol_row_final_discount',
-                value: customerDiscount,
-                ignoreFieldChange: true
-            });
-            return;
-        }
-
-        var zuizhong  =  (customerDiscount)*(interDiscountSp[0])/100
-        cuRecord.setValue({
-            fieldId : 'custbody_final_discount',
-            value : zuizhong
-        });
-        cuRecord.setCurrentSublistValue({
-            sublistId: 'item',
-            fieldId: 'custcol_row_final_discount',
-            value: zuizhong,
-            ignoreFieldChange: true
-        });
-       
-    }
-
-    function FieldAssignment(entityId){
-        var customFilter = [];
-        var shuju = [];
-        customFilter.push({
-            'name': 'internalid',
-            'operator' : search.Operator.ANYOF,
-            'values':[entityId]
-        });
-        var custom = search.create({
-            type: search.Type.CUSTOMER,
-            filters:customFilter,
-             columns: [  
-                         {name: 'custentity_customer_discount'}, 
-                         {name: 'currency'}
-                     ]
-         }).run().getRange({
-             start : 0,
-             end   : 3
-         });
-
-         
-
-
-        var customerDiscount = custom[0].getValue({
-            name:"custentity_customer_discount"
-        });
-
-        var currency = custom[0].getText({
-            name:"currency"
-        });
-        var newcustomerDiscount = customerDiscount.toString().split("%");
-         shuju.push(newcustomerDiscount[0]);
-         shuju.push(currency);
-         return shuju;
-
-    }
-    function  Assignment(context){
-        var cuuRecord = context.currentRecord;
-        //客户
-        var entity = cuuRecord.getValue({
-            fieldId:'entity'
-        })
-        //subsidiary 子公司
-        var subsidiary = cuuRecord.getValue({
-            fieldId:'subsidiary'
-        });
-        //货品item
-        var itema = cuuRecord.getCurrentSublistValue({
-            sublistId: 'item',
-            fieldId: 'item'
-        });
-
-        //customsearch_selling_price  销售价格表已保存搜索
-        var sellingPrice = search.load({
-			id:"customsearch_selling_price"
-        });
-        var sellingPriceData = sellingPrice.run().getRange({
-			start: 0,
-			end: 1000
-         });
-        var customer_discount3='';
-        for (var  i = 0; i < sellingPriceData.length; i++) {
-            //客户
-            var price_client = sellingPriceData[i].getValue({
-                name:"custrecord_selling_price_client"
-            });
-
-            //子公司
-            var item_name = sellingPriceData[i].getValue({
-                name:"custrecord_selling_price_subsidiary"
-            });
-            //货品名称
-            //custrecord_cust_price_item_name
-            var price_item_name = sellingPriceData[i].getValue({
-                name:"custrecord_cust_price_item_name"
-            });
-
-            if(entity==price_client && itema==price_item_name){
-                var customer_discount = sellingPriceData[i].getValue({
-                    name:'custrecord_cust_customer_discount'
-                });
-                var customer_discount2 = customer_discount.split("%");
-                customer_discount3=customer_discount2[0];
-     
-                cuuRecord.setCurrentSublistText({
-                    sublistId: 'item',
-                    fieldId: 'custcol_row_customer_discount',
-                    text: customer_discount3,
-                    ignoreFieldChange: true
-                });
-                break;
-            }else{
-                customer_discount3='';
-                cuuRecord.setCurrentSublistText({
-                    sublistId: 'item',
-                    fieldId: 'custcol_row_customer_discount',
-                    text: "",
-                    ignoreFieldChange: true
-                });
-                cuuRecord.setCurrentSublistText({
-                    sublistId: 'item',
-                    fieldId:'custcol_row_final_discount',
-                    text: "",
-                    ignoreFieldChange: true
-                });
-
-            } 
-        }
-
-        return customer_discount3;
-    }
 
 
     function DepartmentalSet(context){
@@ -287,7 +75,6 @@ define(['N/search','N/url','N/https','N/record'
     }
 
     function calculatedValue(context){
-    
             var bomRecord = context.currentRecord;
             //箱数（Ctns）：出货数量/每箱数量;
             var quantity = bomRecord.getCurrentSublistValue({
@@ -382,7 +169,6 @@ define(['N/search','N/url','N/https','N/record'
     
     return {
         pageInit : pageInit,
-        validateLine : validateLine,
         fieldChanged: fieldChanged
     }
 })

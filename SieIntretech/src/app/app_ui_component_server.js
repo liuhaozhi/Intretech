@@ -88,7 +88,7 @@ define([
             var fieldDisplay = property.display;
             var fieldWidth = property.width;
             var fieldHeight = property.height;
-            var fieldFilter = property.filter;
+            var fieldFilter = property.filter; 
             var fieldOperator = property.operator;
             var searchValue = parameters[fieldId];
             var newFieldProp = {

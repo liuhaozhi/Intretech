@@ -137,6 +137,12 @@ define([
             label : '查看出库单',
             functionName : 'viewfullment'
         })
+
+        form.addButton({
+            id : 'custpage_inven',
+            label : '查看库存',
+            functionName : 'viewInven'
+        })
     }
 
     function getCustomerSelectOption(subsidiary){

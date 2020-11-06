@@ -322,7 +322,7 @@ define([
     }
 
     return {
-        lineInit : lineInit,
+        // lineInit : lineInit,
         pageInit : pageInit,
         saveRecord : saveRecord,
         validateLine : validateLine,

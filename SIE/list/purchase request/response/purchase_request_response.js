@@ -2,6 +2,7 @@
  *@NApiVersion 2.1
  *@NScriptType Suitelet
  */
+//真正的脚本路劲：SuiteScripts : SIE : list : purchase request : response
 define(['N/record' , 'N/format'], 
     (record , format) => {
         const onRequest = (context) => {
@@ -123,8 +124,8 @@ define(['N/record' , 'N/format'],
             constructor(params) {
                 super(params)
                 this.toType = params.toType
-                this.error = {status : 'error'}
-                this.sucess= {status : 'sucess', message : 'xixixixi'}
+                this.error = {status : 'error' , message : "创建采购订单失败"}
+                this.sucess= {status : 'sucess', message : "创建采购订单成功"}
                 this.isDynamic = {isDynamic : false}
                 this.mandatoryFields = {ignoreMandatoryFields : true}
             }
@@ -168,6 +169,12 @@ define(['N/record' , 'N/format'],
                 poRec.setValue({
                     fieldId : 'entity',
                     value : headInfo.headvendor
+                })
+
+                if(headInfo.oano)
+                poRec.setValue({
+                    fieldId : 'custbody_pr_oa_number',
+                    value : headInfo.oano
                 })
 
                 if(headInfo.purchasetype)
@@ -224,13 +231,20 @@ define(['N/record' , 'N/format'],
 
             setPoLineFieldsValue (poRec , lineInfo){
                 lineInfo.map((item , index) => {
-                    if(item.item)
-                    poRec.setSublistValue({
-                        sublistId : 'item',
-                        fieldId : 'item',
-                        value : item.item,
-                        line : index
-                    })
+                    if(item.item) {
+                        poRec.setSublistValue({
+                            sublistId : 'item',
+                            fieldId : 'item',
+                            value : item.item,
+                            line : index
+                        });
+                        poRec.setSublistValue({
+                            sublistId : 'item',
+                            fieldId : 'custcol_line',
+                            value : (index + 1) + '',
+                            line : index
+                        });
+                    }
 
                     if(item.quantity)
                     poRec.setSublistValue({

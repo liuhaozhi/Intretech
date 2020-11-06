@@ -38,12 +38,10 @@ function(log,record,search) {
             fieldId:'total'
         });
         
-        if(neRecord.getValue({
-            fieldId:'custbody_sales_status'
-        }) === '3' && type =="view"){
+        if(approve == null && type =="view"){
             from.addButton({
                 id : 'custpage_search',
-                label : '跨客户开发票',
+             label : '跨客户开发票',
                 functionName :'butClick('+tranid+','+total+')'
             })
         }

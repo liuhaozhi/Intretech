@@ -457,6 +457,11 @@ define([
                             value = "<a class='dottedlink' href='" + url.resolveRecord({recordType: "customrecord_reconciliation", recordId: recId}) + "&whence='>" + value + "</a>";
                         }
                     }
+
+                    if(id === 'custpage_paged_formulanumeric_2' || id === 'custpage_paged_custrecord_amount_tax'){
+                        value = commonLib.accAdd(value || 0 , 0)
+                    }
+
                     sublistObj.setSublistValue({
                         id: id,
                         value: value,
@@ -478,10 +483,36 @@ define([
             {
                 id: 'custpage_vendor',
                 label: '供应商',
-                type: 'SELECT',
-                source: 'CUSTRECORD_CHECK_PARENT',
-                filter: 'custrecord_vendor_name',
+                type: 'MULTISELECT',
+                source: 'vendor',
+                filter: 'custrecord_check_parent.custrecord_vendor_name',
                 operator: 'anyof',
+                layout: 'OUTSIDEBELOW'
+            },
+            {
+                id: 'custpage_statements',
+                label: '对账单号',
+                type: 'MULTISELECT',
+                source: 'customrecord_reconciliation',
+                filter: 'custrecord_check_parent',
+                operator: 'anyof',
+                layout: 'OUTSIDEBELOW'
+            },
+            {
+                id: 'custpage_currency',
+                label: '货币',
+                type: 'SELECT',
+                source: 'currency',
+                filter: 'custrecord_trasations_currency',
+                operator: 'anyof',
+                layout: 'OUTSIDEBELOW'
+            },
+            {
+                id: 'custpage_invoice',
+                label: '实际发票号',
+                type: 'TEXT',
+                filter: 'custrecord_check_parent.custrecord_practical_bill_num',
+                operator: 'contains',
                 layout: 'OUTSIDEBELOW'
             },
             {
@@ -580,7 +611,7 @@ define([
                 label: '对账单号'
             }
         };
-
+ 
         try {
             //创建表单
             var form = uiComponent.createForm({

@@ -4,12 +4,14 @@
  */
 define([
     'N/url',
+    'N/https',
     'N/search',
     'N/record',
     'N/ui/message',
     '../../helper/operation_assistant'
 ], function(
     url,
+    https,
     search,
     record,
     message,
@@ -17,11 +19,39 @@ define([
 ) {
     var coco = false
     var sublistId = 'recmachcustrecord185'
+    var childFields = [
+        'custrecord_ci_danjubianhao',
+        'custrecord_ci_hanghao',
+        'custrecord_ci_wuliaobianma',
+        'custrecord_ci_kehuwuliaomingchen',
+        'custrecord_ci_kehudingdanhanghao',
+        'custrecord_ci_zongtuoshu',
+        'custrecord_ci_zonglifangshu',
+        'custrecord_ci_zongmaozhong',
+        'custrecord_ci_zongjingzhong',
+        'custrecord_ci_kehuwuliaobianma',
+        'custrecord_ci_kehudingdanhao',
+        'custrecord_ci_xiangshu',
+        'custrecord_ci_jiaoqi',
+        'custrecord_ci_total_amount_before_discou',
+        'custrecord_ci_buhanshuiheji',
+        'custrecord_ci_total_before_discount',
+        'custrecord_ci_zheqiandanjia',
+        'custrecord_ci_wuliaomingcheng',
+        'custrecord_ci_huobi',
+        'custrecord_ci_danjia',
+        'custrecord_ci_shuliang',
+        'custrecord_ci_shuilv',
+        'custrecord_ci_shuie',
+        'custrecord_ci_zongjine_',
+        'custrecord_planum'
+    ]
     function pageInit(context){
 
     }
 
     function createInvoice(messageDaiog,coco,recordId){
+        debugger
         record.load.promise({
             type : 'customrecord_hebingfapiao',
             id : recordId
@@ -108,125 +138,19 @@ define([
         })
 
         for(var i = 0 ; i < lineCount ; i ++){
-            newRecord.setSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custrecord_ci_danjubianhao',
-                line : i,
-                value : oldRecord.getSublistValue({
+            childFields.map(function(item){
+                var value = oldRecord.getSublistValue({
                     sublistId : sublistId,
-                    fieldId : 'custrecord_ci_danjubianhao',
+                    fieldId : item,
                     line : i
                 })
-            })
 
-            newRecord.setSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custrecord_ci_hanghao',
-                line : i,
-                value : oldRecord.getSublistValue({
+                if(!_isEmpty(value))
+                newRecord.setSublistValue({
                     sublistId : sublistId,
-                    fieldId : 'custrecord_ci_hanghao',
-                    line : i
-                })
-            })
-
-            newRecord.setSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custrecord_ci_wuliaobianma',
-                line : i,
-                value : oldRecord.getSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custrecord_ci_wuliaobianma',
-                    line : i
-                })
-            })
-
-            newRecord.setSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custrecord_ci_wuliaomingcheng',
-                line : i,
-                value : oldRecord.getSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custrecord_ci_wuliaomingcheng',
-                    line : i
-                })
-            })
-
-            newRecord.setSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custrecord_ci_huobi',
-                line : i,
-                value : oldRecord.getSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custrecord_ci_huobi',
-                    line : i
-                })
-            })
-
-            newRecord.setSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custrecord_ci_danjia',
-                line : i,
-                value : oldRecord.getSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custrecord_ci_danjia',
-                    line : i
-                })
-            })
-
-            newRecord.setSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custrecord_ci_shuliang',
-                line : i,
-                value : oldRecord.getSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custrecord_ci_shuliang',
-                    line : i
-                })
-            })
-
-            newRecord.setSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custrecord_ci_buhanshuiheji',
-                line : i,
-                value : oldRecord.getSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custrecord_ci_buhanshuiheji',
-                    line : i
-                })
-            })
-
-            newRecord.setSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custrecord_ci_shuilv',
-                line : i,
-                value : oldRecord.getSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custrecord_ci_shuilv',
-                    line : i
-                })
-            })
-
-            newRecord.setSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custrecord_ci_shuie',
-                line : i,
-                value : oldRecord.getSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custrecord_ci_shuie',
-                    line : i
-                })
-            })
-
-
-            newRecord.setSublistValue({
-                sublistId : sublistId,
-                fieldId : 'custrecord_ci_zongjine_',
-                line : i,
-                value : oldRecord.getSublistValue({
-                    sublistId : sublistId,
-                    fieldId : 'custrecord_ci_zongjine_',
-                    line : i
+                    fieldId : item,
+                    line : i,
+                    value : value
                 })
             })
         }
@@ -240,118 +164,23 @@ define([
             message : '正在处理中，请勿关闭此页'
         }).show()
 
-        getSublistLines(recordId)
-    }
-
-    function changeSalesOrdLinesQuantity(params){
-        console.log(operation.sub(
-            params.saleOrder.getSublistValue({
-                sublistId : 'item',
-                fieldId : 'custcol_ci_yunshudaying',
-                line : params.index,
-            }),params.quantity
-        ))
-        params.saleOrder.setSublistValue({
-            sublistId : 'item',
-            fieldId : 'custcol_ci_yunshudaying',
-            line : params.index,
-            value : operation.sub(
-                params.saleOrder.getSublistValue({
-                    sublistId : 'item',
-                    fieldId : 'custcol_ci_yunshudaying',
-                    line : params.index,
-                }),params.quantity
-            )
-        })
-    }
-
-    function getSublistLines(recordId){
-        var saleOrds  = new Object()
-
-        search.create.promise({
-            type : 'customrecord_ci_huopinghang',
-            filters : [
-                ['custrecord185' , 'anyof' , [recordId]]
-            ],
-            columns : [
-                'custrecord_ci_danjubianhao',
-                'custrecord_ci_hanghao',
-                'custrecord_ci_shuliang'
-            ]
-        })
-        .then(function(result){
-            result.run().each(function(res){
-                var orderId = res.getValue({
-                    name : 'custrecord_ci_danjubianhao'
-                })
-
-                if(!saleOrds[orderId])
-                saleOrds[orderId] = new Object()
-
-                saleOrds[orderId][res.getValue({
-                    name : 'custrecord_ci_hanghao'
-                })] = res.getValue({
-                    name : 'custrecord_ci_shuliang'
-                })
-
-                return true
-            })
-            console.log('saleOrds',saleOrds)
-            dealWithSublist(saleOrds,recordId)
-        })
-        .catch(function(e){
-            throw e.message
-        })
-    }
-
-    function dealWithSublist(sublistLines,recordId){
-        try
-        {
-            for(var key in sublistLines)
-            {
-                var salesItem = sublistLines[key]
-                var saleOrder = record.load({
-                    type : 'salesorder',
-                    id : key
-                })
-    
-                for(var line in salesItem)
-                {
-                    var index = saleOrder.findSublistLineWithValue({
-                        sublistId : 'item',
-                        fieldId : 'line',
-                        value : line
-                    })
-        
-                    if(index > -1)
-                    {
-                        changeSalesOrdLinesQuantity({
-                            index : index,
-                            saleOrder : saleOrder,
-                            quantity : salesItem[line]
-                        })
-                    }
-                }
-    
-                saleOrder.save({
-                    ignoreMandatoryFields : true
-                })
-            }
-
-            record.submitFields({
-                type : 'customrecord_hebingfapiao',
-                id : recordId,
-                values : {
-                    custrecord_void : true
+        https.get.promise({
+            url : url.resolveScript({
+                scriptId : 'customscript_invoice_transform_sl',
+                deploymentId : 'customdeploy_invoice_transform_sl',
+                params : {
+                    action : 'voidRecord',
+                    recordId : recordId
                 }
             })
-            
-            location.reload()
-        }
-        catch(e)
-        {
-            throw e.message
-        }
+        }).then(function(res){
+            console.log(res)
+            var body = JSON.parse(res.body)
+
+            if(body.status === 'sucess') location.reload()
+        })
+
+        // getSublistLines(recordId)
     }
 
     function printPackpdf(id){
@@ -416,6 +245,12 @@ define([
             deploymentId : 'customdeploy_print_response',
             params : params
         }))
+    }
+
+    function _isEmpty(value){
+        var bResult = false;            
+        if (value == null || value == 'null' || value == undefined || value == '' || value == "" || value.length <= 0) { bResult = true}
+        return bResult;
     }
 
     return {

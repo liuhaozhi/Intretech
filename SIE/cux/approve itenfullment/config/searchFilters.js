@@ -57,7 +57,7 @@ define([
         {
             filters.push(
                 'AND',
-                ['custbody_om_export_or_not' , 'anyof' , [params.isexport]]
+                ['custbody_changedate' , 'anyof' , [params.isexport]]
             )
         }
 
@@ -120,13 +120,17 @@ define([
                 if(transType[0].value === 'SalesOrd')
                 filters.push(
                     'AND',
-                    ['createdfrom' , 'anyof' , [params.fullmentord]]
+                    ['createdfrom' , 'anyof' , [params.fullmentord]],
+                    'AND',
+                    ['createdfrom.mainline' , 'is' , 'T']
                 )
 
                 if(transType[0].value === 'Estimate')
                 filters.push(
                     'AND',
-                    ['custcol_salesorder' , 'anyof' , [params.fullmentord]]
+                    ['custcol_salesorder' , 'anyof' , [params.fullmentord]],
+                    'AND',
+                    ['custcol_salesorder.mainline' , 'is' , 'T']
                 )
             }
         }

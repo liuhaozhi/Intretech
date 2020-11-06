@@ -39,6 +39,7 @@ define([
     }
 
     function searchPage(params,response){
+        var currentUser = runtime.getCurrentUser()
         var form = ui.createForm({
             title : 'Invoice execution platform/发票执行平台'
         })
@@ -59,6 +60,8 @@ define([
         })
 
         form.clientScriptModulePath = '../cs/invoic_consolidation_cs'
+
+        if(!params.subsidiary) params.subsidiary = currentUser.subsidiary
 
         if(params.subsidiary)
         {
@@ -202,6 +205,8 @@ define([
         }
     }
 
+    var custbody_loading_port = ''
+
     function invoiceOrdCreate(params,request,response){
         try{
             createInvoice(
@@ -335,7 +340,6 @@ define([
             id : orderId
         })
 
-        log.error('lines',lines)
         for(var line in lines)
         {
             var index = salesRecord.findSublistLineWithValue({
@@ -380,7 +384,7 @@ define([
                 ).toFixed(2)
                 var noDisCountPrice = salesRecord.getSublistValue({
                     sublistId : 'item',
-                    fieldId : 'custcol_unit_tax',
+                    fieldId : 'custcol_unit_notax',
                     line : index
                 })
                 var amount = operation.mul(rate , lines[line].quantity)
@@ -736,6 +740,11 @@ define([
         var customer = params.custpage_customer
 
         newRecord.setValue({
+            fieldId : 'custrecord_port_of_loading',
+            value : custbody_loading_port
+        })
+
+        newRecord.setValue({
             fieldId : 'custrecord_kehu_fapiao',
             value : customer
         })
@@ -802,18 +811,23 @@ define([
             })
         })
 
-        if(type === 'batch')
-        {
-            setOtherFields(newRecord,salesorders)
-        }
-        else
-        {
-            if(params.custpage_internalid)
-            setOtherFields(newRecord,[params.custpage_internalid])
-        }
+        setOtherFields(newRecord,salesorders)
+        // if(type === 'batch')
+        // {
+        //     setOtherFields(newRecord,salesorders)
+        // }
+        // else
+        // {
+        //     if(params.custpage_internalid)
+        //     setOtherFields(newRecord,[params.custpage_internalid])
+        // }
     }
 
     function setOtherFields(newRecord,salesorders){
+        var billaddress = true
+        var shipaddress = true
+        var shipMethods = true
+
         search.create({
             type : 'salesorder',
             filters : [
@@ -825,11 +839,29 @@ define([
                 'tranid','terms','custbody_loading_port', 'custbody_vperson',
                 'custbody_tel', 'custbody_emailss', 'custbody_vtax','shipaddress',
                 'custbody_goodsman', 'custbody_phones','custbody_emails', 'custbody_taxs',
-                'billaddress'
+                'billaddress','custbody_shipmethod'
             ]
         })
         .run()
         .each(function(res){
+            if(billaddress !== true && billaddress != res.getValue('billaddress')){
+                billaddress = false
+            }else if(billaddress === true){
+                billaddress = res.getValue('billaddress')
+            }
+
+            if(shipaddress !== true && shipaddress != res.getValue('shipaddress')){
+                shipaddress = false
+            }else if(shipaddress === true){
+                shipaddress = res.getValue('shipaddress')
+            }
+
+            if(shipMethods !== true && shipMethods != res.getValue('custbody_shipmethod')){
+                shipMethods = false
+            }else if(shipMethods === true){
+                shipMethods = res.getValue('custbody_shipmethod')
+            }
+            
             newRecord.setValue({
                 fieldId : 'custrecord_port_of_loading',
                 value : res.getValue('custbody_loading_port')
@@ -840,18 +872,49 @@ define([
                 value : res.getText('terms')
             })   
 
-            setSalesAdressInfo(newRecord,res)
+            setSalesAdressInfo(newRecord,res,billaddress,shipaddress,shipMethods)
 
             return true
         })
     }
 
-
-    function setSalesAdressInfo(newRecord,res){
+    function setSalesAdressInfo(newRecord,res,billaddress,shipaddress,shipMethods){
+        if(billaddress)
         newRecord.setValue({
             fieldId : 'custrecord_kehudizhi',
-            value : res.getValue('billaddress')
+            value : billaddress
         })   
+
+        if(!billaddress)
+        newRecord.setValue({
+            fieldId : 'custrecord_kehudizhi',
+            value : ''
+        })   
+
+        if(shipaddress)
+        newRecord.setValue({
+            fieldId : 'custrecord_shouhuodizhi',
+            value : shipaddress
+        })   
+
+        if(!shipaddress)
+        newRecord.setValue({
+            fieldId : 'custrecord_shouhuodizhi',
+            value : ''
+        })   
+
+        if(shipMethods)
+        newRecord.setValue({
+            fieldId : 'custrecord_yunshufangshi',
+            value : shipMethods
+        })   
+
+        if(!shipMethods)
+        newRecord.setValue({
+            fieldId : 'custrecord_yunshufangshi',
+            value : ''
+        })   
+
         newRecord.setValue({
             fieldId : 'custrecord_shoupiaoren',
             value : res.getValue('custbody_vperson')
@@ -867,10 +930,6 @@ define([
         newRecord.setValue({
             fieldId : 'custrecord_shoupiaorenchuanzhen',
             value : res.getValue('custbody_vtax')
-        }) 
-        newRecord.setValue({
-            fieldId : 'custrecord_shouhuodizhi',
-            value : res.getValue('shipaddress')
         }) 
         newRecord.setValue({
             fieldId : 'custrecord_shouhuoren',
@@ -942,6 +1001,8 @@ define([
                 ports = res.getValue({
                     name : 'custbody_loading_port'
                 })
+
+                custbody_loading_port = ports
     
                 if(terms)
                 {
@@ -951,23 +1012,23 @@ define([
     
                     if(terms !== thisTerms)
                     {
-                        response.write({output : '所选项有交期不同，本次检查单号' + res.getValue('tranid')})
+                        response.write({output : '所选项有账期不同，本次检查单号' + res.getValue('tranid')})
                         throw 'out'
                     }
                 }
     
-                if(ports)
-                {
-                    var thisPorts = res.getValue({
-                        name : 'custbody_loading_port'
-                    })
+                // if(ports)
+                // {
+                //     var thisPorts = res.getValue({
+                //         name : 'custbody_loading_port'
+                //     })
   
-                    if(ports !== thisPorts)
-                    {
-                        response.write({output : '所选项有装货港不同，本次检查单号' + res.getValue('tranid')})
-                        throw 'out'
-                    }
-                }
+                //     if(ports !== thisPorts)
+                //     {
+                //         response.write({output : '所选项有装货港不同，本次检查单号' + res.getValue('tranid')})
+                //         throw 'out'
+                //     }
+                // }
     
                 return true
             })
@@ -1310,6 +1371,20 @@ define([
             line : index,
             value : operation.add(netamountnotax || 0 ,taxamount || 0)
         }) //总金额
+
+        if(res.getValue('custcol_line'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'custline',
+            line : index,
+            value : res.getValue('custcol_line')
+        }) //订单行号
+
+        if(res.getValue('custbody_invoice_number'))
+        sublist.setSublistValue({
+            id : FIELDPR + 'invnumber',
+            line : index,
+            value : res.getValue('custbody_invoice_number')
+        }) //发票号
     }
 
     function addSublist(form,params,callBackFun){

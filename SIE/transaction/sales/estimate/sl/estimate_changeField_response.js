@@ -3,11 +3,13 @@
  *@NScriptType Suitelet
  */
 define([
+    'N/util',
     'N/search',
     'N/record',
     'N/runtime',
     '../../../helper/operation_assistant'
 ], function(
+    util,
     search,
     record,
     runtime,
@@ -23,6 +25,61 @@ define([
 
         if(params.action === 'getRelated')
         response.write(JSON.stringify(relatedValue(params)))
+
+        if(params.action === 'getPolists')
+        response.write(JSON.stringify(VdPolists(params)))
+
+        if(params.action === 'vondorBankInfo')
+        response.write(JSON.stringify(vondorBankInfo(params)))
+    }
+
+    function vondorBankInfo(params){
+        var bankInfo = Object.create(null)
+
+        search.create({
+            type : 'vendorsubsidiaryrelationship',
+            filters : [
+                ['entity' , 'anyof' , [params.vendor]],
+                'AND',
+                ['subsidiary' , 'anyof' , [params.subsidiary]]
+            ],
+            columns : ['custrecord_bank_swift_code','custrecord_deposit_bank_vendor','custrecord_bank_num']
+        })
+        .run()
+        .each(function(res){
+            bankInfo = util.extend(bankInfo , {
+                banknum : res.getValue({name : 'custrecord_bank_num'}),
+                swiftcode : res.getValue({name : 'custrecord_bank_swift_code'}),
+                accountbank : res.getValue({name : 'custrecord_deposit_bank_vendor'}),
+            })
+        })
+
+        return bankInfo
+    }
+
+    function VdPolists(params){
+        var poLists = Object.create(null)
+
+        search.create({
+            type : 'purchaseorder',
+            filters : [
+                ['mainline' , 'is' , 'T'],
+                'AND',
+                ['entity' , 'anyof' , JSON.parse(params.vd)]
+            ],
+            columns : ['tranid']
+        })
+        .run()
+        .each(function(res){
+            poLists[res.id] = res.getValue('tranid')
+
+            return true
+        })
+
+        return {
+            status : 'sucess',
+            body : poLists
+        } 
     }
 
     function addPrOrd(params){
@@ -44,17 +101,59 @@ define([
         }
     }
 
+    function getLowestPriceVendot(item,quantity){
+        var vendor
+        search.create({
+            type : 'customrecord_price_apply',
+            filters : [
+                ['isinactive' , 'is' , 'F'],
+                'AND',
+                ['custrecord_field_status' , 'anyof' , ['1']],
+                'AND',
+                ['custrecord_field_item' , 'anyof' , [item]],
+                'AND',
+                ['custrecord_field_stop', 'greaterthanorequalto' , quantity],
+                'AND',
+                ['custrecord_field_start1' , 'lessthanorequalto' , quantity],
+                'AND',
+                ['custrecord_po_price_list.isinactive' , 'is' , 'F']
+            ],
+            columns : [
+                {name : 'custrecord_field_vendor'},
+                {name : 'custrecord_unit_price_vat' , sort : 'ASC'}
+            ]
+        })
+        .run().each(function(res){
+            vendor = res.getValue({name : 'custrecord_field_vendor'})
+        })
+
+        return vendor
+    }
+
     function addPrOrdList(estimateOrd , index){
         var item = estimateOrd.getSublistValue({
             sublistId : 'item',
             fieldId : 'item',
             line : index
         })
+        var quantity = estimateOrd.getSublistValue({
+            sublistId : 'item',
+            fieldId : 'quantity',
+            line : index
+        })
         var prord = record.create({
             type : 'customrecord_purchase_application'
         })
         var subsidiary = estimateOrd.getValue('subsidiary')
+        var vendor = getLowestPriceVendot(item,quantity)
   
+        if(vendor){
+            prord.setValue({
+                fieldId : 'custrecord_plan_vendor_pr',
+                value : vendor
+            })
+        }
+
         prord.setValue({
             fieldId : 'custrecord_create_num_pr',
             value : estimateOrd.id
@@ -134,11 +233,7 @@ define([
 
         prord.setValue({
             fieldId : 'custrecord_platform_pr_number',
-            value : estimateOrd.getSublistValue({
-                sublistId : 'item',
-                fieldId : 'quantity',
-                line : index
-            })
+            value : quantity
         })
 
         prord.setValue({

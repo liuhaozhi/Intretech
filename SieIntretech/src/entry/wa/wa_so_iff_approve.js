@@ -59,19 +59,19 @@ define([
             iffInventorydetailSubObj = {},
             createdfromValue,
             fromAsnRec, //销售订单记录
-            cSoIdFieldId = 'custcol_salesorder_2', //销售订单号
-            cSoLineFieldId = 'custcol_line_4', //销售订单行号
-            csdcFieldId = 'custbody_source_doc_creator_3', //来源单据创建人
-            cinterDisFieldId = 'custbody_sales_order_inter_discount_4', //公司间交易折扣率
-            fromAsnFcFieldId = 'custbody_final_customer_4', //最终客户
-            fromAsnWntFieldId = 'custbody_whether_ntercompany_transact_4', //是否公司间交易
-            fromAsnMarkFieldId = 'custbody_mark_3', //寄售标示
-            fromAsnRlFieldId = 'custbody_rece_locations_3', //寄售仓
-            fromAsnordertypeFieldId = 'custbody_cust_ordertype_4', //销售订单类型
-            slSourceSoIdFieldId = 'custcol_external_2', //来源订单号
-            slSourceLineFieldId = 'custcol_sales_bank_2', //来源订单行号
-            slCsidoFieldId = 'custcol_source_issue_doc_no_2', //来源出库单号
-            slCsidlnFieldId = 'custcol_source_issue_doc_line_no_2', //来源出库行号
+            cSoIdFieldId = 'custcol_salesorder', //销售订单号
+            cSoLineFieldId = 'custcol_line', //销售订单行号
+            csdcFieldId = 'custbody_source_doc_creator', //来源单据创建人
+            cinterDisFieldId = 'custbody_sales_order_inter_discount', //公司间交易折扣率
+            fromAsnFcFieldId = 'custbody_final_customer', //最终客户
+            fromAsnWntFieldId = 'custbody_whether_ntercompany_transact', //是否公司间交易
+            fromAsnMarkFieldId = 'custbody_mark', //寄售标示
+            fromAsnRlFieldId = 'custbody_rece_locations', //寄售仓
+            fromAsnordertypeFieldId = 'custbody_cust_ordertype', //销售订单类型
+            slSourceSoIdFieldId = 'custcol_external', //来源订单号
+            slSourceLineFieldId = 'custcol_sales_bank', //来源订单行号
+            slCsidoFieldId = 'custcol_source_issue_doc_no', //来源出库单号
+            slCsidlnFieldId = 'custcol_source_issue_doc_line_no', //来源出库行号
             fromIffMain = {}, //来源出库单主体信息
             fromAsnSoMain = {},
             fromAsnSoItemObj = {},
@@ -466,6 +466,7 @@ define([
                     toPoItemObj[gSlLineFieldId] = toLineValue;
                     toPoItemObj[slCsidoFieldId] = createdfromValue;
                     toPoItemObj[slCsidlnFieldId] = iffItemList[i][gSlLineFieldId];
+                    toPoItemObj[gSlLocationFieldId] = fromAsnSoMain[fromAsnRlFieldId];
                     //toIrItemObj[slSourceSoIdFieldId] = createdfromValue;
                     toIrItemObj[gSlLineFieldId] = toLineValue;
                     toIffItemObj[gSlLineFieldId] = toLineValue;
@@ -496,6 +497,7 @@ define([
                     toAsnItemObj[gSlLineFieldId] = toPoItemList[i][gSlLineFieldId];
                     toAsnItemObj[slCsidoFieldId] = toPoItemList[i][slCsidoFieldId];
                     toAsnItemObj[slCsidlnFieldId] = toPoItemList[i][slCsidlnFieldId];
+                    toAsnItemObj[gSlLocationFieldId] = toPoItemList[i][gSlLocationFieldId];
                     toAsnItemList.push(toAsnItemObj);
                 }
                 log.debug('toPoItemList', toPoItemList);
@@ -511,39 +513,35 @@ define([
                     ignoreMandatoryFields: true
                 };
 
-                toPoRecId = poCommon.purchaseorderCreationSt(toPoOption);
+                log.debug('toPoOption', toPoOption);
 
-                log.debug('toPoRecId', toPoRecId);
+                toPoRecId = poCommon.purchaseorderCreationSt(toPoOption);
 
                 if (toPoRecId) {
                     //6.3创建采购接收
                     toIrMain[gCreatedfromFieldId] = toPoRecId;
 
                     toIrOption = {
-
                         main: toIrMain,
                         items: toIrItemList,
                         enableSourcing: false,
                         ignoreMandatoryFields: true
                     };
-
+                    log.debug('toIrOption',toIrOption)
                     toIrRecId = poCommon.itemreceiptCreationSt(toIrOption);
-
-                    log.debug('toIrRecId', toIrRecId);
                 }
 
                 //6.4创建发货通知单
                 toAsnOption = {
-
                     main: toAsnMain,
                     items: toAsnItemList,
                     enableSourcing: false,
                     ignoreMandatoryFields: true
                 };
 
-                var toAsnRecId = soCommon.salesorderCreationSt(toAsnOption);
+                log.debug('toAsnOption', toAsnOption);
 
-                log.debug('toAsnRecId', toAsnRecId);
+                var toAsnRecId = soCommon.salesorderCreationSt(toAsnOption);
 
                 //6.5创建出库单
                 if (toIrRecId && toAsnRecId) {
@@ -559,9 +557,6 @@ define([
                     };
 
                     toIffRecId = soCommon.itemfulfillmentCreationSt(toIffOption);
-
-                    log.debug('toIffRecId', toIffRecId);
-
                 }
             }
 

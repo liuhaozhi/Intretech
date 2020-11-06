@@ -5,7 +5,7 @@
  *@description  此程序用于搜索系统标准Invoice，然后合并生成发票单号的页面逻辑验证
  */
 define([
-    'N/currentRecord',
+    'N/currentRecord', 
     'N/ui/dialog',
     '../../app/app_ui_component_client.js'
 ], function (
@@ -105,10 +105,23 @@ define([
                     fieldId: 'custpage_paged_custom_bill_type',
                     line: i
                 });
+                var rellInvoice = suiteletPage.getSublistValue({
+                    sublistId: sublistId,
+                    fieldId: 'custpage_paged_custrecord_real_bill_number',
+                    line: i
+                });
                 if(billType == '未知'){
                     dialog.alert({
                         title: '错误',
                         message: '您勾选了未知的类型，有可能是使用了其他语言所致，请使用中文或者英文。'
+                    });
+                    return false;
+                }
+
+                if(!rellInvoice){
+                    dialog.alert({
+                        title: '错误',
+                        message: '您勾选了无实际发票号的选项，请核验。'
                     });
                     return false;
                 }

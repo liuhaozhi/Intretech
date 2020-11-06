@@ -201,6 +201,7 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
                 curItemId,
                 curItemRate,
                 curItemIsLevel,
+                promptMessage = new Array(),
                 curItemLatestPrice,
                 curItemLatestVendor,
                 curItemLatestAppDate,
@@ -272,6 +273,13 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
                             curLineLatestVendor = priceInfo[curItemId].latest.vendorId;
                             curLineLatestAppDate = priceInfo[curItemId].latest.approveDate;
                         }
+                        if(priceInfo[curItemId].nextPrice){	
+                            promptMessage.push({	
+                                index : i + 1,	
+                                difff : priceInfo[curItemId].nextPrice.difference,	
+                                purPrice : priceInfo[curItemId].nextPrice.purPrice	
+                            })	
+                        }
                     }
 
                     //转换格式
@@ -332,6 +340,14 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
                             sublistId: 'item'
                         });
                     }
+                }
+                if(promptMessage.length){	
+                    dialog.alert({	
+                        title: '提示',	
+                        message: promptMessage.map(function(item){	
+                            return '第' + item.index + '行物料离下个阶梯还有' + item.difff + '个,' + '下个阶梯价是' + item.purPrice + ',是否多采购进入下个阶梯价</br>'	
+                        }).join('')	
+                    });	
                 }
             } else {
                 dialog.alert({
@@ -408,7 +424,7 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
             ldblHead = interPriceRspObj.data.head;
             //console.log('ldblInfo', ldblInfo);
         }
-
+        var items = new Array()
         //收集物料信息
         for (var i = 0; i < lineCount; i++) {
             curItemId = newRecord.getSublistValue({
@@ -427,9 +443,18 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
             } else {
                 itemInfo[curItemId] = curItemQty;
             }
+
+            items.push(curItemId)
         }
 
-        //console.log('itemInfo', itemInfo);
+        var firmLevel = JSON.parse(https.get({
+            url: getSearchVendorURL({
+                items : JSON.stringify(items),
+                action: 'getFirmLevel'
+            })
+        }).body)
+
+        // console.log('firmLevel', firmLevel);
 
         https.post.promise({
             url: getPriceSearchUrl(),
@@ -466,6 +491,10 @@ define(['N/https', 'N/url', 'N/ui/dialog', 'N/format', 'N/record'], function (ht
                     if (ldblInfo[curItemId]) {
                         ldblTypeValue = ldblInfo[curItemId].jglx;
                         ldblorgdjg = ldblInfo[curItemId].sz;
+                    }
+
+                    if(firmLevel[curItemId]){
+                        ldblorgdjg = firmLevel[curItemId]
                     }
 
                     //console.log('ldblTypeValue', ldblTypeValue);

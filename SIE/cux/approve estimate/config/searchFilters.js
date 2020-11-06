@@ -112,14 +112,6 @@ define({
             )
         }
 
-        if(params.endcustomer)
-        {
-            filters.push(
-                'AND',
-                ['custbody_final_customer' , 'anyof' , [params.endcustomer]]
-            )
-        }
-
         if(params.customerord)
         {
             filters.push(
