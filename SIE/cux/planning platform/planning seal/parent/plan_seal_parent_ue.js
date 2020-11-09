@@ -788,25 +788,6 @@ define([
                     var scale = (item.quantity || 0) / parentQuantity
                     var planNumber = getPlanNumber(orderRecord,item)
 
-                    var copyId = copyRecord.save()
-
-                    copyRecord = record.load({
-                        type : 'customrecord_shipping_plan',
-                        id : copyId
-                    })
-
-                    log.error('custrecord_p_custcol_trueamount',parentRec.getValue({
-                        fieldId : 'custrecord_p_custcol_trueamount'
-                    }))
-
-                    log.error('custrecord_p_custcol_om_total_discount',parentRec.getValue({
-                        fieldId : 'custrecord_p_custcol_om_total_discount'
-                    }))
-
-                    log.error('custrecord_p_custcol_discount',parentRec.getValue({
-                        fieldId : 'custrecord_p_custcol_discount'
-                    }))
-
                     copyRecord.setValue({
                         fieldId : 'custrecord_p_custcol_om_before_discount',
                         value : operation.mul(priceNotax || 0 , item.quantity)

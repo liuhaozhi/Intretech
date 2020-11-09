@@ -8,7 +8,7 @@ define([
     '../../helper/operation_assistant'
 ], 
     (search , record , operation) => {
-        const afterSubmit = context => {
+        const beforeSubmit = context => {
             const {type , UserEventType} = context
             log.error(type,UserEventType.EDIT)
             if(type === UserEventType.EDIT || type === UserEventType.XEDIT){
@@ -74,7 +74,9 @@ define([
 
         const updateItemProperty = (newRecord,newQuantity,oldQuantity,oldRecord) => {
             log.error('entersub')
-            var scale = newQuantity / oldQuantity
+            var scale = (newQuantity / oldQuantity) || 1
+
+            log.error('scale',scale)
 
             // newRecord.setValue({
             //     fieldId : 'custrecord_p_custcol_total_net_weight',
@@ -201,6 +203,6 @@ define([
             })
         }
 
-        return { afterSubmit }
+        return { beforeSubmit }
     }
 )

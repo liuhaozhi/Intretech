@@ -1,19 +1,19 @@
-{
-  "files.autoSave": "onFocusChange",
+ {
+    "files.autoSave": "onFocusChange",
+    
+    "editor.tabSize": 4,
   
-  "editor.tabSize": 4,
+    "netSuiteUpload.netSuiteKey": "dbd53365c98fc2799c710b3c3a811574135ec1665abe56558fcd236c6cdc8f13",
+  
+    "netSuiteUpload.netSuiteSecret": "88f4990fc0a391643d4ca42a3d3faa4507c7abf8877968c562ba24c1a5170afd",
+  
+    "netSuiteUpload.consumerToken": "4841f6295820ab4e6833195fa9d13ad233cebf419389051676b6fba49a4bf7c6",
+  
+    "netSuiteUpload.consumerSecret": "5ac6ef9a5160a24de0d859b20a20445db2a273d09a6c8954ec98a2381c1732b2",
+  
+    "netSuiteUpload.realm": "5399033",
+  
+    "netSuiteUpload.restlet":"https://5399033.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=324&deploy=1",
 
-  "netSuiteUpload.netSuiteKey": "db9e195c57492f33ab4844a380787a8048f0ba80314f114e4fb33fc3fb74c70e",
-
-  "netSuiteUpload.netSuiteSecret": "c889d70412d3b8801d31ac359184f072cd7f82a36b945ccfb1306fed7f2b3ea9",
-
-  "netSuiteUpload.consumerToken": "548002ab1b31cf5f6bb78e1939a48edd5a2494bbff062b96bd1775397d3f1606",
-
-  "netSuiteUpload.consumerSecret": "78a6716fae0e22a995a07fc70546c7a7d6192d627c09a8eb3f5fb5514916637c",
-
-  "netSuiteUpload.realm": "5399033_SB1",
-
-  "netSuiteUpload.restlet":"https://5399033-sb1.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=324&deploy=1",
-
-  "netSuiteUpload.tempFolder": "E:\\盈趣NETSUITE",
-}
+    "netSuiteUpload.tempFolder": "E:\\盈趣NETSUITE",
+  }

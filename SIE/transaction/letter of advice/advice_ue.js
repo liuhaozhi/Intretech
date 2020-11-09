@@ -324,35 +324,12 @@ define([
                 {
                     if(+inventory[item][key].count >= quantity)
                     {
-                        // salesorder.setSublistValue({
-                        //     sublistId : 'item',
-                        //     fieldId : 'inventorylocation',
-                        //     value : key,
-                        //     line : i
-                        // })
-
                         salesorder.setSublistValue({
                             sublistId : 'item',
                             fieldId : 'location',
                             value : key,
                             line : i
                         })
-
-                        log.error(salesorder.getSublistValue({
-                            sublistId : 'item',
-                            fieldId : 'inventorylocation',
-                            line : i
-                        }),salesorder.getSublistValue({
-                            sublistId : 'item',
-                            fieldId : 'location',
-                            line : i
-                        }))
-
-                        // var subDetail = salesorder.getSublistSubrecord({
-                        //     sublistId : 'item',
-                        //     fieldId : 'inventorydetail',
-                        //     line : i
-                        // })
 
                         setInventorySublist(subDetail, quantity , inventory[item][key].details)
 
